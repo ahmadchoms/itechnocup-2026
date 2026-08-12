@@ -1,13 +1,211 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
-generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
-}
-
 datasource db {
   provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  WARGA
+  PETUGAS
+  UMKM
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fullName      String    @map("full_name")
+  email         String    @unique
+  phone         String?
+  address       String?
+  latitude      Decimal?  @db.Decimal
+  longitude     Decimal?  @db.Decimal
+  avatarUrl     String?   @map("avatar_url")
+  passwordHash  String?   @map("password_hash")
+  isAdmin       Boolean   @default(false) @map("is_admin")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  listings              Listing[]
+  wasteRequests         WasteRequest[]       @relation("BuyerRequests")
+  sellerConversations   Conversation[]       @relation("SellerConversations")
+  buyerConversations    Conversation[]       @relation("BuyerConversations")
+  sentMessages          Message[]            @relation("SentMessages")
+  sellerTransactions    Transaction[]        @relation("SellerTransactions")
+  buyerTransactions     Transaction[]        @relation("BuyerTransactions")
+  givenReviews          Review[]             @relation("GivenReviews")
+  receivedReviews       Review[]             @relation("ReceivedReviews")
+
+  @@map("users")
+}
+
+model WasteCategory {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  listings             Listing[]             @relation("ListingCategory")
+  cvPredictedListings  Listing[]             @relation("CVPredictedCategory")
+  wasteRequests        WasteRequest[]
+  transactions         Transaction[]
+  cvLogs               CVClassificationLog[]
+
+  @@map("waste_categories")
+}
+
+model Listing {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sellerId              String    @map("seller_id") @db.Uuid
+  categoryId            String    @map("category_id") @db.Uuid
+  title                 String
+  photoUrl              String    @map("photo_url")
+  estimatedWeightKg     Decimal?  @map("estimated_weight_kg") @db.Decimal
+  quantity              Int?
+  unit                  String?
+  condition             String?
+  description           String?
+  estimatedPrice        Decimal?  @map("estimated_price") @db.Decimal
+  address               String?
+  latitude              Decimal?  @db.Decimal
+  longitude             Decimal?  @db.Decimal
+  status                String    @default("aktif") // aktif, terjual, dihapus
+  cvPredictedCategoryId String?   @map("cv_predicted_category_id") @db.Uuid
+  cvConfidence          Decimal?  @map("cv_confidence") @db.Decimal
+  isCvCorrected         Boolean   @default(false) @map("is_cv_corrected")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  seller               User                  @relation(fields: [sellerId], references: [id])
+  category             WasteCategory         @relation("ListingCategory", fields: [categoryId], references: [id])
+  cvPredictedCategory  WasteCategory?        @relation("CVPredictedCategory", fields: [cvPredictedCategoryId], references: [id])
+  matches              Match[]
+  transactions         Transaction[]
+  cvLogs               CVClassificationLog[]
+
+  @@map("listings")
+}
+
+model WasteRequest {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  buyerId        String    @map("buyer_id") @db.Uuid
+  categoryId     String    @map("category_id") @db.Uuid
+  title          String
+  description    String?
+  quantityWanted Int?      @map("quantity_wanted")
+  unit           String?
+  offeredPrice   Decimal   @map("offered_price") @db.Decimal
+  address        String?
+  latitude       Decimal?  @db.Decimal
+  longitude      Decimal?  @db.Decimal
+  status         String    @default("aktif") // aktif, terpenuhi, dihapus
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  buyer    User          @relation("BuyerRequests", fields: [buyerId], references: [id])
+  category WasteCategory @relation(fields: [categoryId], references: [id])
+  matches  Match[]
+
+  @@map("waste_requests")
+}
+
+model Match {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  listingId   String   @map("listing_id") @db.Uuid
+  requestId   String   @map("request_id") @db.Uuid
+  distanceKm  Decimal? @map("distance_km") @db.Decimal
+  status      String?  // disarankan, dilihat, diabaikan
+  matchedAt   DateTime @default(now()) @map("matched_at")
+
+  listing       Listing        @relation(fields: [listingId], references: [id])
+  request       WasteRequest   @relation(fields: [requestId], references: [id])
+  conversations Conversation[]
+
+  @@map("matches")
+}
+
+model Conversation {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  matchId   String?  @map("match_id") @db.Uuid
+  sellerId  String   @map("seller_id") @db.Uuid
+  buyerId   String   @map("buyer_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  match        Match?        @relation(fields: [matchId], references: [id])
+  seller       User          @relation("SellerConversations", fields: [sellerId], references: [id])
+  buyer        User          @relation("BuyerConversations", fields: [buyerId], references: [id])
+  messages     Message[]
+  transactions Transaction[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String   @map("conversation_id") @db.Uuid
+  senderId       String   @map("sender_id") @db.Uuid
+  content        String
+  isRead         Boolean  @default(false) @map("is_read")
+  sentAt         DateTime @default(now()) @map("sent_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  sender       User         @relation("SentMessages", fields: [senderId], references: [id])
+
+  @@map("messages")
+}
+
+model Transaction {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  conversationId String?   @map("conversation_id") @db.Uuid
+  listingId      String?   @map("listing_id") @db.Uuid
+  sellerId       String    @map("seller_id") @db.Uuid
+  buyerId        String    @map("buyer_id") @db.Uuid
+  categoryId     String?   @map("category_id") @db.Uuid
+  finalPrice     Decimal   @map("final_price") @db.Decimal
+  finalQuantity  Int?      @map("final_quantity")
+  unit           String?
+  status         String    @default("menunggu_konfirmasi") // menunggu_konfirmasi, selesai, dibatalkan
+  completedAt    DateTime? @map("completed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  conversation Conversation?  @relation(fields: [conversationId], references: [id])
+  listing      Listing?       @relation(fields: [listingId], references: [id])
+  seller       User           @relation("SellerTransactions", fields: [sellerId], references: [id])
+  buyer        User           @relation("BuyerTransactions", fields: [buyerId], references: [id])
+  category     WasteCategory? @relation(fields: [categoryId], references: [id])
+  reviews      Review[]
+
+  @@map("transactions")
+}
+
+model Review {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  transactionId String   @map("transaction_id") @db.Uuid
+  reviewerId    String   @map("reviewer_id") @db.Uuid
+  revieweeId    String   @map("reviewee_id") @db.Uuid
+  rating        Int
+  comment       String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  reviewer    User        @relation("GivenReviews", fields: [reviewerId], references: [id])
+  reviewee    User        @relation("ReceivedReviews", fields: [revieweeId], references: [id])
+
+  @@map("reviews")
+}
+
+model CVClassificationLog {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  listingId           String   @map("listing_id") @db.Uuid
+  photoUrl            String?  @map("photo_url")
+  predictedCategoryId String?  @map("predicted_category_id") @db.Uuid
+  confidence          Decimal? @db.Decimal
+  modelProvider       String?  @map("model_provider") // roboflow / teachable_machine
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  listing           Listing        @relation(fields: [listingId], references: [id])
+  predictedCategory WasteCategory? @relation(fields: [predictedCategoryId], references: [id])
+
+  @@map("cv_classification_logs")
 }
