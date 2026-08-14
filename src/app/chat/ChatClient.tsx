@@ -302,26 +302,40 @@ export function ChatClient({ conversations, activeId, sellerIdParam, listingIdPa
             <div ref={messagesEndRef} />
           </div>
 
-          {/* FLOATING DEAL BOX (WIDGET TRANSAKSI) */}
+          {/* FLOATING DEAL BOX (WIDGET TRANSAKSI COD) */}
           <div className="p-4 bg-white border-t border-slate-200 space-y-3">
-            <div className="p-3.5 rounded-2xl bg-slate-900 text-white border border-slate-800">
-              <div className="flex items-center justify-between mb-2">
+            <div className="p-4 rounded-2xl bg-slate-900 text-white border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Coins className="w-4 h-4 text-amber-400" />
                   <span className="text-xs font-bold text-white tracking-wide">
-                    DEAL NEGOSIASI
+                    KESEPAKATAN COD &amp; HARGA
                   </span>
                 </div>
-                <span className="text-[10px] text-emerald-300 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">
+                <span className="text-[10px] font-semibold text-emerald-300 bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-700">
                   {activeConv.match?.listing?.category?.name || "Limbah"}
                 </span>
               </div>
 
+              {/* Practical Guidance Note */}
+              {activeTx?.status === "menunggu_konfirmasi" ? (
+                <div className="p-3 bg-amber-950/60 border border-amber-700/60 rounded-xl text-amber-200 text-xs space-y-1">
+                  <span className="font-bold block">✓ Kesepakatan dibuat!</span>
+                  <p className="text-[11px] text-amber-300/90 leading-relaxed">
+                    Silakan lakukan COD tatap muka di lokasi penjemputan. Tekan tombol <strong className="text-white">"Tandai COD Selesai"</strong> di bawah setelah pembayaran tunai diterima.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-400">
+                  Ringkasan barang &amp; sepakati harga akhir transaksi sebelum penjemputan COD:
+                </p>
+              )}
+
               {/* Deal Price & Quantity Input Row */}
-              <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[10px] font-semibold text-slate-300 mb-1">
-                    Sepakati Total Harga (Rp)
+                    Harga Kesepakatan (Rp)
                   </label>
                   <input
                     type="number"
@@ -333,7 +347,7 @@ export function ChatClient({ conversations, activeId, sellerIdParam, listingIdPa
 
                 <div>
                   <label className="block text-[10px] font-semibold text-slate-300 mb-1">
-                    Total Jumlah ({activeConv.match?.listing?.unit || "kg"})
+                    Jumlah ({activeConv.match?.listing?.unit || "kg"})
                   </label>
                   <input
                     type="number"
@@ -345,20 +359,22 @@ export function ChatClient({ conversations, activeId, sellerIdParam, listingIdPa
               </div>
 
               {/* Transaction Action Buttons */}
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => handleUpdateTransactionStatus("menunggu_konfirmasi")}
-                  disabled={isUpdatingTx}
-                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer"
-                >
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>Sepakati Deal (Menunggu COD)</span>
-                </button>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {activeTx?.status !== "menunggu_konfirmasi" && activeTx?.status !== "selesai" && (
+                  <button
+                    onClick={() => handleUpdateTransactionStatus("menunggu_konfirmasi")}
+                    disabled={isUpdatingTx}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 shadow-xs transition-colors flex items-center space-x-1.5 cursor-pointer disabled:opacity-60"
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>Sepakati Harga &amp; Janji COD</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => handleUpdateTransactionStatus("selesai")}
                   disabled={isUpdatingTx}
-                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-xs transition-colors flex items-center space-x-1.5 cursor-pointer disabled:opacity-60"
                 >
                   <CheckCircle className="w-3.5 h-3.5" />
                   <span>Tandai COD Selesai</span>
@@ -367,7 +383,7 @@ export function ChatClient({ conversations, activeId, sellerIdParam, listingIdPa
                 <button
                   onClick={() => handleUpdateTransactionStatus("dibatalkan")}
                   disabled={isUpdatingTx}
-                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-red-900/60 text-slate-300 hover:text-red-200 border border-slate-700 transition-colors flex items-center space-x-1 cursor-pointer"
+                  className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-red-950 text-slate-300 hover:text-red-300 border border-slate-700 transition-colors flex items-center space-x-1 cursor-pointer disabled:opacity-60"
                 >
                   <XCircle className="w-3.5 h-3.5" />
                   <span>Batalkan</span>

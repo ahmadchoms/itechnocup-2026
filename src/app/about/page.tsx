@@ -13,9 +13,6 @@ export default function AboutPage() {
       <div className="max-w-4xl mx-auto space-y-12 py-4">
         {/* Header Section */}
         <div className="text-center space-y-3">
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-            Ekonomi Sirkular Indonesia
-          </span>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             Menghubungkan Penghasil Limbah dengan Industri Daur Ulang
           </h1>

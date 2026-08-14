@@ -173,9 +173,9 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
             </div>
             <div>
               <h2 className="text-base font-semibold text-white tracking-tight">
-                AI Computer Vision Scanner
+                Foto &amp; Deteksi Sampah Otomatis
               </h2>
-              <p className="text-xs text-slate-400">Deteksi jenis sampah otomatis dari foto</p>
+              <p className="text-xs text-slate-400">Foto sampahmu, sistem akan mendeteksi kategorinya secara otomatis</p>
             </div>
           </div>
           <button
