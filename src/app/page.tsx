@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/layout/AppShell";
-import { ListingCard } from "@/components/marketplace/ListingCard";
+
 import { ProximityMap } from "@/components/map/ProximityMap";
 import {
   ArrowRight,
@@ -20,6 +20,7 @@ import {
 import Link from "next/link";
 import { Listing, WasteRequest } from "@/types";
 import Image from "next/image";
+import { getSessionUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -174,7 +175,6 @@ const reviews: ReviewItem[] = [
 ];
 
 const footerLinks = [
-  { href: "/listings", label: "Pasar Sampah" },
   { href: "/matches", label: "Match Terdekat" },
   { href: "/about", label: "Tentang Kami" },
   { href: "/contact", label: "Kontak & FAQ" },
@@ -262,7 +262,7 @@ function HeroSection() {
         <div className="space-y-6 pt-2">
           <div className="flex flex-wrap items-center gap-3">
             <Link
-              href="/listings/create"
+              href="/seller/listings/create"
               className="px-7 py-3.5 rounded-full bg-slate-900 hover:bg-slate-800 active:bg-black text-white font-bold text-xs shadow-sm transition-all flex items-center space-x-2 group"
             >
               <Camera className="w-4 h-4 text-emerald-400" />
@@ -270,7 +270,7 @@ function HeroSection() {
             </Link>
 
             <Link
-              href="/listings"
+              href="/profile"
               className="px-6 py-3.5 rounded-full bg-white hover:bg-slate-100 text-slate-800 font-semibold text-xs border border-slate-200 transition-colors"
             >
               Jelajahi Pasar
@@ -332,7 +332,7 @@ function HeroSection() {
               Akurasi AI: <strong className="text-purple-300 font-semibold">94.5%</strong>
             </span>
             <Link
-              href="/chat"
+              href="/profile"
               className="font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition-colors"
             >
               <span>Tawar Sekarang</span>
@@ -490,33 +490,6 @@ function ImpactStatsSection() {
   );
 }
 
-function ListingsSection({ listings }: { listings: Listing[] }) {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between px-2">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-            Listing Sampah Siap Jual
-          </h2>
-          <p className="text-xs text-slate-500">Koleksi barang limbah terbaru dari masyarakat &amp; UMKM</p>
-        </div>
-        <Link
-          href="/listings"
-          className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1 bg-emerald-50 px-3.5 py-1.5 rounded-full border border-emerald-200"
-        >
-          <span>Buka Pasar Sampah</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {listings.map((item) => (
-          <ListingCard key={item.id} listing={item} />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function SecondLifeSection() {
   return (
@@ -629,14 +602,14 @@ function CtaSection() {
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
-                href="/listings/create"
+                href="/profile"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-bold text-slate-900 transition-colors hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
                 Foto &amp; Jual Sampah
                 <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
               </Link>
               <Link
-                href="/listings"
+                href="/profile"
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-700 px-7 py-4 text-sm font-semibold text-slate-200 transition-colors hover:border-slate-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
                 <Search className="h-4 w-4" strokeWidth={2.5} />
@@ -717,6 +690,8 @@ function SiteFooter() {
 }
 
 export default async function HomePage() {
+  const sessionUser = await getSessionUser();
+
   const categories = await prisma.wasteCategory.findMany({
     orderBy: { name: "asc" },
   });
@@ -794,13 +769,13 @@ export default async function HomePage() {
   })) as unknown as WasteRequest[];
 
   return (
-    <AppShell categories={categories}>
+    <AppShell categories={categories} sessionUser={sessionUser}>
       <div className="space-y-20 py-4">
         <HeroSection />
         <EffortlessSection />
         <ProximityMapSection listings={formattedListings} requests={formattedRequests} />
         <ImpactStatsSection />
-        <ListingsSection listings={formattedListings} />
+
         <SecondLifeSection />
         <TestimonialsSection />
         <CtaSection />

@@ -64,6 +64,14 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ success: true });
     }
 
+    if (action === "deleteRequest") {
+      await prisma.wasteRequest.update({
+        where: { id },
+        data: { status: "dibatalkan" },
+      });
+      return NextResponse.json({ success: true });
+    }
+
     return NextResponse.json({ error: "Action tidak dikenal" }, { status: 400 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

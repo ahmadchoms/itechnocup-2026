@@ -7,9 +7,13 @@ export const metadata = {
   description: "Mengenal DaurNusa, platform sirkular jual-beli sampah dan limbah berbasis AI dan lokasi terdekat.",
 };
 
-export default function AboutPage() {
+import { getSessionUser } from "@/lib/session";
+
+export default async function AboutPage() {
+  const sessionUser = await getSessionUser();
+
   return (
-    <AppShell>
+    <AppShell sessionUser={sessionUser}>
       <div className="max-w-4xl mx-auto space-y-12 py-4">
         {/* Header Section */}
         <div className="text-center space-y-3">
@@ -77,7 +81,7 @@ export default function AboutPage() {
           <h3 className="text-xl font-bold text-slate-900">Siap Bergabung dalam Ekosistem Sirkular?</h3>
           <div className="flex justify-center space-x-4">
             <Link
-              href="/listings"
+              href="/profile"
               className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-md transition-colors"
             >
               Jelajahi Pasar Sampah

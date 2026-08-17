@@ -40,21 +40,30 @@ export default async function RequestDetailPage({ params }: RouteParams) {
         )
       : 4.9;
 
+  const safeBuyer = {
+    ...request.buyer,
+    latitude: request.buyer.latitude ? Number(request.buyer.latitude) : null,
+    longitude: request.buyer.longitude ? Number(request.buyer.longitude) : null,
+    avgRating,
+    reviewCount: buyerReviews.length,
+  };
+  delete (safeBuyer as any).receivedReviews;
+
   const serialized = {
     ...request,
     offeredPrice: Number(request.offeredPrice),
     latitude: request.latitude ? Number(request.latitude) : null,
     longitude: request.longitude ? Number(request.longitude) : null,
-    buyer: {
-      ...request.buyer,
-      avgRating,
-      reviewCount: buyerReviews.length,
-    },
+    buyer: safeBuyer,
   };
 
   return (
-    <AppShell categories={categories}>
-      <RequestDetailClient request={serialized} currentUserId={sessionUser?.id || null} />
+    <AppShell categories={categories} sessionUser={sessionUser}>
+      <RequestDetailClient 
+        request={serialized} 
+        currentUserId={sessionUser?.id || null} 
+        currentRole={sessionUser?.activeRole || "seller"}
+      />
     </AppShell>
   );
 }

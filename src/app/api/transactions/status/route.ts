@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSessionUser } from "@/lib/session";
 
 export async function POST(request: Request) {
   try {
+    const sessionUser = await getSessionUser();
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const {
       conversationId,
       listingId,
@@ -15,6 +21,15 @@ export async function POST(request: Request) {
       status, // "menunggu_konfirmasi" | "selesai" | "dibatalkan"
       transactionId,
     } = await request.json();
+
+    // Verify ownership via conversation
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationId },
+    });
+
+    if (!conversation || (conversation.sellerId !== sessionUser.id && conversation.buyerId !== sessionUser.id)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     let transaction;
 

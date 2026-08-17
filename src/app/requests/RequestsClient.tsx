@@ -8,9 +8,10 @@ import { cn } from "@/lib/utils";
 interface RequestsClientProps {
   initialRequests: any[];
   categories: { id: string; name: string }[];
+  currentRole?: string;
 }
 
-export function RequestsClient({ initialRequests, categories }: RequestsClientProps) {
+export function RequestsClient({ initialRequests, categories, currentRole = "guest" }: RequestsClientProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -38,13 +39,15 @@ export function RequestsClient({ initialRequests, categories }: RequestsClientPr
           </p>
         </div>
 
-        <Link
-          href="/requests/create"
-          className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold transition-colors inline-flex items-center space-x-2 shrink-0 shadow-sm"
-        >
-          <PlusCircle className="w-4 h-4" />
-          <span>Post Permintaan Baru (Buyer)</span>
-        </Link>
+        {currentRole === "buyer" && (
+          <Link
+            href="/buyer/requests/create"
+            className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold transition-colors inline-flex items-center space-x-2 shrink-0 shadow-sm"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>Post Permintaan Baru (Buyer)</span>
+          </Link>
+        )}
       </div>
 
       {/* Search & Category Filter */}

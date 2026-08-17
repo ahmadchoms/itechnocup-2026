@@ -50,7 +50,7 @@ export default function RegisterPage() {
         return;
       }
 
-      router.push("/listings");
+      router.push("/profile");
       router.refresh();
     } catch {
       setError("Terjadi kesalahan koneksi. Coba lagi.");

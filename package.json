@@ -12,7 +12,8 @@
     "@base-ui/react": "^1.7.0",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
-    "@supabase/supabase-js": "^2.112.2",
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.112.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/pg": "^8.21.0",
     "bcryptjs": "^3.0.3",
@@ -44,5 +45,11 @@
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
+  },
+  "allowScripts": {
+    "unrs-resolver@1.12.2": true,
+    "@prisma/engines@7.9.1": true,
+    "prisma@7.9.1": true,
+    "esbuild@0.28.2": true
   }
 }

@@ -146,16 +146,17 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
         }),
       });
 
+      const data = await res.json();
+
       if (res.ok) {
         onClose();
-        router.push("/listings");
+        router.push(`/seller/listing-match/${data.listing.id}`);
         router.refresh();
       } else {
-        const data = await res.json();
-        alert(data.error || "Gagal membuat listing");
+        alert("Gagal membuat listing: " + (data.error || "Unknown error"));
       }
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
       alert("Terjadi kesalahan koneksi");
     } finally {
       setIsSubmitting(false);

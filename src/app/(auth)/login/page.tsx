@@ -8,7 +8,7 @@ import { Mail, Lock, Eye, EyeOff, RefreshCw } from "lucide-react";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/listings";
+  const redirectTo = searchParams.get("redirect") || "/profile";
   const reason = searchParams.get("reason");
 
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -41,7 +41,11 @@ function LoginForm() {
         return;
       }
 
-      router.push(redirectTo);
+      if (data.user?.isAdmin && redirectTo === "/profile") {
+        router.push("/admin");
+      } else {
+        router.push(redirectTo);
+      }
       router.refresh();
     } catch {
       setError("Terjadi kesalahan koneksi. Coba lagi.");

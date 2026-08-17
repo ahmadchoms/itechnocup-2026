@@ -8,6 +8,9 @@ export async function POST(request: Request) {
     const { matchId, listingId, requestId, sellerId: inputSellerId, buyerId: inputBuyerId } = body;
 
     const sessionUser = await getSessionUser();
+    if (!sessionUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     let sellerId = inputSellerId;
     let buyerId = inputBuyerId;

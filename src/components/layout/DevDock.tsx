@@ -11,9 +11,9 @@ export function DevDock() {
   const [isOpen, setIsOpen] = useState(false);
 
   const routes = [
-    { href: "/listings", label: "Marketplace Feed", icon: Store },
+    { href: "/profile", label: "Dashboard Profil", icon: Store },
     { href: "/matches", label: "Pencocokan Lokasi", icon: Compass },
-    { href: "/requests/create", label: "Buat Request", icon: FilePlus },
+    { href: "/buyer/requests/create", label: "Buat Request", icon: FilePlus },
     { href: "/chat", label: "Chat & Negosiasi", icon: MessageSquare },
     { href: "/profile", label: "Profil & Analytics", icon: User },
     { href: "/admin", label: "Panel Admin", icon: ShieldCheck },
@@ -30,7 +30,7 @@ export function DevDock() {
 
           {routes.map((r) => {
             const Icon = r.icon;
-            const isActive = pathname === r.href || (r.href !== "/listings" && pathname.startsWith(r.href));
+            const isActive = pathname === r.href || (r.href !== "/profile" && pathname.startsWith(r.href));
 
             return (
               <Link

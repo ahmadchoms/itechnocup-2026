@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSessionUser } from "@/lib/session";
 
 export async function POST(request: Request) {
   try {
@@ -23,14 +24,19 @@ export async function POST(request: Request) {
       sellerId: inputSellerId,
     } = body;
 
-    // Get a default seller if not provided
+    const sessionUser = await getSessionUser();
     let sellerId = inputSellerId;
+    
     if (!sellerId) {
-      const defaultUser = await prisma.user.findFirst();
-      if (!defaultUser) {
-        return NextResponse.json({ error: "User tidak ditemukan" }, { status: 400 });
+      if (sessionUser) {
+        sellerId = sessionUser.id;
+      } else {
+        const defaultUser = await prisma.user.findFirst();
+        if (!defaultUser) {
+          return NextResponse.json({ error: "User tidak ditemukan" }, { status: 400 });
+        }
+        sellerId = defaultUser.id;
       }
-      sellerId = defaultUser.id;
     }
 
     // 1. Create Listing
@@ -65,28 +71,6 @@ export async function POST(request: Request) {
           predictedCategoryId: cvPredictedCategoryId,
           confidence: cvConfidence ? parseFloat(cvConfidence) : 90.0,
           modelProvider: "roboflow",
-        },
-      });
-    }
-
-    // 3. Automatic Proximity Matching Engine (MTC-1, MTC-2)
-    // Find active buyer requests with matching category
-    const matchingRequests = await prisma.wasteRequest.findMany({
-      where: {
-        categoryId: categoryId,
-        status: "aktif",
-      },
-    });
-
-    for (const req of matchingRequests) {
-      // Calculate mock distance based on coordinates or random proximity
-      const distance = Number((Math.random() * 3 + 0.5).toFixed(1));
-      await prisma.match.create({
-        data: {
-          listingId: listing.id,
-          requestId: req.id,
-          distanceKm: distance,
-          status: "disarankan",
         },
       });
     }

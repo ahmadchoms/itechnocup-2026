@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Coins, Scale, Star, TrendingUp, CheckCircle, Clock, XCircle, User, MapPin, Phone, Mail, Award, MessageSquare } from "lucide-react";
+import { Coins, Scale, Star, TrendingUp, CheckCircle, Clock, XCircle, User, MapPin, Phone, Mail, Award, MessageSquare, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 interface ProfileClientProps {
   user: any;
@@ -14,10 +15,100 @@ interface ProfileClientProps {
   };
   transactions: any[];
   reviews: any[];
+  buyerApplication?: any;
 }
 
-export function ProfileClient({ user, stats, transactions, reviews }: ProfileClientProps) {
+export function ProfileClient({ user, stats, transactions, reviews, buyerApplication }: ProfileClientProps) {
+  const router = useRouter();
   const [filterTab, setFilterTab] = useState<"semua" | "selesai" | "menunggu_konfirmasi" | "dibatalkan">("semua");
+  const [isSwitching, setIsSwitching] = useState(false);
+  
+  // State for Buyer Application Modal
+  const [showBuyerModal, setShowBuyerModal] = useState(false);
+  const [buyerForm, setBuyerForm] = useState({
+    ktpPhotoUrl: "",
+    outletPhotoUrl: "",
+    npwp: "",
+    address: user.address || "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  const handleSwitchRole = async () => {
+    if (user.activeRole === "seller" && !user.isBuyerApproved) {
+      alert("Anda belum disetujui untuk menjadi Pengepul (Buyer). Silakan daftar terlebih dahulu.");
+      return;
+    }
+
+    setIsSwitching(true);
+    try {
+      const newRole = user.activeRole === "seller" ? "buyer" : "seller";
+      const res = await fetch("/api/auth/role", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole }),
+      });
+      
+      const data = await res.json();
+      if (res.ok) {
+        router.refresh();
+      } else {
+        alert(data.error || "Gagal mengganti role");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Terjadi kesalahan pada server");
+    } finally {
+      setIsSwitching(false);
+    }
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, field: "ktpPhotoUrl" | "outletPhotoUrl") => {
+    if (e.target.files && e.target.files[0]) {
+      try {
+        const base64 = await fileToBase64(e.target.files[0]);
+        setBuyerForm((prev) => ({ ...prev, [field]: base64 }));
+      } catch (err) {
+        console.error("Error converting file to base64", err);
+      }
+    }
+  };
+
+  const handleBuyerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitError("");
+    
+    try {
+      const res = await fetch("/api/buyer-applications/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buyerForm),
+      });
+      
+      const data = await res.json();
+      if (res.ok) {
+        setShowBuyerModal(false);
+        router.refresh();
+      } else {
+        setSubmitError(data.error || "Gagal mengajukan pendaftaran");
+      }
+    } catch (err) {
+      console.error(err);
+      setSubmitError("Terjadi kesalahan pada server");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const filteredTransactions = transactions.filter((t) => {
     if (filterTab === "semua") return true;
@@ -39,7 +130,7 @@ export function ProfileClient({ user, stats, transactions, reviews }: ProfileCli
             <div className="flex items-center space-x-2">
               <h1 className="text-xl font-bold text-slate-900">{user.fullName}</h1>
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                Seller & Warga Terverifikasi
+                {user.activeRole === 'seller' ? 'Mode: Seller' : 'Mode: Buyer'}
               </span>
             </div>
 
@@ -62,16 +153,134 @@ export function ProfileClient({ user, stats, transactions, reviews }: ProfileCli
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 shrink-0">
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-2.5 text-center">
+        <div className="flex flex-col items-end space-y-3 shrink-0">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-2.5 text-center w-full">
             <span className="text-[10px] uppercase font-semibold text-emerald-700 block">Rating Reputasi</span>
             <span className="text-lg font-extrabold text-emerald-700 flex items-center justify-center gap-1">
               <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
               {stats.avgRating} / 5.0
             </span>
           </div>
+          
+          <div className="flex flex-col gap-2 w-full">
+            {(! (user.activeRole === 'seller' && !user.isBuyerApproved)) && (
+              <button
+                onClick={handleSwitchRole}
+                disabled={isSwitching}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all disabled:opacity-50"
+              >
+                <Repeat className="w-4 h-4" />
+                {isSwitching ? "Loading..." : `Beralih ke ${user.activeRole === 'seller' ? 'Buyer' : 'Seller'}`}
+              </button>
+            )}
+            
+            {user.activeRole === 'seller' && !user.isBuyerApproved && (
+              <div className="w-full">
+                {buyerApplication?.status === "menunggu" ? (
+                   <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl text-center font-medium">
+                     Pengajuan Pengepul sedang ditinjau.
+                   </div>
+                ) : buyerApplication?.status === "ditolak" ? (
+                   <button
+                     onClick={() => setShowBuyerModal(true)}
+                     className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-200 transition-all"
+                   >
+                     Pengajuan Ditolak - Daftar Ulang
+                   </button>
+                ) : (
+                   <button
+                     onClick={() => setShowBuyerModal(true)}
+                     className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold hover:bg-emerald-200 transition-all"
+                   >
+                     Daftar Menjadi Pengepul
+                   </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {showBuyerModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-xl">
+            <h2 className="text-xl font-bold text-slate-900 mb-2">Daftar Menjadi Pengepul</h2>
+            <p className="text-sm text-slate-500 mb-6">Lengkapi data berikut untuk menjadi buyer. Tim admin akan memverifikasi data Anda.</p>
+            
+            {submitError && (
+              <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-200">
+                {submitError}
+              </div>
+            )}
+            
+            <form onSubmit={handleBuyerSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Foto KTP <span className="text-red-500">*</span></label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => handleFileChange(e, "ktpPhotoUrl")}
+                  required
+                  className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
+                />
+                {buyerForm.ktpPhotoUrl && <div className="mt-2 text-[10px] text-emerald-600 font-medium flex items-center gap-1"><CheckCircle className="w-3 h-3"/> File terlampir</div>}
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Foto Outlet / Lokasi <span className="text-red-500">*</span></label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => handleFileChange(e, "outletPhotoUrl")}
+                  required
+                  className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
+                />
+                {buyerForm.outletPhotoUrl && <div className="mt-2 text-[10px] text-emerald-600 font-medium flex items-center gap-1"><CheckCircle className="w-3 h-3"/> File terlampir</div>}
+              </div>
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Nomor NPWP (Opsional)</label>
+                <input 
+                  type="text" 
+                  placeholder="Masukkan NPWP jika ada"
+                  value={buyerForm.npwp}
+                  onChange={(e) => setBuyerForm({...buyerForm, npwp: e.target.value})}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Alamat Lengkap <span className="text-red-500">*</span></label>
+                <textarea 
+                  placeholder="Alamat operasional pengepul"
+                  value={buyerForm.address}
+                  onChange={(e) => setBuyerForm({...buyerForm, address: e.target.value})}
+                  required
+                  rows={3}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => setShowBuyerModal(false)}
+                  className="flex-1 px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-200 transition-colors"
+                >
+                  Batal
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                >
+                  {isSubmitting ? "Mengirim..." : "Kirim Pengajuan"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* SUPABASE STYLE DASHBOARD STAT CARDS (3 Cards) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

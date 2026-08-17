@@ -8,13 +8,18 @@ import { MapPin, MessageSquare, ArrowLeft, Star, RefreshCw } from "lucide-react"
 interface RequestDetailClientProps {
   request: any;
   currentUserId: string | null;
+  currentRole?: string;
 }
 
-export function RequestDetailClient({ request, currentUserId }: RequestDetailClientProps) {
+export function RequestDetailClient({ request, currentUserId, currentRole = "seller" }: RequestDetailClientProps) {
   const router = useRouter();
   const [isStartingChat, setIsStartingChat] = useState(false);
 
   const handleStartChat = async () => {
+    if (!currentUserId) {
+      router.push("/login");
+      return;
+    }
     setIsStartingChat(true);
     try {
       const res = await fetch("/api/matches/start-chat", {
@@ -28,7 +33,9 @@ export function RequestDetailClient({ request, currentUserId }: RequestDetailCli
 
       if (res.ok) {
         const data = await res.json();
-        router.push(`/chat/${data.conversationId}`);
+        router.push(`/${currentRole}/chat/${data.conversationId}`);
+      } else if (res.status === 401) {
+        router.push("/login");
       } else {
         const errData = await res.json();
         alert(errData.error || "Gagal memulai obrolan");
@@ -128,7 +135,7 @@ export function RequestDetailClient({ request, currentUserId }: RequestDetailCli
         </div>
 
         {/* Action Button: Tawarkan Limbah (Chat) */}
-        {!isOwner && request.status === "aktif" && (
+        {!isOwner && request.status === "aktif" && currentRole === "seller" && (
           <button
             onClick={handleStartChat}
             disabled={isStartingChat}

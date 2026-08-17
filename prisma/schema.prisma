@@ -12,6 +12,10 @@ enum Role {
   UMKM
   ADMIN
 }
+enum ActiveRole {
+  seller
+  buyer
+}
 
 model User {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -24,6 +28,8 @@ model User {
   avatarUrl     String?   @map("avatar_url")
   passwordHash  String?   @map("password_hash")
   isAdmin       Boolean   @default(false) @map("is_admin")
+  isBuyerApproved Boolean @default(false) @map("is_buyer_approved")
+  activeRole    ActiveRole @default(seller) @map("active_role")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
 
@@ -36,8 +42,25 @@ model User {
   buyerTransactions     Transaction[]        @relation("BuyerTransactions")
   givenReviews          Review[]             @relation("GivenReviews")
   receivedReviews       Review[]             @relation("ReceivedReviews")
+  buyerApplication      BuyerApplication?
 
   @@map("users")
+}
+
+model BuyerApplication {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @unique @map("user_id") @db.Uuid
+  ktpPhotoUrl    String   @map("ktp_photo_url")
+  outletPhotoUrl String   @map("outlet_photo_url")
+  npwp           String?
+  address        String
+  status         String   @default("menunggu") // menunggu, disetujui, ditolak
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@map("buyer_applications")
 }
 
 model WasteCategory {

@@ -45,6 +45,8 @@ export async function getSessionUser() {
         address: true,
         avatarUrl: true,
         isAdmin: true,
+        isBuyerApproved: true,
+        activeRole: true,
       },
     });
     return user;
