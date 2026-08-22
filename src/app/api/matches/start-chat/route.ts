@@ -5,7 +5,7 @@ import { getSessionUser } from "@/lib/session";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { matchId, listingId, requestId, sellerId: inputSellerId, buyerId: inputBuyerId } = body;
+    const { matchId, listingId, requestId, sellerId: inputSellerId, buyerId: inputBuyerId, initialMessage } = body;
 
     const sessionUser = await getSessionUser();
     if (!sessionUser) {
@@ -60,6 +60,9 @@ export async function POST(request: Request) {
       },
     });
 
+    const defaultMsg = `Halo, saya berminat dengan item ${itemTitle}. Mari kita diskusikan kesepakatan harga dan penjemputan.`;
+    const messageToSend = initialMessage || defaultMsg;
+
     if (!conversation) {
       conversation = await prisma.conversation.create({
         data: {
@@ -72,8 +75,16 @@ export async function POST(request: Request) {
       await prisma.message.create({
         data: {
           conversationId: conversation.id,
-          senderId: buyerId!,
-          content: `Halo, saya berminat dengan item ${itemTitle}. Mari kita diskusikan kesepakatan harga dan COD.`,
+          senderId: sessionUser.id,
+          content: messageToSend,
+        },
+      });
+    } else if (initialMessage) {
+      await prisma.message.create({
+        data: {
+          conversationId: conversation.id,
+          senderId: sessionUser.id,
+          content: initialMessage,
         },
       });
     }

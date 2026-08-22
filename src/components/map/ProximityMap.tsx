@@ -57,10 +57,10 @@ export function ProximityMap({ listings, requests }: ProximityMapProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
         <div>
           <h2 className="text-lg font-bold text-white tracking-tight">
-            Peta Interaktif Proksimitas Sampah
+            Peta Sampah Terdekat
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Klik pin pada peta untuk meninjau lokasi Seller &amp; Buyer di sekitarmu.
+            Klik pin pada peta untuk melihat Penjual &amp; Pengepul sampah di sekitarmu.
           </p>
         </div>
 
@@ -68,11 +68,11 @@ export function ProximityMap({ listings, requests }: ProximityMapProps) {
         <div className="flex items-center space-x-4 text-xs font-medium">
           <span className="flex items-center gap-1.5 text-emerald-400">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-            Seller (Sampah Dijual)
+            Penjual (Sampah Dijual)
           </span>
           <span className="flex items-center gap-1.5 text-amber-400">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-            Buyer (Sampah Dicari)
+            Pengepul (Sampah Dicari)
           </span>
         </div>
       </div>
@@ -93,7 +93,7 @@ export function ProximityMap({ listings, requests }: ProximityMapProps) {
                     : "bg-amber-950 text-amber-300 border border-amber-700/50"
                 )}
               >
-                {selectedPin.type === "seller" ? "Seller Listing" : "Buyer Request"} • {selectedPin.category}
+                {selectedPin.type === "seller" ? "Penjual Sampah" : "Kebutuhan Pengepul"} • {selectedPin.category}
               </span>
 
               <button

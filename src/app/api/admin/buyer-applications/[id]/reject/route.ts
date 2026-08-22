@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { buyerApplicationService } from "@/services/buyerApplicationService";
 
 export async function POST(
   request: Request,
@@ -13,30 +13,15 @@ export async function POST(
     }
 
     const { id } = await context.params;
-
-    // Pastikan aplikasi ada
-    const application = await prisma.buyerApplication.findUnique({
-      where: { id },
-    });
-
-    if (!application) {
-      return NextResponse.json(
-        { error: "Aplikasi tidak ditemukan" },
-        { status: 404 }
-      );
-    }
-
-    await prisma.buyerApplication.update({
-      where: { id },
-      data: { status: "ditolak" },
-    });
+    await buyerApplicationService.rejectApplication(id);
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error rejecting buyer application:", error);
+    const statusCode = error.message === "Aplikasi tidak ditemukan" ? 404 : 500;
     return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
+      { error: error.message || "Internal Server Error" },
+      { status: statusCode }
     );
   }
 }

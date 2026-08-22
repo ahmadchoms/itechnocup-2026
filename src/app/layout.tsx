@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/toast";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -31,6 +32,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 font-sans">
         {children}
+        <Toaster />
       </body>
     </html>
   );

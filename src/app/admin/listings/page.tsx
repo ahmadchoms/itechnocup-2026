@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { ListingsClient } from "./ListingsClient";
+import { ListingsClient } from "@/components/features/admin/ListingsClient";
 
 export const dynamic = "force-dynamic";
 

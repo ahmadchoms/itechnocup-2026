@@ -15,6 +15,7 @@ export interface User {
   longitude?: any;
   avatarUrl?: string | null;
   isAdmin: boolean;
+  activeRole?: "seller" | "buyer";
   rating?: number;
 }
 

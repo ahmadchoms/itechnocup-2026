@@ -45,12 +45,16 @@ export async function getSessionUser() {
         address: true,
         avatarUrl: true,
         isAdmin: true,
-        isBuyerApproved: true,
         activeRole: true,
       },
     });
-    return user;
-  } catch {
+    if (!user) return null;
+    return {
+      ...user,
+      activeRole: (user.activeRole as "seller" | "buyer") || "seller",
+    };
+  } catch (error) {
+    console.error("[getSessionUser] Error fetching user:", error);
     return null;
   }
 }

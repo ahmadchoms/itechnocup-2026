@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { AdminDashboardClient } from "./AdminDashboardClient";
+import { AdminDashboardClient } from "@/components/features/admin/AdminDashboardClient";
 
 export const dynamic = "force-dynamic";
 

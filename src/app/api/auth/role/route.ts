@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
-import { ActiveRole } from "@prisma/client";
+import { userService } from "@/services/userService";
 
 /**
  * PATCH /api/auth/role
@@ -15,36 +14,18 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const newRole = body.role;
+    const updatedRoleUser = await userService.switchUserRole(user.id, body.role);
 
-    if (newRole !== "seller" && newRole !== "buyer") {
-      return NextResponse.json({ error: "Invalid role" }, { status: 400 });
-    }
-
-    if (newRole === "buyer" && !user.isBuyerApproved) {
-      return NextResponse.json(
-        { error: "Anda belum disetujui untuk menjadi Pengepul (Buyer)." },
-        { status: 403 }
-      );
-    }
-
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        activeRole: newRole as ActiveRole,
-      },
-      select: {
-        id: true,
-        activeRole: true,
-      },
+    return NextResponse.json({
+      success: true,
+      user: updatedRoleUser,
     });
-
-    return NextResponse.json({ success: true, user: updatedUser });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error updating role:", error);
+    const statusCode = error.message === "Invalid role" ? 400 : 500;
     return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
+      { error: error.message || "Internal Server Error" },
+      { status: statusCode }
     );
   }
 }

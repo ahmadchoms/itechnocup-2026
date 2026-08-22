@@ -13,7 +13,7 @@ export function DevDock() {
   const routes = [
     { href: "/profile", label: "Dashboard Profil", icon: Store },
     { href: "/matches", label: "Pencocokan Lokasi", icon: Compass },
-    { href: "/buyer/requests/create", label: "Buat Request", icon: FilePlus },
+    { href: "/buyer/requests/create", label: "Cari Sampah (Pengepul)", icon: FilePlus },
     { href: "/chat", label: "Chat & Negosiasi", icon: MessageSquare },
     { href: "/profile", label: "Profil & Analytics", icon: User },
     { href: "/admin", label: "Panel Admin", icon: ShieldCheck },

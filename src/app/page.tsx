@@ -167,7 +167,7 @@ const reviews: ReviewItem[] = [
   },
   {
     name: "Budi Santoso",
-    role: "Pengepul Kardus & Plastik (Buyer)",
+    role: "Pengepul Kardus & Plastik",
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120",
     quote:
       "Sistem matching berdasarkan km lokasi membuat penjemputan kardus & botol plastik jadi jauh lebih hemat waktu dan ongkos.",
@@ -262,7 +262,7 @@ function HeroSection() {
         <div className="space-y-6 pt-2">
           <div className="flex flex-wrap items-center gap-3">
             <Link
-              href="/seller/listings/create"
+              href="/listings/create"
               className="px-7 py-3.5 rounded-full bg-slate-900 hover:bg-slate-800 active:bg-black text-white font-bold text-xs shadow-sm transition-all flex items-center space-x-2 group"
             >
               <Camera className="w-4 h-4 text-emerald-400" />

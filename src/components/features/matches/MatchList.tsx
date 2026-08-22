@@ -30,7 +30,7 @@ export function MatchList({ matches, role }: MatchesClientProps) {
       if (res.ok) {
         const data = await res.json();
         if (data.conversationId) {
-          router.push(`/${role}/chat?id=${data.conversationId}`);
+          router.push(`/chat/${data.conversationId}`);
         }
       } else if (res.status === 401) {
         router.push("/login");
@@ -52,13 +52,13 @@ export function MatchList({ matches, role }: MatchesClientProps) {
         <div>
           <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 mb-1">
             <Compass className="w-3.5 h-3.5" />
-            <span>Pencocokan Otomatis Kategori & Proksimitas Jarak</span>
+            <span>Pencocokan Otomatis Kategori &amp; Jarak Terdekat</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-            Rekomendasi Pencocokan Terdekat (Uber Style)
+            Rekomendasi Sampah Terdekat
           </h1>
           <p className="text-xs text-slate-500">
-            Sistem secara otomatis mencocokkan listing Seller dan kebutuhan Buyer berdasarkan kedekatan lokasi & kategori limbah.
+            Sistem otomatis mencocokkan Penjual dan Pengepul terdekat berdasarkan lokasi &amp; jenis sampah.
           </p>
         </div>
       </div>
@@ -118,7 +118,7 @@ export function MatchList({ matches, role }: MatchesClientProps) {
               <div className="flex items-center space-x-6 border-t md:border-t-0 border-slate-100 pt-3 md:pt-0">
                 <div>
                   <span className="text-[10px] uppercase font-semibold text-slate-400 block">
-                    Harga Seller / Unit
+                    Harga Penjual / Satuan
                   </span>
                   <span className="text-sm font-bold text-emerald-600">
                     Rp {Number(match.listing.estimatedPrice || 0).toLocaleString("id-ID")}
@@ -128,7 +128,7 @@ export function MatchList({ matches, role }: MatchesClientProps) {
 
                 <div className="hidden sm:block">
                   <span className="text-[10px] uppercase font-semibold text-slate-400 block">
-                    Penawaran Buyer
+                    Penawaran Pengepul
                   </span>
                   <span className="text-sm font-bold text-amber-600">
                     Rp {Number(match.request.offeredPrice || 0).toLocaleString("id-ID")}

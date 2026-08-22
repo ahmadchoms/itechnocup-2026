@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { UsersClient } from "./UsersClient";
+import { UsersClient } from "@/components/features/admin/UsersClient";
 
 export const dynamic = "force-dynamic";
 

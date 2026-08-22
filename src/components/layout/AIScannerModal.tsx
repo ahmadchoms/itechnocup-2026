@@ -150,7 +150,7 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
 
       if (res.ok) {
         onClose();
-        router.push(`/seller/listing-match/${data.listing.id}`);
+        router.push(`/listings/match/${data.listing.id}`);
         router.refresh();
       } else {
         alert("Gagal membuat listing: " + (data.error || "Unknown error"));
@@ -291,7 +291,7 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
                 {/* Title */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Judul Listing Sampah *
+                    Nama / Judul Barang Sampah *
                   </label>
                   <input
                     type="text"
@@ -462,7 +462,7 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
                   ) : (
                     <>
                       <CheckCircle className="w-4 h-4" />
-                      <span>Publikasikan Listing Sampah</span>
+                      <span>Pasang Lapak Sampah</span>
                     </>
                   )}
                 </button>

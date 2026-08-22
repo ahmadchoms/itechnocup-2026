@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { buyerApplicationService } from "@/services/buyerApplicationService";
 
 /**
  * POST /api/buyer-applications/create
@@ -14,57 +14,18 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { ktpPhotoUrl, outletPhotoUrl, npwp, address } = body;
-
-    if (!ktpPhotoUrl || !outletPhotoUrl || !address) {
-      return NextResponse.json(
-        { error: "Foto KTP, Foto Outlet, dan Alamat wajib diisi" },
-        { status: 400 }
-      );
-    }
-
-    // Cek apakah sudah ada aplikasi yang pending
-    const existingApplication = await prisma.buyerApplication.findUnique({
-      where: { userId: user.id },
-    });
-
-    if (existingApplication && existingApplication.status === "menunggu") {
-      return NextResponse.json(
-        { error: "Anda sudah memiliki pengajuan yang sedang diproses" },
-        { status: 400 }
-      );
-    }
-
-    let application;
-    if (existingApplication) {
-      application = await prisma.buyerApplication.update({
-        where: { userId: user.id },
-        data: {
-          ktpPhotoUrl,
-          outletPhotoUrl,
-          npwp: npwp || null,
-          address,
-          status: "menunggu", // Reset status jika sebelumnya ditolak
-        },
-      });
-    } else {
-      application = await prisma.buyerApplication.create({
-        data: {
-          userId: user.id,
-          ktpPhotoUrl,
-          outletPhotoUrl,
-          npwp: npwp || null,
-          address,
-        },
-      });
-    }
+    const application = await buyerApplicationService.submitApplication(user.id, body);
 
     return NextResponse.json({ success: true, application });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating buyer application:", error);
+    const isValidationError =
+      error.message === "Foto KTP, Foto Outlet, dan Alamat wajib diisi" ||
+      error.message === "Anda sudah memiliki pengajuan yang sedang diproses";
+    const statusCode = isValidationError ? 400 : 500;
     return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
+      { error: error.message || "Internal Server Error" },
+      { status: statusCode }
     );
   }
 }

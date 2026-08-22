@@ -1,22 +1,10 @@
-import { prisma } from "@/lib/prisma";
-import { BuyerAppsClient } from "./BuyerAppsClient";
+import { buyerApplicationService } from "@/services/buyerApplicationService";
+import { BuyerAppsClient } from "@/components/features/admin/BuyerAppsClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function BuyerApplicationsPage() {
-  const buyerApplications = await prisma.buyerApplication.findMany({
-    include: { user: true },
-    orderBy: { createdAt: "desc" },
-  });
-
-  const formattedBuyerApplications = buyerApplications.map(app => ({
-    ...app,
-    user: {
-      ...app.user,
-      latitude: app.user.latitude ? Number(app.user.latitude) : null,
-      longitude: app.user.longitude ? Number(app.user.longitude) : null,
-    }
-  }));
+  const formattedBuyerApplications = await buyerApplicationService.getAllApplications();
 
   return <BuyerAppsClient initialBuyerApplications={formattedBuyerApplications} />;
 }

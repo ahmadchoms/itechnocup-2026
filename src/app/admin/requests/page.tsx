@@ -1,9 +1,13 @@
 import { prisma } from "@/lib/prisma";
-import { RequestsClient } from "./RequestsClient";
+import { RequestsClient } from "@/components/features/requests/RequestsClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function RequestsPage() {
+  const categories = await prisma.wasteCategory.findMany({
+    orderBy: { name: "asc" },
+  });
+
   const requests = await prisma.wasteRequest.findMany({
     include: { buyer: true, category: true },
     orderBy: { createdAt: "desc" },
@@ -11,6 +15,7 @@ export default async function RequestsPage() {
 
   const formattedRequests = requests.map((r) => ({
     ...r,
+    unit: r.unit || "kg",
     offeredPrice: Number(r.offeredPrice),
     latitude: r.latitude ? Number(r.latitude) : null,
     longitude: r.longitude ? Number(r.longitude) : null,
@@ -21,5 +26,5 @@ export default async function RequestsPage() {
     },
   }));
 
-  return <RequestsClient initialRequests={formattedRequests} />;
+  return <RequestsClient initialRequests={formattedRequests} categories={categories} />;
 }

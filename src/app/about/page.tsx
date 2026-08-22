@@ -58,7 +58,7 @@ export default async function AboutPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
             <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 space-y-2">
               <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">
-                Untuk Seller (Masyarakat & UMKM)
+                Untuk Penjual (Masyarakat & UMKM)
               </span>
               <p className="text-xs text-slate-300 leading-relaxed">
                 Upload foto ampas kopi, kardus, plastik, atau minyak jelantah Anda. Model Computer Vision kami mengenali kategori secara otomatis. Dapatkan pembeli terdekat tanpa ribet.
@@ -67,10 +67,10 @@ export default async function AboutPage() {
 
             <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 space-y-2">
               <span className="text-xs font-bold text-amber-400 uppercase tracking-wider block">
-                Untuk Buyer (Pengepul & Industri)
+                Untuk Pembeli (Pengepul & Industri)
               </span>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Post kebutuhan limbah tertentu yang Anda cari (misal ampas kopi untuk pupuk atau kardus untuk daur ulang). Sistem otomatis mencocokkan listing Seller terdekat dalam radius kilometer.
+                Post kebutuhan limbah tertentu yang Anda cari (misal ampas kopi untuk pupuk atau kardus untuk daur ulang). Sistem otomatis mencocokkan listing Penjual terdekat dalam radius kilometer.
               </p>
             </div>
           </div>

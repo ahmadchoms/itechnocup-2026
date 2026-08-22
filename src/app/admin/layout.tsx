@@ -1,7 +1,8 @@
 import { getSessionUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 import React from "react";
-import { AdminLayoutClient } from "./AdminLayoutClient";
+import { AdminLayoutClient } from "@/components/features/admin/AdminLayoutClient";
+
 export default async function AdminLayout({
   children,
 }: {

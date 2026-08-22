@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/layout/AppShell";
-import { RequestsClient } from "./RequestsClient";
 import { getSessionUser } from "@/lib/session";
+import { WasteRequest } from "@/types/waste-request";
+import { RequestsClient } from "@/components/features/requests/RequestsClient";
 
 export const dynamic = "force-dynamic";
 
@@ -28,16 +29,16 @@ export default async function RequestsPage() {
     longitude: r.longitude ? Number(r.longitude) : null,
     buyer: r.buyer
       ? {
-          ...r.buyer,
-          latitude: r.buyer.latitude ? Number(r.buyer.latitude) : null,
-          longitude: r.buyer.longitude ? Number(r.buyer.longitude) : null,
-        }
+        ...r.buyer,
+        latitude: r.buyer.latitude ? Number(r.buyer.latitude) : null,
+        longitude: r.buyer.longitude ? Number(r.buyer.longitude) : null,
+      }
       : r.buyer,
   }));
 
   return (
     <AppShell categories={categories} sessionUser={sessionUser}>
-      <RequestsClient initialRequests={serialized} categories={categories} currentRole={currentRole} />
+      <RequestsClient initialRequests={serialized as WasteRequest[]} categories={categories} currentRole={currentRole} />
     </AppShell>
   );
 }
