@@ -2,6 +2,7 @@ import { getSessionUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 import React from "react";
 import { AdminLayoutClient } from "@/components/features/admin/AdminLayoutClient";
+import { AdminSessionUser } from "@/components/features/admin/types";
 
 export default async function AdminLayout({
   children,
@@ -9,13 +10,13 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const user = await getSessionUser();
-  
+
   if (!user || !user.isAdmin) {
     redirect("/");
   }
 
   return (
-    <AdminLayoutClient sessionUser={user as any}>
+    <AdminLayoutClient sessionUser={user as AdminSessionUser}>
       {children}
     </AdminLayoutClient>
   );

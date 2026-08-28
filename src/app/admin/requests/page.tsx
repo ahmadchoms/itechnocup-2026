@@ -1,30 +1,69 @@
 import { prisma } from "@/lib/prisma";
-import { RequestsClient } from "@/components/features/requests/RequestsClient";
+import { AdminRequestsClient } from "@/components/features/admin/AdminRequestsClient";
+import { AdminRequestItem } from "@/components/features/admin/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function RequestsPage() {
-  const categories = await prisma.wasteCategory.findMany({
-    orderBy: { name: "asc" },
-  });
+  const [categories, requests] = await Promise.all([
+    prisma.wasteCategory.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.wasteRequest.findMany({
+      include: {
+        buyer: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+            avatarUrl: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
 
-  const requests = await prisma.wasteRequest.findMany({
-    include: { buyer: true, category: true },
-    orderBy: { createdAt: "desc" },
-  });
-
-  const formattedRequests = requests.map((r) => ({
-    ...r,
+  const formattedRequests: AdminRequestItem[] = requests.map((r) => ({
+    id: r.id,
+    buyerId: r.buyerId,
+    categoryId: r.categoryId,
+    title: r.title,
+    description: r.description,
+    quantityWanted: r.quantityWanted,
     unit: r.unit || "kg",
     offeredPrice: Number(r.offeredPrice),
+    address: r.address,
     latitude: r.latitude ? Number(r.latitude) : null,
     longitude: r.longitude ? Number(r.longitude) : null,
+    status: r.status,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+    category: {
+      id: r.category.id,
+      name: r.category.name,
+    },
     buyer: {
-      ...r.buyer,
-      latitude: r.buyer.latitude ? Number(r.buyer.latitude) : null,
-      longitude: r.buyer.longitude ? Number(r.buyer.longitude) : null,
+      id: r.buyer.id,
+      fullName: r.buyer.fullName,
+      email: r.buyer.email,
+      phone: r.buyer.phone,
+      avatarUrl: r.buyer.avatarUrl,
     },
   }));
 
-  return <RequestsClient initialRequests={formattedRequests} categories={categories} />;
+  return (
+    <AdminRequestsClient
+      initialRequests={formattedRequests}
+      categories={categories}
+    />
+  );
 }

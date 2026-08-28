@@ -1,3 +1,4 @@
+import { prisma } from "@/lib/prisma";
 import {
   buyerApplicationRepository,
   BuyerApplicationRepository,
@@ -18,8 +19,12 @@ export class BuyerApplicationService {
 
     return buyerApplications.map((app) => ({
       ...app,
+      createdAt: app.createdAt.toISOString(),
+      updatedAt: app.updatedAt.toISOString(),
       user: {
         ...app.user,
+        createdAt: app.user.createdAt.toISOString(),
+        updatedAt: app.user.updatedAt.toISOString(),
         latitude: app.user.latitude ? Number(app.user.latitude) : null,
         longitude: app.user.longitude ? Number(app.user.longitude) : null,
       },
@@ -62,6 +67,11 @@ export class BuyerApplicationService {
       throw new Error("Aplikasi tidak ditemukan");
     }
 
+    await prisma.user.update({
+      where: { id: application.userId },
+      data: { isBuyerApproved: true },
+    });
+
     return this.repo.update(applicationId, { status: "disetujui" });
   }
 
@@ -70,6 +80,11 @@ export class BuyerApplicationService {
     if (!application) {
       throw new Error("Aplikasi tidak ditemukan");
     }
+
+    await prisma.user.update({
+      where: { id: application.userId },
+      data: { isBuyerApproved: false },
+    });
 
     return this.repo.update(applicationId, { status: "ditolak" });
   }
