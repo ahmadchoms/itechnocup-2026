@@ -1,7 +1,9 @@
 import { chatRepository, UpsertTransactionData } from "@/repositories/chatRepository";
-import type { ChatConversation } from "@/components/features/chat/types";
+import type { ChatConversation } from "@/types";
 
-function serializeConversation(conv: any): ChatConversation {
+type RawConversation = NonNullable<Awaited<ReturnType<typeof chatRepository.findConversationById>>>;
+
+function serializeConversation(conv: RawConversation): ChatConversation {
   return {
     ...conv,
     seller: conv.seller

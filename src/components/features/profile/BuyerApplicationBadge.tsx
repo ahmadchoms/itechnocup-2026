@@ -1,7 +1,7 @@
 import { Clock, Sparkles, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { BuyerApplication } from "./types";
+import type { BuyerApplication } from "@/types";
 
 interface BuyerApplicationBadgeProps {
   application?: BuyerApplication | null;

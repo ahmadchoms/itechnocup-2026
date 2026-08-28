@@ -1,7 +1,7 @@
 import { CheckCircle, Clock, XCircle, type LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { TransactionStatus } from "./types";
+import type { TransactionStatus } from "@/types";
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; icon: LucideIcon }> = {
   selesai: { label: "Selesai", className: "bg-[#E8EEDD] text-[#6B7B4F]", icon: CheckCircle },

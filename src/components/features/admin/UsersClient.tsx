@@ -29,7 +29,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { AdminUserItem } from "./types";
+import { AdminUserItem } from "@/types";
 
 interface UsersClientProps {
   initialUsers: AdminUserItem[];

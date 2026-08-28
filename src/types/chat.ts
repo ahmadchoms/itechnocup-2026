@@ -1,4 +1,6 @@
-export interface ChatUser {
+import { CategoryRef, GeoLocation, TransactionCore } from "./common";
+
+export interface ChatUser extends GeoLocation {
   id: string;
   fullName: string;
   email?: string;
@@ -7,24 +9,19 @@ export interface ChatUser {
   avatarUrl?: string | null;
 }
 
-export interface ChatListing {
+export interface ChatListing extends GeoLocation {
   id: string;
   title: string;
   estimatedPrice?: number | null;
   estimatedWeightKg?: number | null;
   unit?: string | null;
   categoryId?: string;
-  category?: { id: string; name: string } | null;
+  category?: CategoryRef | null;
+  cvConfidence?: number | null;
 }
 
-export interface ChatTransaction {
-  id: string;
-  status: "menunggu_konfirmasi" | "selesai" | "dibatalkan" | string;
-  finalPrice: number;
-  finalQuantity?: number | null;
-  unit?: string | null;
+export interface ChatTransaction extends TransactionCore {
   completedAt?: string | Date | null;
-  createdAt: string | Date;
 }
 
 export interface ChatMessage {
@@ -40,10 +37,7 @@ export interface ChatMatch {
   id: string;
   distanceKm?: number | null;
   listing?: ChatListing | null;
-  request?: {
-    id: string;
-    offeredPrice?: number | null;
-  } | null;
+  request?: ({ id: string; offeredPrice?: number | null } & GeoLocation) | null;
 }
 
 export interface ChatConversation {

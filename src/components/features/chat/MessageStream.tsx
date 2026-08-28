@@ -4,7 +4,7 @@ import { useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { formatIdDate } from "@/lib/format";
-import type { ChatMessage } from "./types";
+import type { ChatMessage } from "@/types";
 
 interface MessageStreamProps {
   messages: ChatMessage[];

@@ -5,7 +5,11 @@ import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RequestCard } from "@/components/features/requests/RequestCard";
-import type { UserRole, WasteCategory, WasteRequest } from "@/types/waste-request";
+import type {
+  UserRole,
+  WasteCategory,
+  WasteRequest,
+} from "@/types";
 
 interface RequestsClientProps {
   initialRequests: WasteRequest[];
@@ -38,9 +42,8 @@ export function RequestsClient({
   return (
     <div className="mx-auto max-w-6xl space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-
         <div className="flex items-center justify-between">
-          <h1 className="font-[family-name:var(--font-display)] text-xl font-extrabold tracking-tight text-[#171717] sm:text-2xl">
+          <h1 className="font-display text-xl font-extrabold tracking-tight text-[#171717] sm:text-2xl">
             Permintaan Baru Pengepul
           </h1>
 
@@ -139,10 +142,10 @@ function CategoryPill({ label, active, onClick }: CategoryPillProps) {
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "shrink-0 rounded-full border px-4 py-2.5 text-[12.5px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#171717]",
+        "shrink-0 rounded-full border px-4 py-2.5 text-[12.5px] font-semibold transition-colors focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-[#171717]",
         active
           ? "border-[#171717] bg-[#171717] text-white"
-          : "border-black/5 bg-white text-[#3F3D38] hover:border-black/15"
+          : "border-black/5 bg-white text-[#3F3D38] hover:border-black/15",
       )}
     >
       {label}
@@ -153,7 +156,7 @@ function CategoryPill({ label, active, onClick }: CategoryPillProps) {
 function EmptyState() {
   return (
     <div className="rounded-[28px] border border-black/5 bg-white px-8 py-16 text-center">
-      <p className="font-[family-name:var(--font-display)] text-[17px] font-bold text-[#171717]">
+      <p className="font-display text-[17px] font-bold text-[#171717]">
         Belum ada permintaan yang cocok
       </p>
       <p className="mx-auto mt-1.5 max-w-sm text-[13px] text-[#78766B]">

@@ -1,4 +1,14 @@
+// admin.ts
 import { LucideIcon } from "lucide-react";
+import {
+  BuyerApplicationStatus,
+  CategoryRef,
+  GeoLocation,
+  ListingStatus,
+  RequestStatus,
+  TransactionCore,
+  UserRef,
+} from "./common";
 
 export interface AdminSessionUser {
   id: string;
@@ -53,13 +63,7 @@ export interface DashboardStats {
   avgAiConfidence: number;
 }
 
-export interface DashboardTransaction {
-  id: string;
-  finalPrice: number;
-  finalQuantity: number | null;
-  unit: string | null;
-  status: string;
-  createdAt: string;
+export interface DashboardTransaction extends TransactionCore {
   sellerName: string;
   buyerName: string;
   listingTitle: string | null;
@@ -115,21 +119,16 @@ export interface BuyerApplicationItem {
   outletPhotoUrl: string;
   npwp?: string | null;
   address: string;
-  status: "menunggu" | "disetujui" | "ditolak" | string;
+  status: BuyerApplicationStatus;
   createdAt: string;
   updatedAt: string;
-  user: {
-    id: string;
-    fullName: string;
-    email: string;
-    phone?: string | null;
-    avatarUrl?: string | null;
+  user: UserRef & {
     isBuyerApproved?: boolean;
     activeRole?: string;
   };
 }
 
-export interface AdminListingItem {
+export interface AdminListingItem extends GeoLocation {
   id: string;
   sellerId: string;
   categoryId: string;
@@ -142,33 +141,20 @@ export interface AdminListingItem {
   description: string | null;
   estimatedPrice: number | null;
   address: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  status: "aktif" | "terjual" | "dihapus" | string;
+  status: ListingStatus;
   cvConfidence: number | null;
   createdAt: string;
   updatedAt: string;
-  category: {
-    id: string;
-    name: string;
-  };
-  seller: {
-    id: string;
-    fullName: string;
-    email: string;
-    phone?: string | null;
-    avatarUrl?: string | null;
-  };
+  category: CategoryRef;
+  seller: UserRef;
 }
 
-export interface AdminUserItem {
+export interface AdminUserItem extends GeoLocation {
   id: string;
   fullName: string;
   email: string;
   phone: string | null;
   address: string | null;
-  latitude: number | null;
-  longitude: number | null;
   avatarUrl: string | null;
   isAdmin: boolean;
   isBuyerApproved: boolean;
@@ -183,7 +169,7 @@ export interface AdminUserItem {
   };
 }
 
-export interface AdminRequestItem {
+export interface AdminRequestItem extends GeoLocation {
   id: string;
   buyerId: string;
   categoryId: string;
@@ -193,20 +179,22 @@ export interface AdminRequestItem {
   unit: string | null;
   offeredPrice: number;
   address: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  status: "aktif" | "terpenuhi" | "dibatalkan" | string;
+  status: RequestStatus;
   createdAt: string;
   updatedAt: string;
-  category: {
-    id: string;
-    name: string;
-  };
-  buyer: {
-    id: string;
-    fullName: string;
-    email: string;
-    phone?: string | null;
-    avatarUrl?: string | null;
-  };
+  category: CategoryRef;
+  buyer: UserRef;
+}
+
+export interface CategoryItem extends CategoryRef {
+  description?: string | null;
+}
+
+export interface UpdateUserDTO {
+  fullName?: string;
+  email?: string;
+  phone?: string | null;
+  address?: string | null;
+  isAdmin?: boolean;
+  isBuyerApproved?: boolean;
 }

@@ -1,25 +1,34 @@
-export interface WasteCategory {
-  id: string;
-  name: string;
+import {
+  CategoryRef,
+  GeoLocation,
+  ListingStatus,
+  RequestStatus,
+  TransactionCore,
+} from "./common";
+
+export * from "./common";
+export * from "./admin";
+export * from "./chat";
+export * from "./profile";
+
+export interface WasteCategory extends CategoryRef {
   description?: string | null;
   createdAt?: Date | string;
 }
 
-export interface User {
+export interface User extends GeoLocation {
   id: string;
   fullName: string;
   email: string;
   phone?: string | null;
   address?: string | null;
-  latitude?: any;
-  longitude?: any;
   avatarUrl?: string | null;
   isAdmin: boolean;
   activeRole?: "seller" | "buyer";
   rating?: number;
 }
 
-export interface Listing {
+export interface Listing extends GeoLocation {
   id: string;
   sellerId: string;
   categoryId: string;
@@ -32,9 +41,7 @@ export interface Listing {
   description?: string | null;
   estimatedPrice?: number | null;
   address?: string | null;
-  latitude?: any;
-  longitude?: any;
-  status: "aktif" | "terjual" | "dihapus" | string;
+  status: ListingStatus;
   cvPredictedCategoryId?: string | null;
   cvConfidence?: number | null;
   isCvCorrected?: boolean;
@@ -45,9 +52,20 @@ export interface Listing {
   distanceKm?: number;
 }
 
-export interface WasteRequest {
+export type UserRole = "guest" | "buyer" | "seller";
+
+export interface BuyerProfile extends GeoLocation {
   id: string;
-  buyerId: string;
+  fullName: string;
+  avatarUrl?: string | null;
+  avgRating: number;
+  reviewCount: number;
+  completedTxCount: number;
+}
+
+export interface WasteRequest extends GeoLocation {
+  id: string;
+  buyerId?: string;
   categoryId: string;
   title: string;
   description?: string | null;
@@ -55,13 +73,26 @@ export interface WasteRequest {
   unit?: string | null;
   offeredPrice: number;
   address?: string | null;
-  latitude?: any;
-  longitude?: any;
-  status: "aktif" | "terpenuhi" | "dihapus" | string;
+  status?: RequestStatus;
   createdAt: Date | string;
-  updatedAt: Date | string;
-  category: WasteCategory;
-  buyer: User;
+  updatedAt?: Date | string;
+  category?: WasteCategory | null;
+  buyer?: BuyerProfile | User | null;
+}
+
+export interface RequestDetail extends WasteRequest {
+  buyerId: string;
+  status: string;
+  buyer: BuyerProfile;
+}
+
+export interface SellerListing {
+  id: string;
+  title: string;
+  categoryId: string;
+  unit: string;
+  estimatedWeightKg: number;
+  estimatedPrice: number;
 }
 
 export interface MatchItem {
@@ -72,7 +103,7 @@ export interface MatchItem {
   status?: string | null;
   matchedAt: Date | string;
   listing: Listing;
-  request: WasteRequest;
+  request: WasteRequest & { buyer: User; category: WasteCategory };
 }
 
 export interface MessageItem {
@@ -84,19 +115,13 @@ export interface MessageItem {
   sentAt: Date | string;
 }
 
-export interface TransactionItem {
-  id: string;
+export interface TransactionItem extends TransactionCore {
   conversationId?: string | null;
   listingId?: string | null;
   sellerId: string;
   buyerId: string;
   categoryId?: string | null;
-  finalPrice: number;
-  finalQuantity?: number | null;
-  unit?: string | null;
-  status: "menunggu_konfirmasi" | "selesai" | "dibatalkan" | string;
   completedAt?: Date | string | null;
-  createdAt: Date | string;
   seller?: User;
   buyer?: User;
   category?: WasteCategory;

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/layout/AppShell";
 import { getSessionUser } from "@/lib/session";
-import { WasteRequest } from "@/types/waste-request";
+import { WasteRequest } from "@/types";
 import { RequestsClient } from "@/components/features/requests/RequestsClient";
 
 export const dynamic = "force-dynamic";

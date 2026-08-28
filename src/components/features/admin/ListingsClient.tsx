@@ -30,7 +30,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { AdminListingItem } from "./types";
+import { AdminListingItem, CategoryItem } from "@/types";
 
 interface ListingsClientProps {
   initialListings: AdminListingItem[];

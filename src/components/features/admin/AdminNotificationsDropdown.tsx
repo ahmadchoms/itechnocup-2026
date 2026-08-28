@@ -13,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { AdminNotification } from "./types";
+import { AdminNotification } from "@/types";
 
 const INITIAL_NOTIFICATIONS: AdminNotification[] = [
   {

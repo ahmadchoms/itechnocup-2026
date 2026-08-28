@@ -1,12 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RefreshCw } from "lucide-react";
-import type { ProfileListing, WasteCategoryOption } from "./types";
+import type { ProfileListing, WasteCategoryOption } from "@/types";
 
 interface EditListingModalProps {
   listing: ProfileListing | null;
@@ -25,9 +30,15 @@ export function EditListingModal({
 }: EditListingModalProps) {
   const [title, setTitle] = useState(listing?.title || "");
   const [description, setDescription] = useState(listing?.description || "");
-  const [estimatedWeight, setEstimatedWeight] = useState(String(listing?.estimatedWeightKg || ""));
-  const [estimatedPrice, setEstimatedPrice] = useState(String(listing?.estimatedPrice || ""));
-  const [categoryId, setCategoryId] = useState(listing?.categoryId || categories[0]?.id || "");
+  const [estimatedWeight, setEstimatedWeight] = useState(
+    String(listing?.estimatedWeightKg || ""),
+  );
+  const [estimatedPrice, setEstimatedPrice] = useState(
+    String(listing?.estimatedPrice || ""),
+  );
+  const [categoryId, setCategoryId] = useState(
+    listing?.categoryId || categories[0]?.id || "",
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Sync state when listing changes
@@ -75,17 +86,25 @@ export function EditListingModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); else handleOpen(); }}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+        else handleOpen();
+      }}
+    >
       <DialogContent className="sm:max-w-md rounded-3xl bg-white p-6">
         <DialogHeader>
-          <DialogTitle className="font-[family-name:var(--font-display)] text-lg font-bold text-[#171717]">
+          <DialogTitle className="font-display text-lg font-bold text-[#171717]">
             Edit Listing Limbah
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
           <div className="space-y-1">
-            <Label className="text-xs font-bold text-[#78766B]">Judul Listing</Label>
+            <Label className="text-xs font-bold text-[#78766B]">
+              Judul Listing
+            </Label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -96,7 +115,9 @@ export function EditListingModal({
           </div>
 
           <div className="space-y-1">
-            <Label className="text-xs font-bold text-[#78766B]">Kategori Limbah</Label>
+            <Label className="text-xs font-bold text-[#78766B]">
+              Kategori Limbah
+            </Label>
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
@@ -112,7 +133,9 @@ export function EditListingModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-[#78766B]">Estimasi Berat (kg)</Label>
+              <Label className="text-xs font-bold text-[#78766B]">
+                Estimasi Berat (kg)
+              </Label>
               <Input
                 type="number"
                 value={estimatedWeight}
@@ -123,7 +146,9 @@ export function EditListingModal({
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs font-bold text-[#78766B]">Estimasi Harga (Rp)</Label>
+              <Label className="text-xs font-bold text-[#78766B]">
+                Estimasi Harga (Rp)
+              </Label>
               <Input
                 type="number"
                 value={estimatedPrice}
@@ -135,7 +160,9 @@ export function EditListingModal({
           </div>
 
           <div className="space-y-1">
-            <Label className="text-xs font-bold text-[#78766B]">Deskripsi / Kondisi Barang</Label>
+            <Label className="text-xs font-bold text-[#78766B]">
+              Deskripsi / Kondisi Barang
+            </Label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}

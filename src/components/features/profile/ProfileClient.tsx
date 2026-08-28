@@ -23,7 +23,7 @@ import type {
   ProfileTransaction,
   ProfileUser,
   WasteCategoryOption,
-} from "@/components/features/profile/types";
+} from "@/types";
 
 interface ProfileClientProps {
   user: ProfileUser;
@@ -127,7 +127,7 @@ export function ProfileClient({
         className={cn(
           displayFont.variable,
           bodyFont.variable,
-          "mx-auto max-w-6xl p-3 sm:p-6 lg:p-8"
+          "mx-auto max-w-6xl p-3 sm:p-6 lg:p-8",
         )}
       >
         <motion.div
@@ -150,7 +150,11 @@ export function ProfileClient({
 
           {/* 2. Key Metrics Stats Overview (4 Cards) */}
           <motion.div variants={itemVariants}>
-            <StatsGrid stats={stats} reviewCount={reviews.length} isSeller={isSeller} />
+            <StatsGrid
+              stats={stats}
+              reviewCount={reviews.length}
+              isSeller={isSeller}
+            />
           </motion.div>
 
           {/* 3. Segmented Navigation Tabs */}
@@ -169,26 +173,35 @@ export function ProfileClient({
                       "relative flex items-center justify-center gap-2 py-2.5 px-4 sm:px-5 rounded-xl sm:rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 flex-1",
                       isActive
                         ? "text-[#171717]"
-                        : "text-[#78766B] hover:text-[#171717] hover:bg-white/60"
+                        : "text-[#78766B] hover:text-[#171717] hover:bg-white/60",
                     )}
                   >
                     {isActive && (
                       <motion.div
                         layoutId="activeProfileSegmentedTab"
                         className="absolute inset-0 rounded-xl sm:rounded-full bg-white shadow-xs border border-zinc-200/90"
-                        transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 450,
+                          damping: 35,
+                        }}
                       />
                     )}
                     <span className="relative z-10 flex items-center gap-2">
-                      <Icon className={cn("w-3.5 h-3.5", isActive ? "text-[#6B7B4F]" : "text-[#8A8778]")} />
+                      <Icon
+                        className={cn(
+                          "w-3.5 h-3.5",
+                          isActive ? "text-[#6B7B4F]" : "text-[#8A8778]",
+                        )}
+                      />
                       <span>{tab.label}</span>
                       <Badge
                         variant="secondary"
                         className={cn(
                           "px-2 py-0.2 rounded-full text-[10px] font-bold border-none",
                           isActive
-                            ? "bg-[#EFF3E7] text-[#6B7B4F]"
-                            : "bg-zinc-100 text-[#78766B]"
+                            ? "bg-sage text-[#6B7B4F]"
+                            : "bg-zinc-100 text-[#78766B]",
                         )}
                       >
                         {tab.count}
@@ -226,7 +239,10 @@ export function ProfileClient({
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <TransactionHistoryCard transactions={transactions} isSeller={isSeller} />
+                    <TransactionHistoryCard
+                      transactions={transactions}
+                      isSeller={isSeller}
+                    />
                   </motion.div>
                 )}
 

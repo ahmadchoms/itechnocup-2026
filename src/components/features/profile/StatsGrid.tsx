@@ -1,7 +1,7 @@
 import { Coins, Package, Scale, ShoppingBag, Star, TrendingUp, Layers } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { formatRupiah } from "@/lib/format";
-import type { ProfileStats } from "./types";
+import type { ProfileStats } from "@/types";
 
 interface StatsGridProps {
   stats: ProfileStats;

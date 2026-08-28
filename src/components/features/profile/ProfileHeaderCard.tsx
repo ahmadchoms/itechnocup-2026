@@ -3,10 +3,14 @@
 import { Mail, MapPin, Pencil, Phone, ShieldCheck } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { buttonVariants } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { RoleSwitcher } from "./RoleSwitcher";
 import { BuyerApplicationBadge } from "./BuyerApplicationBadge";
-import type { BuyerApplication, ProfileUser } from "./types";
+import type { BuyerApplication, ProfileUser } from "@/types";
 
 interface ProfileHeaderCardProps {
   user: ProfileUser;
@@ -26,7 +30,8 @@ export function ProfileHeaderCard({
   onRegisterBuyer,
 }: ProfileHeaderCardProps) {
   const isSeller = user.activeRole === "seller";
-  const isPendingBuyerApproval = user.activeRole === "seller" && !user.isBuyerApproved;
+  const isPendingBuyerApproval =
+    user.activeRole === "seller" && !user.isBuyerApproved;
 
   return (
     <div className="rounded-[32px] border border-zinc-200 bg-white p-6 shadow-xs sm:p-8">
@@ -42,7 +47,7 @@ export function ProfileHeaderCard({
                 alt={user.fullName}
                 className="object-cover"
               />
-              <AvatarFallback className="bg-[#EFF3E7] text-lg font-bold text-[#6B7B4F]">
+              <AvatarFallback className="bg-sage text-lg font-bold text-[#6B7B4F]">
                 {user.fullName?.slice(0, 2).toUpperCase() || "DN"}
               </AvatarFallback>
             </Avatar>
@@ -53,7 +58,7 @@ export function ProfileHeaderCard({
 
           <div className="space-y-1.5">
             <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="font-[family-name:var(--font-display)] text-xl font-extrabold tracking-tight text-[#171717] sm:text-2xl">
+              <h1 className="font-display text-xl font-extrabold tracking-tight text-[#171717] sm:text-2xl">
                 {user.fullName}
               </h1>
               <Tooltip>
@@ -68,7 +73,9 @@ export function ProfileHeaderCard({
                 >
                   <Pencil className="h-3.5 w-3.5" />
                 </TooltipTrigger>
-                <TooltipContent className="text-xs font-semibold">Edit Profil</TooltipContent>
+                <TooltipContent className="text-xs font-semibold">
+                  Edit Profil
+                </TooltipContent>
               </Tooltip>
             </div>
 
@@ -95,11 +102,18 @@ export function ProfileHeaderCard({
 
         <div className="flex shrink-0 flex-col items-start gap-3 border-t border-zinc-100 pt-4 sm:flex-row sm:items-center md:flex-col md:items-end md:border-t-0 md:pt-0">
           {!isPendingBuyerApproval && (
-            <RoleSwitcher isSeller={isSeller} isSwitching={isSwitching} onSelect={onSwitchRole} />
+            <RoleSwitcher
+              isSeller={isSeller}
+              isSwitching={isSwitching}
+              onSelect={onSwitchRole}
+            />
           )}
 
           {isPendingBuyerApproval && (
-            <BuyerApplicationBadge application={buyerApplication} onRegister={onRegisterBuyer} />
+            <BuyerApplicationBadge
+              application={buyerApplication}
+              onRegister={onRegisterBuyer}
+            />
           )}
         </div>
       </div>

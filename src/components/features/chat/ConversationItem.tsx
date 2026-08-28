@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { formatRupiah, formatIdDate } from "@/lib/format";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import type { ChatConversation } from "./types";
+import type { ChatConversation } from "@/types";
 
 interface ConversationItemProps {
   conv: ChatConversation;
@@ -38,7 +38,7 @@ export function ConversationItem({
         "w-full text-left p-3 rounded-2xl transition-all flex items-start gap-3 cursor-pointer border",
         isSelected
           ? "bg-white border-zinc-300/90 shadow-xs ring-1 ring-black/5"
-          : "bg-transparent border-transparent hover:bg-white/70 hover:border-zinc-200/50"
+          : "bg-transparent border-transparent hover:bg-white/70 hover:border-zinc-200/50",
       )}
     >
       {/* Avatar */}
@@ -52,7 +52,7 @@ export function ConversationItem({
             alt={partner?.fullName || "User"}
             className="object-cover"
           />
-          <AvatarFallback className="bg-[#EFF3E7] text-xs font-bold text-[#6B7B4F]">
+          <AvatarFallback className="bg-sage text-xs font-bold text-[#6B7B4F]">
             {partnerInitials}
           </AvatarFallback>
         </Avatar>
@@ -66,7 +66,12 @@ export function ConversationItem({
             {partner?.fullName || "Mitra DaurNusa"}
           </span>
           <span className="text-[10px] font-mono text-[#8A8778] shrink-0">
-            {lastMsg ? formatIdDate(lastMsg.sentAt, { hour: "2-digit", minute: "2-digit" }) : ""}
+            {lastMsg
+              ? formatIdDate(lastMsg.sentAt, {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : ""}
           </span>
         </div>
 
@@ -77,8 +82,8 @@ export function ConversationItem({
             className={cn(
               "px-1.5 py-0 rounded-md text-[9.5px] font-bold border",
               isUserSeller
-                ? "bg-[#EFF3E7] text-[#6B7B4F] border-[#7A8F5C]/30"
-                : "bg-[#FEF3D6] text-[#C98A0B] border-[#C98A0B]/30"
+                ? "bg-sage text-[#6B7B4F] border-[#7A8F5C]/30"
+                : "bg-[#FEF3D6] text-[#C98A0B] border-[#C98A0B]/30",
             )}
           >
             {isUserSeller ? "Menjual" : "Membeli"}
@@ -109,13 +114,21 @@ export function ConversationItem({
                 tx.status === "selesai"
                   ? "bg-[#E8EEDD] text-[#6B7B4F]"
                   : tx.status === "menunggu_konfirmasi"
-                  ? "bg-[#FEF3D6] text-[#C98A0B]"
-                  : "bg-red-50 text-red-700"
+                    ? "bg-[#FEF3D6] text-[#C98A0B]"
+                    : "bg-red-50 text-red-700",
               )}
             >
-              {tx.status === "selesai" && <CheckCircle2 className="w-2.5 h-2.5" />}
-              {tx.status === "menunggu_konfirmasi" && <Clock className="w-2.5 h-2.5" />}
-              <span>{tx.status === "menunggu_konfirmasi" ? "Menunggu COD" : tx.status}</span>
+              {tx.status === "selesai" && (
+                <CheckCircle2 className="w-2.5 h-2.5" />
+              )}
+              {tx.status === "menunggu_konfirmasi" && (
+                <Clock className="w-2.5 h-2.5" />
+              )}
+              <span>
+                {tx.status === "menunggu_konfirmasi"
+                  ? "Menunggu COD"
+                  : tx.status}
+              </span>
             </Badge>
             <span className="text-[10px] font-mono font-bold text-[#171717]">
               {formatRupiah(Number(tx.finalPrice))}

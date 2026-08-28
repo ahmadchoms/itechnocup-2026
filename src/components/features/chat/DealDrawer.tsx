@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { ChatConversation, ChatTransaction } from "./types";
+import type { ChatConversation, ChatTransaction } from "@/types";
 
 interface DealDrawerProps {
   activeConv: ChatConversation;
@@ -17,7 +17,9 @@ interface DealDrawerProps {
   isUpdatingTx: boolean;
   onPriceChange: (value: string) => void;
   onQuantityChange: (value: string) => void;
-  onUpdateStatus: (status: "menunggu_konfirmasi" | "selesai" | "dibatalkan") => void;
+  onUpdateStatus: (
+    status: "menunggu_konfirmasi" | "selesai" | "dibatalkan",
+  ) => void;
 }
 
 export function DealDrawer({
@@ -42,7 +44,6 @@ export function DealDrawer({
         >
           <div className="p-3 sm:p-4">
             <div className="rounded-2xl border border-zinc-200/80 bg-[#F7F4EE]/70 p-3 sm:p-4 space-y-3">
-              
               {/* Top Meta Bar */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-200/60 pb-2.5">
                 <div className="flex items-center gap-2">
@@ -50,22 +51,27 @@ export function DealDrawer({
                     <Handshake className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
-                    <span className="font-[family-name:var(--font-display)] font-bold text-xs text-[#171717] block truncate">
+                    <span className="font-display font-bold text-xs text-[#171717] block truncate">
                       Formulir Kesepakatan Harga &amp; Penjemputan COD
                     </span>
                     <span className="text-[10.5px] text-[#78766B] truncate block">
-                      Item: {activeConv.match?.listing?.title || "Limbah Sirkular"}
+                      Item:{" "}
+                      {activeConv.match?.listing?.title || "Limbah Sirkular"}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 text-xs shrink-0">
-                  <span className="text-[11px] text-[#78766B]">Estimasi Jarak:</span>
+                  <span className="text-[11px] text-[#78766B]">
+                    Estimasi Jarak:
+                  </span>
                   <Badge
                     variant="outline"
                     className="font-mono font-bold text-[#6B7B4F] bg-white px-2 py-0.5 rounded-md border-zinc-200/80"
                   >
-                    {activeConv.match?.distanceKm ? `${activeConv.match.distanceKm} km` : "0.8 km"}
+                    {activeConv.match?.distanceKm
+                      ? `${activeConv.match.distanceKm} km`
+                      : "0.8 km"}
                   </Badge>
                 </div>
               </div>
@@ -100,18 +106,19 @@ export function DealDrawer({
 
                 {/* Action Trigger Buttons */}
                 <div className="flex flex-wrap items-center gap-2">
-                  {activeTx?.status !== "menunggu_konfirmasi" && activeTx?.status !== "selesai" && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => onUpdateStatus("menunggu_konfirmasi")}
-                      disabled={isUpdatingTx}
-                      className="h-9 flex-1 cursor-pointer rounded-full bg-[#171717] hover:bg-[#2B2B26] text-white text-[11.5px] font-bold shadow-xs gap-1.5"
-                    >
-                      <Clock className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Sepakati COD</span>
-                    </Button>
-                  )}
+                  {activeTx?.status !== "menunggu_konfirmasi" &&
+                    activeTx?.status !== "selesai" && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => onUpdateStatus("menunggu_konfirmasi")}
+                        disabled={isUpdatingTx}
+                        className="h-9 flex-1 cursor-pointer rounded-full bg-[#171717] hover:bg-[#2B2B26] text-white text-[11.5px] font-bold shadow-xs gap-1.5"
+                      >
+                        <Clock className="w-3.5 h-3.5 text-amber-300" />
+                        <span>Sepakati COD</span>
+                      </Button>
+                    )}
 
                   <Button
                     type="button"
@@ -144,7 +151,12 @@ export function DealDrawer({
                 <div className="p-2.5 rounded-xl bg-[#FEF3D6] border border-[#C98A0B]/30 flex items-start gap-2 text-xs text-[#92400E]">
                   <Info className="w-4 h-4 shrink-0 mt-0.5 text-[#C98A0B]" />
                   <span className="text-[11px] leading-relaxed">
-                    Kesepakatan tercatat sebesar <strong>{formatRupiah(Number(currentDealInput.price))}</strong>. Silakan tentukan waktu penjemputan dan bayar tunai di lokasi.
+                    Kesepakatan tercatat sebesar{" "}
+                    <strong>
+                      {formatRupiah(Number(currentDealInput.price))}
+                    </strong>
+                    . Silakan tentukan waktu penjemputan dan bayar tunai di
+                    lokasi.
                   </span>
                 </div>
               )}

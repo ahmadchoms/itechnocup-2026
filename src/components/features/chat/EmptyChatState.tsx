@@ -9,11 +9,12 @@ export function EmptyChatState() {
         <MessageSquare className="w-6 h-6 sm:w-7 sm:h-7" />
       </div>
       <div>
-        <h3 className="font-[family-name:var(--font-display)] font-bold text-sm sm:text-base text-[#171717]">
+        <h3 className="font-display font-bold text-sm sm:text-base text-[#171717]">
           Pilih Percakapan
         </h3>
         <p className="text-xs text-[#78766B] max-w-xs sm:max-w-sm mt-1">
-          Pilih salah satu obrolan di panel kiri untuk melanjutkan koordinasi penjemputan dan kesepakatan harga COD.
+          Pilih salah satu obrolan di panel kiri untuk melanjutkan koordinasi
+          penjemputan dan kesepakatan harga COD.
         </p>
       </div>
     </div>

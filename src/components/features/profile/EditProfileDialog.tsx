@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { ProfileUser } from "@/components/features/profile/types";
+import type { ProfileUser } from "@/types";
 
 interface EditProfileDialogProps {
   open: boolean;
@@ -21,7 +21,11 @@ interface EditProfileDialogProps {
   user: Pick<ProfileUser, "fullName" | "phone" | "address">;
 }
 
-export function EditProfileDialog({ open, onOpenChange, user }: EditProfileDialogProps) {
+export function EditProfileDialog({
+  open,
+  onOpenChange,
+  user,
+}: EditProfileDialogProps) {
   const router = useRouter();
   const [form, setForm] = useState({
     fullName: user.fullName || "",
@@ -57,23 +61,29 @@ export function EditProfileDialog({ open, onOpenChange, user }: EditProfileDialo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md rounded-[32px] border-zinc-200 bg-white p-6 sm:p-8">
         <DialogHeader>
-          <DialogTitle className="font-[family-name:var(--font-display)] text-xl font-bold text-[#171717]">
+          <DialogTitle className="font-display text-xl font-bold text-[#171717]">
             Perbarui Data Profil
           </DialogTitle>
           <DialogDescription className="text-xs text-[#78766B]">
-            Perubahan kontak dan alamat akan digunakan untuk koordinasi transaksi penjemputan.
+            Perubahan kontak dan alamat akan digunakan untuk koordinasi
+            transaksi penjemputan.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div className="space-y-1">
-            <Label htmlFor="fullName" className="text-xs font-bold text-[#171717]">
+            <Label
+              htmlFor="fullName"
+              className="text-xs font-bold text-[#171717]"
+            >
               Nama Lengkap
             </Label>
             <Input
               id="fullName"
               value={form.fullName}
-              onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, fullName: e.target.value }))
+              }
               required
               className="h-10 rounded-2xl border-zinc-200 bg-[#F7F4EE] text-xs"
             />
@@ -88,20 +98,27 @@ export function EditProfileDialog({ open, onOpenChange, user }: EditProfileDialo
               type="tel"
               placeholder="Contoh: 08123456789"
               value={form.phone}
-              onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, phone: e.target.value }))
+              }
               className="h-10 rounded-2xl border-zinc-200 bg-[#F7F4EE] text-xs"
             />
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="address" className="text-xs font-bold text-[#171717]">
+            <Label
+              htmlFor="address"
+              className="text-xs font-bold text-[#171717]"
+            >
               Alamat Utama
             </Label>
             <Textarea
               id="address"
               rows={2}
               value={form.address}
-              onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, address: e.target.value }))
+              }
               className="resize-none rounded-2xl border-zinc-200 bg-[#F7F4EE] text-xs"
             />
           </div>

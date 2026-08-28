@@ -19,7 +19,7 @@ import type {
   SellerListing,
   UserRole,
   WasteRequest,
-} from "@/types/waste-request";
+} from "@/types";
 
 interface RequestDetailClientProps {
   request: RequestDetail;
@@ -39,7 +39,7 @@ export function RequestDetailClient({
   const router = useRouter();
   const [isStartingChat, setIsStartingChat] = useState(false);
   const [customQty, setCustomQty] = useState<number>(
-    request.quantityWanted ? Math.min(Number(request.quantityWanted), 10) : 10
+    request.quantityWanted ? Math.min(Number(request.quantityWanted), 10) : 10,
   );
 
   const handleStartChat = async (customMessage?: string) => {
@@ -101,7 +101,7 @@ export function RequestDetailClient({
   ];
 
   const matchingSellerListings = sellerListings.filter(
-    (l) => l.categoryId === request.categoryId
+    (l) => l.categoryId === request.categoryId,
   );
 
   const showAction = !isOwner && isActive && currentRole === "seller";
@@ -111,7 +111,7 @@ export function RequestDetailClient({
       className={cn(
         displayFont.variable,
         bodyFont.variable,
-        "mx-auto max-w-6xl space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8"
+        "mx-auto max-w-6xl space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8",
       )}
     >
       <div className="flex items-center justify-between gap-4 border-b border-black/5 pb-4">
@@ -135,7 +135,7 @@ export function RequestDetailClient({
                 {request.category?.name}
               </span>
             </div>
-            <h1 className="mt-0.5 font-[family-name:var(--font-display)] text-[20px] font-extrabold tracking-tight text-[#171717] sm:text-[24px]">
+            <h1 className="mt-0.5 font-display text-[20px] font-extrabold tracking-tight text-[#171717] sm:text-[24px]">
               {request.title}
             </h1>
           </div>
@@ -144,7 +144,9 @@ export function RequestDetailClient({
         <span
           className={cn(
             "shrink-0 rounded-full px-3 py-1 text-[11px] font-bold",
-            isActive ? "bg-[#E8EEDD] text-[#6B7B4F]" : "bg-black/5 text-[#78766B]"
+            isActive
+              ? "bg-[#E8EEDD] text-[#6B7B4F]"
+              : "bg-black/5 text-[#78766B]",
           )}
         >
           {isActive ? "● Sedang Dicari" : "● Selesai"}
@@ -189,7 +191,7 @@ export function RequestDetailClient({
             isStartingChat={isStartingChat}
             onStartChat={() =>
               handleStartChat(
-                `Halo ${request.buyer.fullName}, saya berminat menyetor sekitar ${customQty} ${unit} sampah "${request.title}". Apakah bisa dijadwalkan penjemputan?`
+                `Halo ${request.buyer.fullName}, saya berminat menyetor sekitar ${customQty} ${unit} sampah "${request.title}". Apakah bisa dijadwalkan penjemputan?`,
               )
             }
           />

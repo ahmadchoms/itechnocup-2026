@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import { TransactionStatusBadge } from "./TransactionStatusBadge";
 import { formatIdDate, formatRupiah } from "@/lib/format";
-import type { ProfileTransaction } from "./types";
+import type { ProfileTransaction } from "@/types";
 
 interface TransactionTableProps {
   transactions: ProfileTransaction[];

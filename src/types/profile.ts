@@ -1,3 +1,10 @@
+import {
+  BuyerApplicationStatus,
+  CategoryRef,
+  TransactionCore,
+  TransactionStatus,
+} from "./common";
+
 export interface ProfileUser {
   id: string;
   fullName: string;
@@ -17,16 +24,11 @@ export interface ProfileStats {
   activeListingsCount?: number;
 }
 
-export type TransactionStatus = "selesai" | "menunggu_konfirmasi" | "dibatalkan" | string;
+export type { TransactionStatus };
 
-export interface ProfileTransaction {
-  id: string;
+export interface ProfileTransaction extends Omit<TransactionCore, "status"> {
   status: TransactionStatus;
-  finalQuantity?: number | null;
-  finalPrice: number;
-  unit?: string | null;
-  createdAt: string | Date;
-  category?: { id?: string; name: string } | null;
+  category?: CategoryRef | null;
   buyer?: { fullName: string } | null;
   seller?: { fullName: string } | null;
 }
@@ -39,7 +41,7 @@ export interface ProfileReview {
   reviewer?: { fullName: string; avatarUrl?: string | null } | null;
 }
 
-export type BuyerApplicationStatus = "menunggu" | "disetujui" | "ditolak" | string;
+export type { BuyerApplicationStatus };
 
 export interface BuyerApplication {
   id?: string;
@@ -62,10 +64,7 @@ export interface ProfileListing {
   cvConfidence?: number | null;
   createdAt: string | Date;
   categoryId: string;
-  category?: { id: string; name: string } | null;
+  category?: CategoryRef | null;
 }
 
-export interface WasteCategoryOption {
-  id: string;
-  name: string;
-}
+export type WasteCategoryOption = CategoryRef;

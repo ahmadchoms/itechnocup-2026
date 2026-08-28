@@ -3,7 +3,21 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, User, Phone, MapPin, Eye, EyeOff, RefreshCw, Recycle, Star, ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  User,
+  Phone,
+  MapPin,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  Recycle,
+  Star,
+  ArrowRight,
+  CheckCircle2,
+  Sparkles,
+} from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -70,7 +84,10 @@ export default function RegisterPage() {
       <div className="lg:col-span-7 p-6 sm:p-10 lg:p-12 flex flex-col justify-between space-y-6">
         <div>
           {/* Brand Header */}
-          <Link href="/" className="inline-flex items-center space-x-2.5 mb-6 group">
+          <Link
+            href="/"
+            className="inline-flex items-center space-x-2.5 mb-6 group"
+          >
             <div className="w-9 h-9 rounded-xl bg-[#059669] flex items-center justify-center text-white shadow-xs">
               <Recycle className="w-5 h-5" />
             </div>
@@ -85,11 +102,12 @@ export default function RegisterPage() {
           </Link>
 
           <div>
-            <h1 className="font-[family-name:var(--font-display)] text-2xl sm:text-3xl font-extrabold text-[#171717] tracking-tight">
+            <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#171717] tracking-tight">
               Daftar Akun DaurNusa
             </h1>
             <p className="text-xs sm:text-sm text-[#78766B] mt-1.5 leading-relaxed">
-              Bergabunglah sebagai Penjual (Warga/UMKM) atau Pembeli &amp; Pengepul limbah sirkular.
+              Bergabunglah sebagai Penjual (Warga/UMKM) atau Pembeli &amp;
+              Pengepul limbah sirkular.
             </p>
           </div>
 
@@ -101,7 +119,9 @@ export default function RegisterPage() {
             )}
 
             <div>
-              <label className="block text-xs font-bold text-[#171717] mb-1">Nama Lengkap *</label>
+              <label className="block text-xs font-bold text-[#171717] mb-1">
+                Nama Lengkap *
+              </label>
               <div className="relative">
                 <User className="w-4 h-4 text-[#8A8778] absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
@@ -109,7 +129,9 @@ export default function RegisterPage() {
                   type="text"
                   required
                   value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, fullName: e.target.value })
+                  }
                   placeholder="Contoh: Ahmad Syahfruddin"
                   className="w-full pl-10 pr-4 py-2.5 text-[13px] bg-[#F7F4EE] border border-black/5 focus:border-[#171717] focus:bg-white rounded-2xl text-[#171717] focus:outline-none transition-all placeholder:text-[#A8A594]"
                 />
@@ -117,7 +139,9 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#171717] mb-1">Email Aktif *</label>
+              <label className="block text-xs font-bold text-[#171717] mb-1">
+                Email Aktif *
+              </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-[#8A8778] absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
@@ -125,7 +149,9 @@ export default function RegisterPage() {
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   placeholder="nama@email.com"
                   className="w-full pl-10 pr-4 py-2.5 text-[13px] bg-[#F7F4EE] border border-black/5 focus:border-[#171717] focus:bg-white rounded-2xl text-[#171717] focus:outline-none transition-all placeholder:text-[#A8A594]"
                 />
@@ -134,7 +160,9 @@ export default function RegisterPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-[#171717] mb-1">Kata Sandi *</label>
+                <label className="block text-xs font-bold text-[#171717] mb-1">
+                  Kata Sandi *
+                </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-[#8A8778] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
@@ -142,7 +170,9 @@ export default function RegisterPage() {
                     type={showPassword ? "text" : "password"}
                     required
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
                     placeholder="Min. 6 karakter"
                     className="w-full pl-10 pr-9 py-2.5 text-[13px] bg-[#F7F4EE] border border-black/5 focus:border-[#171717] focus:bg-white rounded-2xl text-[#171717] focus:outline-none transition-all placeholder:text-[#A8A594]"
                   />
@@ -150,15 +180,25 @@ export default function RegisterPage() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A8778] hover:text-[#171717] p-1 cursor-pointer"
-                    aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                    aria-label={
+                      showPassword
+                        ? "Sembunyikan password"
+                        : "Tampilkan password"
+                    }
                   >
-                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    {showPassword ? (
+                      <EyeOff className="w-3.5 h-3.5" />
+                    ) : (
+                      <Eye className="w-3.5 h-3.5" />
+                    )}
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#171717] mb-1">Konfirmasi Kata Sandi *</label>
+                <label className="block text-xs font-bold text-[#171717] mb-1">
+                  Konfirmasi Kata Sandi *
+                </label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-[#8A8778] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
@@ -166,7 +206,12 @@ export default function RegisterPage() {
                     type={showPassword ? "text" : "password"}
                     required
                     value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        confirmPassword: e.target.value,
+                      })
+                    }
                     placeholder="Ulangi sandi"
                     className="w-full pl-10 pr-4 py-2.5 text-[13px] bg-[#F7F4EE] border border-black/5 focus:border-[#171717] focus:bg-white rounded-2xl text-[#171717] focus:outline-none transition-all placeholder:text-[#A8A594]"
                   />
@@ -175,14 +220,18 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#171717] mb-1">Nomor WhatsApp / Telepon</label>
+              <label className="block text-xs font-bold text-[#171717] mb-1">
+                Nomor WhatsApp / Telepon
+              </label>
               <div className="relative">
                 <Phone className="w-4 h-4 text-[#8A8778] absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   id="register-phone"
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
                   placeholder="08xxxxxxxxxx"
                   className="w-full pl-10 pr-4 py-2.5 text-[13px] bg-[#F7F4EE] border border-black/5 focus:border-[#171717] focus:bg-white rounded-2xl text-[#171717] focus:outline-none transition-all placeholder:text-[#A8A594]"
                 />
@@ -190,14 +239,18 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#171717] mb-1">Alamat Penjemputan / Operasional</label>
+              <label className="block text-xs font-bold text-[#171717] mb-1">
+                Alamat Penjemputan / Operasional
+              </label>
               <div className="relative">
                 <MapPin className="w-4 h-4 text-[#8A8778] absolute left-3.5 top-3" />
                 <textarea
                   id="register-address"
                   rows={2}
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, address: e.target.value })
+                  }
                   placeholder="Jl. Simpang Lima No. 1, Semarang"
                   className="w-full pl-10 pr-4 py-2.5 text-[13px] bg-[#F7F4EE] border border-black/5 focus:border-[#171717] focus:bg-white rounded-2xl text-[#171717] focus:outline-none transition-all placeholder:text-[#A8A594] resize-none"
                 />
@@ -228,7 +281,10 @@ export default function RegisterPage() {
         <div className="pt-4 border-t border-black/5 text-center">
           <p className="text-xs text-[#78766B]">
             Sudah memiliki akun DaurNusa?{" "}
-            <Link href="/login" className="text-[#059669] font-bold hover:underline ml-1">
+            <Link
+              href="/login"
+              className="text-[#059669] font-bold hover:underline ml-1"
+            >
               Masuk di sini
             </Link>
           </p>
@@ -275,7 +331,9 @@ export default function RegisterPage() {
           {/* Testimonial Quote */}
           <div className="bg-white/5 border border-white/10 rounded-2xl p-4.5 backdrop-blur-sm space-y-2.5">
             <p className="text-xs sm:text-[12.5px] text-white/80 leading-relaxed italic">
-              &ldquo;Ampas kopi dari kedai kami sekarang rutin dijemput petani untuk pupuk organik lewat DaurNusa. Praktis dan menghasilkan uang saku tambahan.&rdquo;
+              &ldquo;Ampas kopi dari kedai kami sekarang rutin dijemput petani
+              untuk pupuk organik lewat DaurNusa. Praktis dan menghasilkan uang
+              saku tambahan.&rdquo;
             </p>
             <div className="flex items-center space-x-3 pt-2 border-t border-white/10">
               <img
@@ -284,8 +342,12 @@ export default function RegisterPage() {
                 className="w-9 h-9 rounded-full object-cover border border-[#7A8F5C]"
               />
               <div>
-                <span className="text-xs font-bold text-white block leading-tight">Ratna Handayani</span>
-                <span className="text-[10.5px] text-[#7A8F5C] block">Owner Kedai Kopi • Semarang Barat</span>
+                <span className="text-xs font-bold text-white block leading-tight">
+                  Ratna Handayani
+                </span>
+                <span className="text-[10.5px] text-[#7A8F5C] block">
+                  Owner Kedai Kopi • Semarang Barat
+                </span>
               </div>
             </div>
           </div>

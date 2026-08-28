@@ -2,7 +2,7 @@ import { Calendar } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { TransactionStatusBadge } from "./TransactionStatusBadge";
 import { formatIdDate, formatRupiah } from "@/lib/format";
-import type { ProfileTransaction } from "./types";
+import type { ProfileTransaction } from "@/types";
 
 interface TransactionCardListProps {
   transactions: ProfileTransaction[];

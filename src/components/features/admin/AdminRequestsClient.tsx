@@ -25,11 +25,11 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { AdminRequestItem } from "./types";
+import { AdminRequestItem, CategoryItem } from "@/types";
 
 interface AdminRequestsClientProps {
   initialRequests: AdminRequestItem[];
-  categories: { id: string; name: string }[];
+  categories: CategoryItem[];
 }
 
 export function AdminRequestsClient({ initialRequests, categories }: AdminRequestsClientProps) {

@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { AdminNotificationsDropdown } from "./AdminNotificationsDropdown";
-import { AdminSessionUser } from "./types";
+import { AdminSessionUser } from "@/types";
 
 interface AdminTopbarProps {
   currentPage: {

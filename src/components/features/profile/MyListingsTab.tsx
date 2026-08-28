@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EditListingModal } from "./EditListingModal";
-import type { ProfileListing, WasteCategoryOption } from "./types";
+import type { ProfileListing, WasteCategoryOption } from "@/types";
 
 interface MyListingsTabProps {
   initialListings: ProfileListing[];
@@ -32,8 +32,12 @@ export function MyListingsTab({
 }: MyListingsTabProps) {
   const [listings, setListings] = useState<ProfileListing[]>(initialListings);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"semua" | "aktif" | "terjual">("semua");
-  const [editingListing, setEditingListing] = useState<ProfileListing | null>(null);
+  const [statusFilter, setStatusFilter] = useState<
+    "semua" | "aktif" | "terjual"
+  >("semua");
+  const [editingListing, setEditingListing] = useState<ProfileListing | null>(
+    null,
+  );
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const filteredListings = useMemo(() => {
@@ -47,7 +51,8 @@ export function MyListingsTab({
         l.category?.name.toLowerCase().includes(q);
 
       if (statusFilter === "aktif") return matchSearch && l.status === "aktif";
-      if (statusFilter === "terjual") return matchSearch && l.status === "terjual";
+      if (statusFilter === "terjual")
+        return matchSearch && l.status === "terjual";
       return matchSearch;
     });
   }, [listings, searchQuery, statusFilter]);
@@ -56,10 +61,14 @@ export function MyListingsTab({
     if (!confirm("Hapus listing sampah ini? Status akan diarsipkan.")) return;
     setDeletingId(listingId);
     try {
-      const res = await fetch(`/api/listings/${listingId}`, { method: "DELETE" });
+      const res = await fetch(`/api/listings/${listingId}`, {
+        method: "DELETE",
+      });
       if (res.ok) {
         setListings((prev) =>
-          prev.map((l) => (l.id === listingId ? { ...l, status: "dihapus" } : l))
+          prev.map((l) =>
+            l.id === listingId ? { ...l, status: "dihapus" } : l,
+          ),
         );
       } else {
         const d = await res.json();
@@ -74,7 +83,7 @@ export function MyListingsTab({
 
   const handleListingUpdated = (updated: ProfileListing) => {
     setListings((prev) =>
-      prev.map((l) => (l.id === updated.id ? { ...l, ...updated } : l))
+      prev.map((l) => (l.id === updated.id ? { ...l, ...updated } : l)),
     );
   };
 
@@ -105,7 +114,7 @@ export function MyListingsTab({
                   "px-3 py-1 rounded-full capitalize transition-all cursor-pointer",
                   statusFilter === tab
                     ? "bg-white text-[#171717] font-bold shadow-2xs"
-                    : "text-[#78766B] hover:text-[#171717]"
+                    : "text-[#78766B] hover:text-[#171717]",
                 )}
               >
                 {tab}
@@ -133,8 +142,10 @@ export function MyListingsTab({
             <Layers className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="font-[family-name:var(--font-display)] font-bold text-sm sm:text-base text-[#171717]">
-              {searchQuery ? "Tidak ada listing yang cocok" : "Belum ada listing sampah"}
+            <h3 className="font-display font-bold text-sm sm:text-base text-[#171717]">
+              {searchQuery
+                ? "Tidak ada listing yang cocok"
+                : "Belum ada listing sampah"}
             </h3>
             <p className="text-xs text-[#78766B] max-w-sm mx-auto mt-1">
               {searchQuery
@@ -165,11 +176,14 @@ export function MyListingsTab({
                 {/* Photo Image with Badges */}
                 <div className="relative aspect-4/3 w-full overflow-hidden rounded-2xl bg-zinc-100 mb-3 border border-zinc-200/60">
                   <img
-                    src={listing.photoUrl || "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=500"}
+                    src={
+                      listing.photoUrl ||
+                      "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=500"
+                    }
                     alt={listing.title}
                     className={cn(
                       "h-full w-full object-cover transition-transform duration-300 group-hover:scale-103",
-                      isSold && "grayscale-40 opacity-70"
+                      isSold && "grayscale-40 opacity-70",
                     )}
                   />
 
@@ -191,7 +205,7 @@ export function MyListingsTab({
                         "rounded-full px-2.5 py-0.5 text-[10.5px] font-bold shadow-2xs",
                         isSold
                           ? "bg-zinc-800 text-white"
-                          : "bg-[#EFF3E7] text-[#6B7B4F] border border-[#7A8F5C]/30"
+                          : "bg-sage text-[#6B7B4F] border border-[#7A8F5C]/30",
                       )}
                     >
                       {isSold ? (
@@ -210,7 +224,9 @@ export function MyListingsTab({
                     <div className="absolute bottom-2.5 left-2.5">
                       <span className="inline-flex items-center gap-1 rounded-md bg-[#171717]/85 backdrop-blur-xs px-2 py-0.5 text-[9.5px] font-mono font-bold text-white shadow-2xs">
                         <Sparkles className="w-2.5 h-2.5 text-amber-300" />
-                        <span>AI {(listing.cvConfidence * 100).toFixed(0)}%</span>
+                        <span>
+                          AI {(listing.cvConfidence * 100).toFixed(0)}%
+                        </span>
                       </span>
                     </div>
                   )}
@@ -220,11 +236,14 @@ export function MyListingsTab({
                 <div className="flex-1 flex flex-col justify-between space-y-3">
                   <div>
                     <div className="flex items-baseline justify-between gap-2 mb-1">
-                      <h4 className="font-[family-name:var(--font-display)] font-bold text-sm text-[#171717] line-clamp-1">
+                      <h4 className="font-display font-bold text-sm text-[#171717] line-clamp-1">
                         {listing.title}
                       </h4>
                       <span className="text-[10px] font-mono text-[#8A8778] shrink-0">
-                        {formatIdDate(listing.createdAt, { day: "numeric", month: "short" })}
+                        {formatIdDate(listing.createdAt, {
+                          day: "numeric",
+                          month: "short",
+                        })}
                       </span>
                     </div>
 
@@ -237,15 +256,23 @@ export function MyListingsTab({
                     {/* Weight & Price Stats */}
                     <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F7F4EE] border border-zinc-200/60 text-xs">
                       <div>
-                        <span className="text-[10px] text-[#78766B] block">Estimasi Bobot</span>
+                        <span className="text-[10px] text-[#78766B] block">
+                          Estimasi Bobot
+                        </span>
                         <span className="font-mono font-bold text-[#171717]">
-                          {listing.estimatedWeightKg ? `${listing.estimatedWeightKg} ${listing.unit || "kg"}` : "-"}
+                          {listing.estimatedWeightKg
+                            ? `${listing.estimatedWeightKg} ${listing.unit || "kg"}`
+                            : "-"}
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] text-[#78766B] block">Estimasi Nilai</span>
+                        <span className="text-[10px] text-[#78766B] block">
+                          Estimasi Nilai
+                        </span>
                         <span className="font-mono font-extrabold text-[#6B7B4F]">
-                          {listing.estimatedPrice ? formatRupiah(listing.estimatedPrice) : "Sesuai Tawar"}
+                          {listing.estimatedPrice
+                            ? formatRupiah(listing.estimatedPrice)
+                            : "Sesuai Tawar"}
                         </span>
                       </div>
                     </div>

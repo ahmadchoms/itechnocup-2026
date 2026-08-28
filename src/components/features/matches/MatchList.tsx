@@ -104,11 +104,11 @@ export function MatchList({ matches, role }: MatchesClientProps) {
 
                   <p className="text-xs text-slate-500 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span>
-                      <strong className="text-slate-700">Penjual:</strong> {match.listing.seller.fullName}
+                      <strong className="text-slate-700">Penjual:</strong> {match.listing.seller?.fullName || "Penjual"}
                     </span>
                     <span>•</span>
                     <span>
-                      <strong className="text-slate-700">Pembeli:</strong> {match.request.buyer.fullName}
+                      <strong className="text-slate-700">Pembeli:</strong> {match.request.buyer?.fullName || "Pembeli"}
                     </span>
                   </p>
                 </div>

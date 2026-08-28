@@ -27,7 +27,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { BuyerApplicationItem } from "./types";
+import { BuyerApplicationItem } from "@/types";
 
 interface BuyerAppsClientProps {
   initialBuyerApplications: BuyerApplicationItem[];

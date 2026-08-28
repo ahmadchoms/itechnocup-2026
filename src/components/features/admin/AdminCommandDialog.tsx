@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { CommandItem } from "./types";
+import { CommandItem } from "@/types";
 
 interface AdminCommandDialogProps {
   isOpen: boolean;

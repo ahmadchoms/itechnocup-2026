@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, MapPin } from "lucide-react";
 import { getCategoryAccent } from "@/lib/category-accent";
-import type { WasteRequest } from "@/types/waste-request";
+import type { WasteRequest } from "@/types";
 
 interface RequestCardProps {
     request: WasteRequest;

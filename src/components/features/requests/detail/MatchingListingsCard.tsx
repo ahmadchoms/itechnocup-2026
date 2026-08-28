@@ -1,7 +1,7 @@
 "use client";
 
 import { RefreshCw, Sparkles } from "lucide-react";
-import type { SellerListing } from "@/types/waste-request";
+import type { SellerListing } from "@/types";
 
 interface MatchingListingsCardProps {
     listings: SellerListing[];

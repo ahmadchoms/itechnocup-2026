@@ -46,7 +46,10 @@ export function BuyerRegistrationDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  const handleFileSelected = async (field: "ktpPhotoUrl" | "outletPhotoUrl", file: File) => {
+  const handleFileSelected = async (
+    field: "ktpPhotoUrl" | "outletPhotoUrl",
+    file: File,
+  ) => {
     try {
       const base64 = await fileToBase64(file);
       setForm((prev) => ({ ...prev, [field]: base64 }));
@@ -90,16 +93,16 @@ export function BuyerRegistrationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90vh] max-w-lg flex-col rounded-[32px] border-zinc-200 bg-white p-6 sm:p-8">
         <DialogHeader className="shrink-0">
-          <div className="mb-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-[#EFF3E7] px-2.5 py-0.5 text-[11px] font-bold text-[#6B7B4F]">
+          <div className="mb-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-sage px-2.5 py-0.5 text-[11px] font-bold text-[#6B7B4F]">
             <Sparkles className="h-3.5 w-3.5" />
             <span>Verifikasi Mitra Pengepul</span>
           </div>
-          <DialogTitle className="font-[family-name:var(--font-display)] text-xl font-bold text-[#171717]">
+          <DialogTitle className="font-display text-xl font-bold text-[#171717]">
             Daftar Menjadi Pengepul
           </DialogTitle>
           <DialogDescription className="text-xs text-[#78766B]">
-            Lengkapi identitas KTP dan foto gudang/outlet Anda agar dapat membuat postingan
-            kebutuhan sampah.
+            Lengkapi identitas KTP dan foto gudang/outlet Anda agar dapat
+            membuat postingan kebutuhan sampah.
           </DialogDescription>
         </DialogHeader>
 
@@ -122,7 +125,9 @@ export function BuyerRegistrationDialog({
             previewAlt="Foto KTP"
             placeholderTitle="Pilih atau Tarik Foto KTP"
             placeholderHelper="Format JPG, PNG (Maks 5MB)"
-            onFileSelected={(file: File) => handleFileSelected("ktpPhotoUrl", file)}
+            onFileSelected={(file: File) =>
+              handleFileSelected("ktpPhotoUrl", file)
+            }
             onRemove={() => handleRemoveFile("ktpPhotoUrl")}
           />
 
@@ -134,7 +139,9 @@ export function BuyerRegistrationDialog({
             previewAlt="Foto Lokasi"
             placeholderTitle="Pilih atau Tarik Foto Outlet/Lapak"
             placeholderHelper="Foto tempat penampungan sampah"
-            onFileSelected={(file: File) => handleFileSelected("outletPhotoUrl", file)}
+            onFileSelected={(file: File) =>
+              handleFileSelected("outletPhotoUrl", file)
+            }
             onRemove={() => handleRemoveFile("outletPhotoUrl")}
           />
 
@@ -146,13 +153,18 @@ export function BuyerRegistrationDialog({
               id="npwp"
               placeholder="Contoh: 12.345.678.9-012.000"
               value={form.npwp}
-              onChange={(e) => setForm((prev) => ({ ...prev, npwp: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, npwp: e.target.value }))
+              }
               className="h-10 rounded-2xl border-zinc-200 bg-[#F7F4EE] text-xs"
             />
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="buyerAddress" className="text-xs font-bold text-[#171717]">
+            <Label
+              htmlFor="buyerAddress"
+              className="text-xs font-bold text-[#171717]"
+            >
               Alamat Lengkap Operasional <span className="text-red-500">*</span>
             </Label>
             <Textarea
@@ -160,7 +172,9 @@ export function BuyerRegistrationDialog({
               rows={2}
               placeholder="Alamat lengkap lapak/gudang sampah..."
               value={form.address}
-              onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, address: e.target.value }))
+              }
               required
               className="resize-none rounded-2xl border-zinc-200 bg-[#F7F4EE] text-xs"
             />

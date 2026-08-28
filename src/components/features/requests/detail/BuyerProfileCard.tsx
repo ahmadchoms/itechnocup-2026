@@ -1,5 +1,5 @@
 import { ShieldCheck, Star } from "lucide-react";
-import type { BuyerProfile } from "@/types/waste-request";
+import type { BuyerProfile } from "@/types";
 
 interface BuyerProfileCardProps {
     buyer: BuyerProfile;

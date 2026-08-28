@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ConversationItem } from "./ConversationItem";
-import type { ChatConversation } from "./types";
+import type { ChatConversation } from "@/types";
 
 export type ChatFilterTab = "semua" | "menjual" | "membeli" | "selesai";
 
@@ -46,7 +46,7 @@ export function ConversationList({
       <div className="p-4 sm:p-5 border-b border-zinc-200/70 bg-white/70 backdrop-blur-xs space-y-3 shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-[family-name:var(--font-display)] text-lg font-bold tracking-tight text-[#171717]">
+            <h1 className="font-display text-lg font-bold tracking-tight text-[#171717]">
               Pesan &amp; Negosiasi
             </h1>
             <p className="text-[11px] text-[#78766B]">
@@ -55,7 +55,7 @@ export function ConversationList({
           </div>
           <Badge
             variant="outline"
-            className="rounded-full border-[#7A8F5C]/30 bg-[#EFF3E7] px-2.5 py-0.5 text-[10.5px] font-bold text-[#6B7B4F]"
+            className="rounded-full border-[#7A8F5C]/30 bg-sage px-2.5 py-0.5 text-[10.5px] font-bold text-[#6B7B4F]"
           >
             {conversations.length} Chat
           </Badge>
@@ -84,7 +84,7 @@ export function ConversationList({
                 "relative flex-1 py-1 px-2 rounded-full transition-colors text-center cursor-pointer capitalize text-[11px]",
                 filterTab === tab.key
                   ? "text-[#171717] font-bold"
-                  : "text-[#78766B] hover:text-[#171717]"
+                  : "text-[#78766B] hover:text-[#171717]",
               )}
             >
               {filterTab === tab.key && (
@@ -107,7 +107,9 @@ export function ConversationList({
             <div className="w-10 h-10 rounded-full bg-[#F7F4EE] flex items-center justify-center mx-auto text-[#8A8778]">
               <MessageSquare className="w-5 h-5" />
             </div>
-            <p className="text-xs font-semibold text-[#171717]">Tidak ada percakapan</p>
+            <p className="text-xs font-semibold text-[#171717]">
+              Tidak ada percakapan
+            </p>
             <p className="text-[11px] text-[#78766B]">
               {searchQuery
                 ? "Coba gunakan kata kunci pencarian lain."

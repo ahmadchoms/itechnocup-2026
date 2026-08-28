@@ -13,7 +13,7 @@ import {
   Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AdminSessionUser, AdminNavItem } from "./types";
+import { AdminSessionUser, AdminNavItem } from "@/types";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminTopbar } from "./AdminTopbar";
 import { AdminCommandDialog } from "./AdminCommandDialog";

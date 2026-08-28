@@ -15,8 +15,12 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { ChatUser, ChatTransaction } from "./types";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import type { ChatUser, ChatTransaction } from "@/types";
 
 interface ChatHeaderProps {
   partnerUser?: ChatUser | null;
@@ -35,7 +39,8 @@ export function ChatHeader({
   onToggleDealBox,
   onBackToConversations,
 }: ChatHeaderProps) {
-  const partnerInitials = partnerUser?.fullName?.slice(0, 2).toUpperCase() || "DN";
+  const partnerInitials =
+    partnerUser?.fullName?.slice(0, 2).toUpperCase() || "DN";
 
   return (
     <div className="px-4 sm:px-5 py-3 border-b border-zinc-200/80 bg-white flex items-center justify-between gap-2 sm:gap-3 shadow-2xs shrink-0">
@@ -63,7 +68,7 @@ export function ChatHeader({
               alt={partnerUser?.fullName || "Mitra"}
               className="object-cover"
             />
-            <AvatarFallback className="bg-[#EFF3E7] text-xs font-bold text-[#6B7B4F]">
+            <AvatarFallback className="bg-sage text-xs font-bold text-[#6B7B4F]">
               {partnerInitials}
             </AvatarFallback>
           </Avatar>
@@ -72,15 +77,17 @@ export function ChatHeader({
 
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <h2 className="font-[family-name:var(--font-display)] font-bold text-xs sm:text-sm text-[#171717] truncate">
+            <h2 className="font-display font-bold text-xs sm:text-sm text-[#171717] truncate">
               {partnerUser?.fullName || "Mitra DaurNusa"}
             </h2>
             <Badge
               variant="secondary"
-              className="hidden sm:inline-flex border-none gap-0.5 rounded-full bg-[#EFF3E7] px-2 py-0.5 text-[10px] font-bold text-[#6B7B4F] shrink-0"
+              className="hidden sm:inline-flex border-none gap-0.5 rounded-full bg-sage px-2 py-0.5 text-[10px] font-bold text-[#6B7B4F] shrink-0"
             >
               <ShieldCheck className="w-3 h-3" />
-              <span>{isSeller ? "Pengepul Terverifikasi" : "Penjual Terverifikasi"}</span>
+              <span>
+                {isSeller ? "Pengepul Terverifikasi" : "Penjual Terverifikasi"}
+              </span>
             </Badge>
           </div>
 
@@ -103,15 +110,23 @@ export function ChatHeader({
               activeTx.status === "selesai"
                 ? "bg-[#E8EEDD] text-[#6B7B4F] border-[#7A8F5C]/30"
                 : activeTx.status === "menunggu_konfirmasi"
-                ? "bg-[#FEF3D6] text-[#C98A0B] border-[#C98A0B]/30 animate-pulse"
-                : "bg-red-50 text-red-700 border-red-200"
+                  ? "bg-[#FEF3D6] text-[#C98A0B] border-[#C98A0B]/30 animate-pulse"
+                  : "bg-red-50 text-red-700 border-red-200",
             )}
           >
-            {activeTx.status === "selesai" && <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
-            {activeTx.status === "menunggu_konfirmasi" && <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
-            {activeTx.status === "dibatalkan" && <XCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
+            {activeTx.status === "selesai" && (
+              <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            )}
+            {activeTx.status === "menunggu_konfirmasi" && (
+              <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            )}
+            {activeTx.status === "dibatalkan" && (
+              <XCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            )}
             <span className="truncate max-w-[80px] sm:max-w-none">
-              {activeTx.status === "menunggu_konfirmasi" ? "Menunggu COD" : activeTx.status}
+              {activeTx.status === "menunggu_konfirmasi"
+                ? "Menunggu COD"
+                : activeTx.status}
             </span>
           </Badge>
         )}
@@ -135,7 +150,9 @@ export function ChatHeader({
             )}
           </TooltipTrigger>
           <TooltipContent className="text-xs font-semibold">
-            {isDealBoxExpanded ? "Sembunyikan form kesepakatan" : "Buka form kesepakatan COD"}
+            {isDealBoxExpanded
+              ? "Sembunyikan form kesepakatan"
+              : "Buka form kesepakatan COD"}
           </TooltipContent>
         </Tooltip>
       </div>

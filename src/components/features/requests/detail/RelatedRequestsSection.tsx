@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { RequestCard } from "@/components/features/requests/RequestCard";
-import type { WasteRequest } from "@/types/waste-request";
+import type { WasteRequest } from "@/types";
 
 interface RelatedRequestsSectionProps {
     requests: WasteRequest[];

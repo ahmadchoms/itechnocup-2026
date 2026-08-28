@@ -11,7 +11,7 @@ import { DealDrawer } from "./DealDrawer";
 import { MessageStream } from "./MessageStream";
 import { ChatInputBar } from "./ChatInputBar";
 import { EmptyChatState } from "./EmptyChatState";
-import type { ChatClientProps, ChatConversation, ChatMessage } from "./types";
+import type { ChatClientProps, ChatConversation, ChatMessage } from "@/types";
 
 export function ChatClient({
   conversations,
@@ -19,12 +19,12 @@ export function ChatClient({
   currentUserId,
 }: ChatClientProps) {
   const [selectedConvId, setSelectedConvId] = useState<string>(
-    activeId || (conversations.length > 0 ? conversations[0].id : "")
+    activeId || (conversations.length > 0 ? conversations[0].id : ""),
   );
 
   // Responsive state: if activeId is provided on mobile, show chat directly; otherwise show list first
   const [showMobileChat, setShowMobileChat] = useState<boolean>(
-    Boolean(activeId || conversations.length > 0)
+    Boolean(activeId || conversations.length > 0),
   );
 
   const [messageInput, setMessageInput] = useState("");
@@ -51,7 +51,9 @@ export function ChatClient({
     : null;
 
   // Track customized inputs per conversation
-  const [dealInputs, setDealInputs] = useState<Record<string, { price: string; quantity: string }>>({});
+  const [dealInputs, setDealInputs] = useState<
+    Record<string, { price: string; quantity: string }>
+  >({});
 
   // Computed deal inputs for the active conversation
   const currentDealInput = useMemo(() => {
@@ -158,8 +160,8 @@ export function ChatClient({
           prev.map((c) =>
             c.id === activeConv.id
               ? { ...c, messages: [...(c.messages || []), newMsg] }
-              : c
-          )
+              : c,
+          ),
         );
       }
     } catch (err) {
@@ -174,7 +176,7 @@ export function ChatClient({
   };
 
   const handleUpdateTransactionStatus = async (
-    status: "menunggu_konfirmasi" | "selesai" | "dibatalkan"
+    status: "menunggu_konfirmasi" | "selesai" | "dibatalkan",
   ) => {
     if (!activeConv) return;
     setIsUpdatingTx(true);
@@ -208,12 +210,14 @@ export function ChatClient({
                     {
                       ...updatedTx,
                       finalPrice: Number(updatedTx.finalPrice),
-                      finalQuantity: updatedTx.finalQuantity ? Number(updatedTx.finalQuantity) : qtyNum,
+                      finalQuantity: updatedTx.finalQuantity
+                        ? Number(updatedTx.finalQuantity)
+                        : qtyNum,
                     },
                   ],
                 }
-              : c
-          )
+              : c,
+          ),
         );
 
         // Send a system message recording the milestone
@@ -242,8 +246,8 @@ export function ChatClient({
               prev.map((c) =>
                 c.id === activeConv.id
                   ? { ...c, messages: [...(c.messages || []), newMsg] }
-                  : c
-              )
+                  : c,
+              ),
             );
           }
         }
@@ -261,15 +265,15 @@ export function ChatClient({
         className={cn(
           displayFont.variable,
           bodyFont.variable,
-          "max-w-7xl mx-auto p-2 sm:p-4 lg:p-6 h-[calc(100vh-4rem)] max-h-[880px]"
+          "max-w-7xl mx-auto p-2 sm:p-4 lg:p-6 h-[calc(100vh-4rem)] max-h-220",
         )}
       >
         <div className="bg-white rounded-2xl sm:rounded-3xl border border-zinc-200/80 shadow-xs flex overflow-hidden h-full">
           {/* Left Column: Conversation List */}
           <div
             className={cn(
-              "w-full md:w-80 lg:w-[360px] h-full flex flex-col shrink-0 transition-all",
-              showMobileChat ? "hidden md:flex" : "flex"
+              "w-full md:w-80 lg:w-90 h-full flex flex-col shrink-0 transition-all",
+              showMobileChat ? "hidden md:flex" : "flex",
             )}
           >
             <ConversationList
@@ -289,7 +293,7 @@ export function ChatClient({
           <div
             className={cn(
               "flex-1 flex flex-col h-full bg-[#FAF8F5]/30 min-w-0 transition-all",
-              !showMobileChat ? "hidden md:flex" : "flex"
+              !showMobileChat ? "hidden md:flex" : "flex",
             )}
           >
             {activeConv ? (
@@ -300,7 +304,9 @@ export function ChatClient({
                   activeTx={activeTx}
                   isSeller={isSeller}
                   isDealBoxExpanded={isDealBoxExpanded}
-                  onToggleDealBox={() => setIsDealBoxExpanded(!isDealBoxExpanded)}
+                  onToggleDealBox={() =>
+                    setIsDealBoxExpanded(!isDealBoxExpanded)
+                  }
                   onBackToConversations={handleBackToConversations}
                 />
 
