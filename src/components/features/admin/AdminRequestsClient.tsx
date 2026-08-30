@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { moderateRequestAction } from "@/actions/admin.actions";
 import {
   Dialog,
   DialogContent,
@@ -76,13 +77,9 @@ export function AdminRequestsClient({ initialRequests, categories }: AdminReques
   const handleDeleteRequest = async (requestId: string) => {
     setProcessingId(requestId);
     try {
-      const res = await fetch("/api/admin", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "deleteRequest", id: requestId }),
-      });
+      const res = await moderateRequestAction(requestId, "dibatalkan");
 
-      if (res.ok) {
+      if (res.success) {
         setRequests((prev) =>
           prev.map((r) => (r.id === requestId ? { ...r, status: "dibatalkan" } : r))
         );
@@ -91,7 +88,7 @@ export function AdminRequestsClient({ initialRequests, categories }: AdminReques
         }
         setRequestToDelete(null);
       } else {
-        alert("Gagal memoderasi permintaan.");
+        alert(res.error || "Gagal memoderasi permintaan.");
       }
     } catch (err) {
       console.error(err);
@@ -104,13 +101,9 @@ export function AdminRequestsClient({ initialRequests, categories }: AdminReques
   const handleRestoreRequest = async (requestId: string) => {
     setProcessingId(requestId);
     try {
-      const res = await fetch("/api/admin", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "restoreRequest", id: requestId }),
-      });
+      const res = await moderateRequestAction(requestId, "aktif");
 
-      if (res.ok) {
+      if (res.success) {
         setRequests((prev) =>
           prev.map((r) => (r.id === requestId ? { ...r, status: "aktif" } : r))
         );
@@ -118,7 +111,7 @@ export function AdminRequestsClient({ initialRequests, categories }: AdminReques
           setInspectingRequest((prev) => (prev ? { ...prev, status: "aktif" } : null));
         }
       } else {
-        alert("Gagal memulihkan permintaan.");
+        alert(res.error || "Gagal memulihkan permintaan.");
       }
     } catch (err) {
       console.error(err);

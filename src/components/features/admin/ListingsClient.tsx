@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { moderateListingAction } from "@/actions/admin.actions";
 import {
   Dialog,
   DialogContent,
@@ -84,13 +85,9 @@ export function ListingsClient({ initialListings, categories }: ListingsClientPr
   const handleDeleteListing = async (listingId: string) => {
     setProcessingId(listingId);
     try {
-      const res = await fetch("/api/admin", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "deleteListing", id: listingId }),
-      });
+      const res = await moderateListingAction(listingId, "dihapus");
 
-      if (res.ok) {
+      if (res.success) {
         setListings((prev) =>
           prev.map((l) => (l.id === listingId ? { ...l, status: "dihapus" } : l))
         );
@@ -99,7 +96,7 @@ export function ListingsClient({ initialListings, categories }: ListingsClientPr
         }
         setListingToDelete(null);
       } else {
-        alert("Gagal menghapus listing.");
+        alert(res.error || "Gagal menghapus listing.");
       }
     } catch (err) {
       console.error(err);
@@ -112,13 +109,9 @@ export function ListingsClient({ initialListings, categories }: ListingsClientPr
   const handleRestoreListing = async (listingId: string) => {
     setProcessingId(listingId);
     try {
-      const res = await fetch("/api/admin", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "restoreListing", id: listingId }),
-      });
+      const res = await moderateListingAction(listingId, "aktif");
 
-      if (res.ok) {
+      if (res.success) {
         setListings((prev) =>
           prev.map((l) => (l.id === listingId ? { ...l, status: "aktif" } : l))
         );
@@ -126,7 +119,7 @@ export function ListingsClient({ initialListings, categories }: ListingsClientPr
           setInspectingListing((prev) => (prev ? { ...prev, status: "aktif" } : null));
         }
       } else {
-        alert("Gagal memulihkan listing.");
+        alert(res.error || "Gagal memulihkan listing.");
       }
     } catch (err) {
       console.error(err);

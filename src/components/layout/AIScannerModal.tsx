@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { Camera, Sparkles, X, CheckCircle, RefreshCw, Upload, AlertCircle, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { createListingAction } from "@/actions/listing.actions";
+import { classifyWasteAction } from "@/actions/ai.actions";
+import { geocodeAddressAction } from "@/actions/geo.actions";
 
 interface AIScannerModalProps {
   isOpen: boolean;
@@ -92,22 +95,16 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
     setStep("scanning");
 
     try {
-      // Panggil /api/classify (proxy CV provider)
-      const classifyRes = await fetch("/api/classify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photoUrl: sample.url }),
-      });
+      const classifyRes = await classifyWasteAction({ photoUrl: sample.url });
 
       let categoryName = sample.catName;
       let confidence = sample.confidence;
       let catId = categories.find((c) => c.name.toLowerCase() === categoryName.toLowerCase())?.id || categories[0]?.id || "";
 
-      if (classifyRes.ok) {
-        const cvData = await classifyRes.json();
-        categoryName = cvData.categoryName || categoryName;
-        confidence = cvData.confidence || confidence;
-        catId = cvData.categoryId || catId;
+      if (classifyRes.success) {
+        categoryName = classifyRes.categoryName || categoryName;
+        confidence = classifyRes.confidence || confidence;
+        catId = classifyRes.categoryId || catId;
       }
 
       setAiResult({ categoryName, categoryId: catId, confidence });
@@ -119,7 +116,7 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
       }));
       setStep("form");
     } catch {
-      // Fallback ke mock data jika API gagal
+      // Fallback ke mock data jika aksi gagal
       const targetCat = categories.find((c) => c.name.toLowerCase() === sample.catName.toLowerCase());
       const catId = targetCat?.id || categories[0]?.id || "";
       setAiResult({ categoryName: sample.catName, categoryId: catId, confidence: sample.confidence });
@@ -133,31 +130,33 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
     setIsSubmitting(true);
 
     try {
-      const res = await fetch("/api/listings/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          photoUrl,
-          cvPredictedCategoryId: aiResult.categoryId,
-          cvConfidence: aiResult.confidence,
-          isCvCorrected: isManualOverride,
-          sellerId: sellerId || undefined,
-        }),
+      const res = await createListingAction({
+        title: formData.title,
+        categoryId: formData.categoryId,
+        estimatedWeightKg: formData.estimatedWeightKg ? Number(formData.estimatedWeightKg) : null,
+        quantity: formData.quantity ? Number(formData.quantity) : null,
+        unit: formData.unit,
+        condition: formData.condition,
+        description: formData.description,
+        estimatedPrice: formData.estimatedPrice ? Number(formData.estimatedPrice) : null,
+        address: formData.address,
+        photoUrl,
+        cvPredictedCategoryId: aiResult.categoryId,
+        cvConfidence: aiResult.confidence,
+        isCvCorrected: isManualOverride,
+        sellerId: sellerId || undefined,
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
+      if (res.success && res.listing) {
         onClose();
-        router.push(`/listings/match/${data.listing.id}`);
+        router.push(`/listings/match/${res.listing.id}`);
         router.refresh();
       } else {
-        alert("Gagal membuat listing: " + (data.error || "Unknown error"));
+        alert("Gagal membuat listing: " + (res.error || "Unknown error"));
       }
     } catch (error) {
       console.error(error);
-      alert("Terjadi kesalahan koneksi");
+      alert("Terjadi kesalahan sistem");
     } finally {
       setIsSubmitting(false);
     }
@@ -416,11 +415,10 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       onBlur={async (e) => {
                         const addr = e.target.value.trim();
-                        if (addr.length < 5) return;
+                        if (addr.length < 3) return;
                         try {
-                          const geoRes = await fetch(`/api/geocode?address=${encodeURIComponent(addr)}`);
-                          if (geoRes.ok) {
-                            const geo = await geoRes.json();
+                          const geo = await geocodeAddressAction({ address: addr });
+                          if (geo.success) {
                             setFormData((prev) => ({
                               ...prev,
                               latitude: String(geo.lat),

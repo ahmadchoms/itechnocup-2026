@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/layout/AppShell";
 import { ProfileClient } from "@/components/features/profile/ProfileClient";
 import { getSessionUser } from "@/lib/session";
-import { userService } from "@/services/userService";
+import { userService } from "@/services/user.service";
 
 export const dynamic = "force-dynamic";
 

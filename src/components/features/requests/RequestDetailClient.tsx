@@ -14,6 +14,7 @@ import { MatchingListingsCard } from "@/components/features/requests/detail/Matc
 import { RevenueCalculatorCard } from "@/components/features/requests/detail/RevenueCalculatorCard";
 import { BuyerProfileCard } from "@/components/features/requests/detail/BuyerProfileCard";
 import { RelatedRequestsSection } from "@/components/features/requests/detail/RelatedRequestsSection";
+import { startChatAction } from "@/actions/chat.actions";
 import type {
   RequestDetail,
   SellerListing,
@@ -49,24 +50,16 @@ export function RequestDetailClient({
     }
     setIsStartingChat(true);
     try {
-      const res = await fetch("/api/matches/start-chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          buyerId: request.buyerId,
-          requestId: request.id,
-          initialMessage: customMessage,
-        }),
+      const res = await startChatAction({
+        buyerId: request.buyerId,
+        requestId: request.id,
+        initialMessage: customMessage,
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        router.push(`/chat/${data.conversationId}`);
-      } else if (res.status === 401) {
-        router.push("/login");
+      if (res.success && res.conversationId) {
+        router.push(`/chat/${res.conversationId}`);
       } else {
-        const errData = await res.json();
-        alert(errData.error || "Gagal memulai obrolan");
+        alert(res.error || "Gagal memulai obrolan");
       }
     } catch {
       alert("Terjadi kesalahan. Coba lagi.");

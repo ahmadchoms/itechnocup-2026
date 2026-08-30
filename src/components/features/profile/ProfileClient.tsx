@@ -15,6 +15,7 @@ import { TransactionHistoryCard } from "@/components/features/profile/Transactio
 import { ReviewsCard } from "@/components/features/profile/ReviewsCard";
 import { EditProfileDialog } from "@/components/features/profile/EditProfileDialog";
 import { BuyerRegistrationDialog } from "@/components/features/profile/BuyerRegistrationDialog";
+import { switchRoleAction } from "@/actions/auth.actions";
 import type {
   BuyerApplication,
   ProfileListing,
@@ -81,17 +82,12 @@ export function ProfileClient({
 
     setIsSwitching(true);
     try {
-      const res = await fetch("/api/auth/role", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: targetRole }),
-      });
+      const res = await switchRoleAction(targetRole);
 
-      if (res.ok) {
+      if (res.success) {
         router.refresh();
       } else {
-        const data = await res.json();
-        alert(data.error || "Gagal mengganti role");
+        alert(res.error || "Gagal mengganti role");
       }
     } catch {
       alert("Terjadi kesalahan pada server");

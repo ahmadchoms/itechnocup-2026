@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { ArrowLeft, MessageCircle, MapPin, Package, Star, Loader2, Sparkles, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { startChatAction } from "@/actions/chat.actions";
 
 interface Listing {
   id: string;
@@ -89,22 +90,17 @@ export function ListingMatchClient({ listing, wasteRequests, sessionUser }: Prop
   const handleStartChat = async (buyerId: string, reqTitle: string) => {
     setStartingChat(buyerId);
     try {
-      const res = await fetch("/api/chat/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sellerId: sessionUser.id,
-          buyerId: buyerId,
-          listingId: listing.id,
-          initialMessage: `Halo, saya memiliki ${listing.title} yang mungkin sesuai dengan permintaan Anda ("${reqTitle}"). Mari diskusikan!`,
-        }),
+      const res = await startChatAction({
+        sellerId: sessionUser.id,
+        buyerId: buyerId,
+        listingId: listing.id,
+        initialMessage: `Halo, saya memiliki ${listing.title} yang mungkin sesuai dengan permintaan Anda ("${reqTitle}"). Mari diskusikan!`,
       });
       
-      const data = await res.json();
-      if (res.ok && data.conversationId) {
-        router.push(`/chat/${data.conversationId}`);
+      if (res.success && res.conversationId) {
+        router.push(`/chat/${res.conversationId}`);
       } else {
-        alert("Gagal memulai chat: " + (data.error || "Unknown error"));
+        alert("Gagal memulai chat: " + (res.error || "Unknown error"));
         setStartingChat(null);
       }
     } catch (error) {

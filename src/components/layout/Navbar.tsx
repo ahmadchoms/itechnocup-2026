@@ -6,6 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { Recycle, Camera, MessageSquare, Search, LogIn, LogOut, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { getAuthUserAction, logoutAction } from "@/actions/auth.actions";
+
 interface NavbarProps {
   onOpenScanner?: () => void;
   initialSessionUser?: {
@@ -32,12 +34,11 @@ export function Navbar({ onOpenScanner, initialSessionUser = null }: NavbarProps
   } | null>(initialSessionUser);
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.user) setSessionUser(d.user);
-      })
-      .catch(() => {});
+    getAuthUserAction().then((res) => {
+      if (res.success && res.user) {
+        setSessionUser(res.user);
+      }
+    });
   }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -70,11 +71,11 @@ export function Navbar({ onOpenScanner, initialSessionUser = null }: NavbarProps
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      const res = await fetch("/api/auth/logout", { method: "POST" });
-      if (res.ok) {
+      const res = await logoutAction();
+      if (res.success) {
         window.location.href = "/";
       } else {
-        alert("Gagal logout.");
+        alert(res.error || "Gagal logout.");
         setIsLoggingOut(false);
       }
     } catch {

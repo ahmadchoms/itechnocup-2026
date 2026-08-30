@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EditListingModal } from "./EditListingModal";
+import { deleteListingAction } from "@/actions/listing.actions";
 import type { ProfileListing, WasteCategoryOption } from "@/types";
 
 interface MyListingsTabProps {
@@ -61,18 +62,15 @@ export function MyListingsTab({
     if (!confirm("Hapus listing sampah ini? Status akan diarsipkan.")) return;
     setDeletingId(listingId);
     try {
-      const res = await fetch(`/api/listings/${listingId}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
+      const res = await deleteListingAction(listingId);
+      if (res.success) {
         setListings((prev) =>
           prev.map((l) =>
             l.id === listingId ? { ...l, status: "dihapus" } : l,
           ),
         );
       } else {
-        const d = await res.json();
-        alert(d.error || "Gagal menghapus listing");
+        alert(res.error || "Gagal menghapus listing");
       }
     } catch {
       alert("Terjadi kesalahan pada server");

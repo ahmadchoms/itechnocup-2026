@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FileUploadField } from "./FileUploadField";
+import { buyerApplicationSchema, BuyerApplicationInput } from "@/validations/user.schema";
+import { submitBuyerApplicationAction } from "@/actions/user.actions";
 
 interface BuyerRegistrationDialogProps {
   open: boolean;
@@ -37,14 +41,26 @@ export function BuyerRegistrationDialog({
   initialAddress,
 }: BuyerRegistrationDialogProps) {
   const router = useRouter();
-  const [form, setForm] = useState({
-    ktpPhotoUrl: "",
-    outletPhotoUrl: "",
-    npwp: "",
-    address: initialAddress || "",
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<BuyerApplicationInput>({
+    resolver: zodResolver(buyerApplicationSchema),
+    defaultValues: {
+      ktpPhotoUrl: "",
+      outletPhotoUrl: "",
+      npwp: "",
+      address: initialAddress || "",
+    },
+  });
+
+  const ktpPhotoUrl = watch("ktpPhotoUrl");
+  const outletPhotoUrl = watch("outletPhotoUrl");
 
   const handleFileSelected = async (
     field: "ktpPhotoUrl" | "outletPhotoUrl",
@@ -52,40 +68,26 @@ export function BuyerRegistrationDialog({
   ) => {
     try {
       const base64 = await fileToBase64(file);
-      setForm((prev) => ({ ...prev, [field]: base64 }));
+      setValue(field, base64, { shouldValidate: true });
     } catch {
-      setForm((prev) => ({ ...prev, [field]: "" }));
+      setValue(field, "", { shouldValidate: true });
       console.error(`Gagal membaca atau mengonversi file untuk ${field}`);
     }
   };
 
   const handleRemoveFile = (field: "ktpPhotoUrl" | "outletPhotoUrl") => {
-    setForm((prev) => ({ ...prev, [field]: "" }));
+    setValue(field, "", { shouldValidate: true });
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  const onSubmit = async (data: BuyerApplicationInput) => {
     setSubmitError("");
+    const result = await submitBuyerApplicationAction(data);
 
-    try {
-      const res = await fetch("/api/buyer-applications/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        onOpenChange(false);
-        router.refresh();
-      } else {
-        setSubmitError(data.error || "Gagal mengajukan pendaftaran");
-      }
-    } catch {
-      setSubmitError("Terjadi kesalahan pada server");
-    } finally {
-      setIsSubmitting(false);
+    if (result.success) {
+      onOpenChange(false);
+      router.refresh();
+    } else {
+      setSubmitError(result.error || "Gagal mengajukan pendaftaran");
     }
   };
 
@@ -114,14 +116,14 @@ export function BuyerRegistrationDialog({
 
         <form
           id="buyer-register-form"
-          onSubmit={handleSubmit}
+          onSubmit={handleSubmit(onSubmit)}
           className="flex-1 space-y-4 overflow-y-auto pr-1"
         >
           <FileUploadField
             id="ktp-upload"
             label="Foto KTP Pemilik"
             required
-            value={form.ktpPhotoUrl}
+            value={ktpPhotoUrl}
             previewAlt="Foto KTP"
             placeholderTitle="Pilih atau Tarik Foto KTP"
             placeholderHelper="Format JPG, PNG (Maks 5MB)"
@@ -130,12 +132,15 @@ export function BuyerRegistrationDialog({
             }
             onRemove={() => handleRemoveFile("ktpPhotoUrl")}
           />
+          {errors.ktpPhotoUrl && (
+            <p className="text-[11px] font-semibold text-red-500">{errors.ktpPhotoUrl.message}</p>
+          )}
 
           <FileUploadField
             id="outlet-upload"
             label="Foto Gudang / Lokasi Operasional"
             required
-            value={form.outletPhotoUrl}
+            value={outletPhotoUrl}
             previewAlt="Foto Lokasi"
             placeholderTitle="Pilih atau Tarik Foto Outlet/Lapak"
             placeholderHelper="Foto tempat penampungan sampah"
@@ -144,6 +149,9 @@ export function BuyerRegistrationDialog({
             }
             onRemove={() => handleRemoveFile("outletPhotoUrl")}
           />
+          {errors.outletPhotoUrl && (
+            <p className="text-[11px] font-semibold text-red-500">{errors.outletPhotoUrl.message}</p>
+          )}
 
           <div className="space-y-1">
             <Label htmlFor="npwp" className="text-xs font-bold text-[#171717]">
@@ -152,10 +160,7 @@ export function BuyerRegistrationDialog({
             <Input
               id="npwp"
               placeholder="Contoh: 12.345.678.9-012.000"
-              value={form.npwp}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, npwp: e.target.value }))
-              }
+              {...register("npwp")}
               className="h-10 rounded-2xl border-zinc-200 bg-[#F7F4EE] text-xs"
             />
           </div>
@@ -171,13 +176,12 @@ export function BuyerRegistrationDialog({
               id="buyerAddress"
               rows={2}
               placeholder="Alamat lengkap lapak/gudang sampah..."
-              value={form.address}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, address: e.target.value }))
-              }
-              required
+              {...register("address")}
               className="resize-none rounded-2xl border-zinc-200 bg-[#F7F4EE] text-xs"
             />
+            {errors.address && (
+              <p className="text-[11px] font-semibold text-red-500">{errors.address.message}</p>
+            )}
           </div>
         </form>
 

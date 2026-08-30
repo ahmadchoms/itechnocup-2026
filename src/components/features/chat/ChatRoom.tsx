@@ -11,6 +11,8 @@ import { DealDrawer } from "./DealDrawer";
 import { MessageStream } from "./MessageStream";
 import { ChatInputBar } from "./ChatInputBar";
 import { EmptyChatState } from "./EmptyChatState";
+import { sendMessageAction } from "@/actions/chat.actions";
+import { updateTransactionStatusAction } from "@/actions/transaction.actions";
 import type { ChatClientProps, ChatConversation, ChatMessage } from "@/types";
 
 export function ChatClient({
@@ -144,22 +146,16 @@ export function ChatClient({
     setIsSending(true);
 
     try {
-      const res = await fetch("/api/chat/message", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conversationId: activeConv.id,
-          senderId: effectiveUserId,
-          content: currentMsg,
-        }),
+      const res = await sendMessageAction({
+        conversationId: activeConv.id,
+        content: currentMsg,
       });
 
-      if (res.ok) {
-        const newMsg: ChatMessage = await res.json();
+      if (res.success && res.message) {
         setConvList((prev) =>
           prev.map((c) =>
             c.id === activeConv.id
-              ? { ...c, messages: [...(c.messages || []), newMsg] }
+              ? { ...c, messages: [...(c.messages || []), res.message as unknown as ChatMessage] }
               : c,
           ),
         );
@@ -185,20 +181,16 @@ export function ChatClient({
     const qtyNum = Number(currentDealInput.quantity) || 0;
 
     try {
-      const res = await fetch("/api/transactions/status", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conversationId: activeConv.id,
-          status,
-          finalPrice: priceNum,
-          finalQuantity: qtyNum,
-          unit: activeConv.match?.listing?.unit || "kg",
-        }),
+      const res = await updateTransactionStatusAction({
+        conversationId: activeConv.id,
+        status,
+        finalPrice: priceNum,
+        finalQuantity: qtyNum,
+        unit: activeConv.match?.listing?.unit || "kg",
       });
 
-      if (res.ok) {
-        const updatedTx = await res.json();
+      if (res.success && res.transaction) {
+        const updatedTx = res.transaction;
 
         // Update in-memory state
         setConvList((prev) =>
@@ -231,21 +223,15 @@ export function ChatClient({
         }
 
         if (milestoneText) {
-          const msgRes = await fetch("/api/chat/message", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              conversationId: activeConv.id,
-              senderId: effectiveUserId,
-              content: milestoneText,
-            }),
+          const msgRes = await sendMessageAction({
+            conversationId: activeConv.id,
+            content: milestoneText,
           });
-          if (msgRes.ok) {
-            const newMsg = await msgRes.json();
+          if (msgRes.success && msgRes.message) {
             setConvList((prev) =>
               prev.map((c) =>
                 c.id === activeConv.id
-                  ? { ...c, messages: [...(c.messages || []), newMsg] }
+                  ? { ...c, messages: [...(c.messages || []), msgRes.message as unknown as ChatMessage] }
                   : c,
               ),
             );

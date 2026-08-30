@@ -1,4 +1,4 @@
-import { adminService } from "@/services/adminService";
+import { adminService } from "@/services/admin.service";
 import { AdminRequestsClient } from "@/components/features/admin/AdminRequestsClient";
 
 export const dynamic = "force-dynamic";

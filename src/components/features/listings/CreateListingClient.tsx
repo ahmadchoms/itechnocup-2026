@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Upload, MapPin, RefreshCw, Sparkles, CheckCircle2 } from "lucide-react";
+import { createListingAction } from "@/actions/listing.actions";
+import { classifyWasteAction } from "@/actions/ai.actions";
+import { geocodeAddressAction } from "@/actions/geo.actions";
 
 interface CreateListingClientProps {
   categories: { id: string; name: string }[];
@@ -79,21 +82,16 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
     setIsClassifying(true);
 
     try {
-      const classifyRes = await fetch("/api/classify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photoUrl: sample.url }),
-      });
+      const classifyRes = await classifyWasteAction({ photoUrl: sample.url });
 
       let catName = sample.catName;
       let conf = sample.confidence;
       let catId = categories.find((c) => c.name.toLowerCase() === catName.toLowerCase())?.id || categories[0]?.id || "";
 
-      if (classifyRes.ok) {
-        const cvData = await classifyRes.json();
-        catName = cvData.categoryName || catName;
-        conf = cvData.confidence || conf;
-        catId = cvData.categoryId || catId;
+      if (classifyRes.success) {
+        catName = classifyRes.categoryName || catName;
+        conf = classifyRes.confidence || conf;
+        catId = classifyRes.categoryId || catId;
       }
 
       setAiResult({ categoryName: catName, categoryId: catId, confidence: conf });
@@ -116,34 +114,29 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
     setIsSubmitting(true);
 
     try {
-      const res = await fetch("/api/listings/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: formData.title,
-          categoryId: formData.categoryId,
-          estimatedWeightKg: formData.estimatedWeightKg,
-          quantity: formData.quantity,
-          unit: formData.unit,
-          condition: formData.condition,
-          description: formData.description,
-          estimatedPrice: formData.estimatedPrice,
-          address: formData.address,
-          latitude: formData.latitude,
-          longitude: formData.longitude,
-          photoUrl,
-          cvConfidence: aiResult?.confidence || 90.0,
-          sellerId: sessionUser.id,
-        }),
+      const res = await createListingAction({
+        title: formData.title,
+        categoryId: formData.categoryId,
+        estimatedWeightKg: formData.estimatedWeightKg ? Number(formData.estimatedWeightKg) : null,
+        quantity: formData.quantity ? Number(formData.quantity) : null,
+        unit: formData.unit,
+        condition: formData.condition,
+        description: formData.description,
+        estimatedPrice: formData.estimatedPrice ? Number(formData.estimatedPrice) : null,
+        address: formData.address,
+        latitude: formData.latitude ? Number(formData.latitude) : null,
+        longitude: formData.longitude ? Number(formData.longitude) : null,
+        photoUrl,
+        cvConfidence: aiResult?.confidence || 90.0,
+        isCvCorrected: false,
+        sellerId: sessionUser.id,
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        router.push(`/listings/match/${data.listing.id}`);
+      if (res.success && res.listing) {
+        router.push(`/listings/match/${res.listing.id}`);
         router.refresh();
       } else {
-        const errData = await res.json();
-        alert(errData.error || "Gagal membuat listing");
+        alert(res.error || "Gagal membuat listing");
       }
     } catch {
       alert("Terjadi kesalahan sistem. Coba lagi.");
@@ -318,11 +311,10 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 onBlur={async (e) => {
                   const addr = e.target.value.trim();
-                  if (addr.length < 5) return;
+                  if (addr.length < 3) return;
                   try {
-                    const geoRes = await fetch(`/api/geocode?address=${encodeURIComponent(addr)}`);
-                    if (geoRes.ok) {
-                      const geo = await geoRes.json();
+                    const geo = await geocodeAddressAction({ address: addr });
+                    if (geo.success) {
                       setFormData((prev) => ({
                         ...prev,
                         latitude: String(geo.lat),

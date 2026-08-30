@@ -5,6 +5,8 @@ import { Navbar } from "./Navbar";
 import { BottomNav } from "./BottomNav";
 import { AIScannerModal } from "./AIScannerModal";
 
+import { getCategoriesAction } from "@/actions/category.actions";
+
 interface AppShellProps {
   children: React.ReactNode;
   categories?: { id: string; name: string }[];
@@ -24,12 +26,11 @@ export function AppShell({ children, categories = [], sessionUser: serverSession
 
   useEffect(() => {
     if (categories.length === 0) {
-      fetch("/api/categories")
-        .then((res) => res.json())
-        .then((data) => {
-          if (Array.isArray(data)) setDbCategories(data);
-        })
-        .catch((err) => console.error(err));
+      getCategoriesAction().then((res) => {
+        if (res.success && res.categories) {
+          setDbCategories(res.categories);
+        }
+      });
     }
   }, [categories]);
 

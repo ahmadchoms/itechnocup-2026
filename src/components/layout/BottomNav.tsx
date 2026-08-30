@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 import { Store, Compass, MessageSquare, User, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+import { getAuthUserAction } from "@/actions/auth.actions";
+
 interface BottomNavProps {
   onOpenScanner?: () => void;
   initialSessionUser?: {
@@ -30,12 +32,11 @@ export function BottomNav({ onOpenScanner, initialSessionUser = null }: BottomNa
   } | null>(initialSessionUser);
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.user) setSessionUser(d.user);
-      })
-      .catch(() => {});
+    getAuthUserAction().then((res) => {
+      if (res.success && res.user) {
+        setSessionUser(res.user);
+      }
+    });
   }, []);
 
   const roleBase = sessionUser?.activeRole || "seller";

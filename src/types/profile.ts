@@ -59,7 +59,7 @@ export interface ProfileListing {
   photoUrl: string;
   estimatedWeightKg?: number | null;
   estimatedPrice?: number | null;
-  unit: string;
+  unit?: string | null;
   status: "aktif" | "terjual" | "dihapus" | string;
   cvConfidence?: number | null;
   createdAt: string | Date;

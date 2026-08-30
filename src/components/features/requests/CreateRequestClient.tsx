@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { ShoppingBag, CheckCircle2, MapPin, Scale, RefreshCw, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
+import { createRequestAction } from "@/actions/request.actions";
+import { getCategoriesAction } from "@/actions/category.actions";
+
 interface CreateRequestClientProps {
   categories: { id: string; name: string }[];
 }
@@ -26,14 +29,12 @@ export function CreateRequestClient({ categories: initialCategories = [] }: Crea
 
   useEffect(() => {
     if (categories.length === 0) {
-      fetch("/api/categories")
-        .then((res) => res.json())
-        .then((data) => {
-          if (Array.isArray(data) && data.length > 0) {
-            setCategories(data);
-            setFormData((prev) => ({ ...prev, categoryId: data[0].id }));
-          }
-        });
+      getCategoriesAction().then((res) => {
+        if (res.success && res.categories && res.categories.length > 0) {
+          setCategories(res.categories);
+          setFormData((prev) => ({ ...prev, categoryId: res.categories[0].id }));
+        }
+      });
     }
   }, [categories]);
 
@@ -42,18 +43,21 @@ export function CreateRequestClient({ categories: initialCategories = [] }: Crea
     setIsSubmitting(true);
 
     try {
-      const res = await fetch("/api/requests/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+      const res = await createRequestAction({
+        title: formData.title,
+        categoryId: formData.categoryId,
+        quantityWanted: formData.quantityWanted ? Number(formData.quantityWanted) : null,
+        unit: formData.unit,
+        offeredPrice: Number(formData.offeredPrice),
+        address: formData.address,
+        description: formData.description,
       });
 
-      if (res.ok) {
+      if (res.success && res.wasteRequest) {
         router.push("/requests");
         router.refresh();
       } else {
-        const data = await res.json();
-        alert(data.error || "Gagal membuat permintaan");
+        alert(res.error || "Gagal membuat permintaan");
       }
     } catch (err) {
       console.error(err);

@@ -21,6 +21,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { updateAdminUserAction, deleteAdminUserAction } from "@/actions/admin.actions";
 import {
   Dialog,
   DialogContent,
@@ -105,24 +106,16 @@ export function UsersClient({ initialUsers }: UsersClientProps) {
 
     setProcessingId(editingUser.id);
     try {
-      const res = await fetch("/api/admin", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "updateUser",
-          id: editingUser.id,
-          data: {
-            fullName: editFormData.fullName,
-            email: editFormData.email,
-            phone: editFormData.phone || null,
-            address: editFormData.address || null,
-            isAdmin: editFormData.isAdmin,
-            isBuyerApproved: editFormData.isBuyerApproved,
-          },
-        }),
+      const res = await updateAdminUserAction(editingUser.id, {
+        fullName: editFormData.fullName,
+        email: editFormData.email,
+        phone: editFormData.phone || null,
+        address: editFormData.address || null,
+        isAdmin: editFormData.isAdmin,
+        isBuyerApproved: editFormData.isBuyerApproved,
       });
 
-      if (res.ok) {
+      if (res.success && res.user) {
         setUsers((prev) =>
           prev.map((u) =>
             u.id === editingUser.id
@@ -155,8 +148,7 @@ export function UsersClient({ initialUsers }: UsersClientProps) {
         }
         setEditingUser(null);
       } else {
-        const errorData = await res.json();
-        alert(errorData.error || "Gagal memperbarui profil pengguna.");
+        alert(res.error || "Gagal memperbarui profil pengguna.");
       }
     } catch (err) {
       console.error(err);
@@ -169,24 +161,16 @@ export function UsersClient({ initialUsers }: UsersClientProps) {
   const handleDeleteUser = async (userId: string) => {
     setProcessingId(userId);
     try {
-      const res = await fetch("/api/admin", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "deleteUser",
-          id: userId,
-        }),
-      });
+      const res = await deleteAdminUserAction(userId);
 
-      if (res.ok) {
+      if (res.success) {
         setUsers((prev) => prev.filter((u) => u.id !== userId));
         if (inspectingUser?.id === userId) {
           setInspectingUser(null);
         }
         setUserToDelete(null);
       } else {
-        const errorData = await res.json();
-        alert(errorData.error || "Gagal menghapus pengguna.");
+        alert(res.error || "Gagal menghapus pengguna.");
       }
     } catch (err) {
       console.error(err);

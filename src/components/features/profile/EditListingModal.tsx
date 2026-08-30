@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RefreshCw } from "lucide-react";
+import { updateListingAction } from "@/actions/listing.actions";
 import type { ProfileListing, WasteCategoryOption } from "@/types";
 
 interface EditListingModalProps {
@@ -58,25 +59,19 @@ export function EditListingModal({
 
     setIsSubmitting(true);
     try {
-      const res = await fetch(`/api/listings/${listing.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          description,
-          estimatedWeightKg: Number(estimatedWeight) || null,
-          estimatedPrice: Number(estimatedPrice) || null,
-          categoryId,
-        }),
+      const res = await updateListingAction(listing.id, {
+        title,
+        description,
+        estimatedWeightKg: Number(estimatedWeight) || null,
+        estimatedPrice: Number(estimatedPrice) || null,
+        categoryId,
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        onSuccess(data);
+      if (res.success && res.listing) {
+        onSuccess(res.listing as unknown as ProfileListing);
         onClose();
       } else {
-        const err = await res.json();
-        alert(err.error || "Gagal memperbarui listing");
+        alert(res.error || "Gagal memperbarui listing");
       }
     } catch {
       alert("Terjadi kesalahan pada server");

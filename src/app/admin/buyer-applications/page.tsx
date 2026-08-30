@@ -1,4 +1,4 @@
-import { buyerApplicationService } from "@/services/buyerApplicationService";
+import { buyerApplicationService } from "@/services/buyer-application.service";
 import { BuyerAppsClient } from "@/components/features/admin/BuyerAppsClient";
 
 export const dynamic = "force-dynamic";

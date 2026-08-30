@@ -18,6 +18,7 @@ import { AdminSidebar } from "./AdminSidebar";
 import { AdminTopbar } from "./AdminTopbar";
 import { AdminCommandDialog } from "./AdminCommandDialog";
 import { AdminLogoutModal } from "./AdminLogoutModal";
+import { logoutAction } from "@/actions/auth.actions";
 
 interface AdminLayoutClientProps {
   children: React.ReactNode;
@@ -56,12 +57,12 @@ export function AdminLayoutClient({ children, sessionUser }: AdminLayoutClientPr
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      const res = await fetch("/api/auth/logout", { method: "POST" });
-      if (res.ok) {
+      const res = await logoutAction();
+      if (res.success) {
         router.push("/");
         router.refresh();
       } else {
-        alert("Gagal logout.");
+        alert(res.error || "Gagal logout.");
         setIsLoggingOut(false);
       }
     } catch {

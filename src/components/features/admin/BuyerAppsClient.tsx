@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { approveBuyerAppAction, rejectBuyerAppAction } from "@/actions/admin.actions";
 import {
   Dialog,
   DialogContent,
@@ -68,10 +69,8 @@ export function BuyerAppsClient({ initialBuyerApplications }: BuyerAppsClientPro
   const handleApproveBuyer = async (appId: string) => {
     setProcessingId(appId);
     try {
-      const res = await fetch(`/api/admin/buyer-applications/${appId}/approve`, {
-        method: "POST",
-      });
-      if (res.ok) {
+      const res = await approveBuyerAppAction(appId);
+      if (res.success) {
         setBuyerApps((prev) =>
           prev.map((app) =>
             app.id === appId ? { ...app, status: "disetujui" } : app
@@ -81,8 +80,7 @@ export function BuyerAppsClient({ initialBuyerApplications }: BuyerAppsClientPro
           setInspectingApp((prev) => (prev ? { ...prev, status: "disetujui" } : null));
         }
       } else {
-        const data = await res.json();
-        alert(data.error || "Gagal menyetujui pengepul");
+        alert(res.error || "Gagal menyetujui pengepul");
       }
     } catch (err) {
       console.error(err);
@@ -95,10 +93,8 @@ export function BuyerAppsClient({ initialBuyerApplications }: BuyerAppsClientPro
   const handleRejectBuyer = async (appId: string) => {
     setProcessingId(appId);
     try {
-      const res = await fetch(`/api/admin/buyer-applications/${appId}/reject`, {
-        method: "POST",
-      });
-      if (res.ok) {
+      const res = await rejectBuyerAppAction(appId);
+      if (res.success) {
         setBuyerApps((prev) =>
           prev.map((app) =>
             app.id === appId ? { ...app, status: "ditolak" } : app
@@ -108,12 +104,11 @@ export function BuyerAppsClient({ initialBuyerApplications }: BuyerAppsClientPro
           setInspectingApp((prev) => (prev ? { ...prev, status: "ditolak" } : null));
         }
       } else {
-        const data = await res.json();
-        alert(data.error || "Gagal menolak pengepul");
+        alert(res.error || "Gagal menolak pengepul");
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan saat memproses pengajuan");
+      alert("Terjadi kesalahan saat memproses penolakan");
     } finally {
       setProcessingId(null);
     }

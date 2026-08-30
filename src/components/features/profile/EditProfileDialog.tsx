@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,6 +15,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { updateProfileSchema, UpdateProfileInput } from "@/validations/user.schema";
+import { updateUserProfileAction } from "@/actions/user.actions";
 import type { ProfileUser } from "@/types";
 
 interface EditProfileDialogProps {
@@ -27,33 +31,30 @@ export function EditProfileDialog({
   user,
 }: EditProfileDialogProps) {
   const router = useRouter();
-  const [form, setForm] = useState({
-    fullName: user.fullName || "",
-    phone: user.phone || "",
-    address: user.address || "",
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      const res = await fetch("/api/user/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (res.ok) {
-        onOpenChange(false);
-        router.refresh();
-      } else {
-        const data = await res.json();
-        alert(data.error || "Gagal memperbarui profil");
-      }
-    } catch {
-      alert("Terjadi kesalahan server");
-    } finally {
-      setIsSubmitting(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<UpdateProfileInput>({
+    resolver: zodResolver(updateProfileSchema),
+    defaultValues: {
+      fullName: user.fullName || "",
+      phone: user.phone || "",
+      address: user.address || "",
+    },
+  });
+
+  const onSubmit = async (data: UpdateProfileInput) => {
+    setServerError(null);
+    const result = await updateUserProfileAction(data);
+
+    if (result.success) {
+      onOpenChange(false);
+      router.refresh();
+    } else {
+      setServerError(result.error || "Gagal memperbarui profil");
     }
   };
 
@@ -70,7 +71,13 @@ export function EditProfileDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+        {serverError && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-600">
+            {serverError}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
           <div className="space-y-1">
             <Label
               htmlFor="fullName"
@@ -80,13 +87,13 @@ export function EditProfileDialog({
             </Label>
             <Input
               id="fullName"
-              value={form.fullName}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, fullName: e.target.value }))
-              }
+              {...register("fullName")}
               required
               className="h-10 rounded-2xl border-zinc-200 bg-[#F7F4EE] text-xs"
             />
+            {errors.fullName && (
+              <p className="text-[11px] font-semibold text-red-500">{errors.fullName.message}</p>
+            )}
           </div>
 
           <div className="space-y-1">
@@ -97,12 +104,12 @@ export function EditProfileDialog({
               id="phone"
               type="tel"
               placeholder="Contoh: 08123456789"
-              value={form.phone}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, phone: e.target.value }))
-              }
+              {...register("phone")}
               className="h-10 rounded-2xl border-zinc-200 bg-[#F7F4EE] text-xs"
             />
+            {errors.phone && (
+              <p className="text-[11px] font-semibold text-red-500">{errors.phone.message}</p>
+            )}
           </div>
 
           <div className="space-y-1">
@@ -115,12 +122,12 @@ export function EditProfileDialog({
             <Textarea
               id="address"
               rows={2}
-              value={form.address}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, address: e.target.value }))
-              }
+              {...register("address")}
               className="resize-none rounded-2xl border-zinc-200 bg-[#F7F4EE] text-xs"
             />
+            {errors.address && (
+              <p className="text-[11px] font-semibold text-red-500">{errors.address.message}</p>
+            )}
           </div>
 
           <div className="flex items-center gap-3 pt-3">

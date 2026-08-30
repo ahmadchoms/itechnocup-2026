@@ -6,6 +6,8 @@ import { Compass, MapPin, MessageSquare, ArrowRight, RefreshCw } from "lucide-re
 import { MatchItem } from "@/types";
 import { cn } from "@/lib/utils";
 
+import { startChatAction } from "@/actions/chat.actions";
+
 interface MatchesClientProps {
   matches: MatchItem[];
   role: "seller" | "buyer";
@@ -18,24 +20,16 @@ export function MatchList({ matches, role }: MatchesClientProps) {
   const handleStartChat = async (match: MatchItem) => {
     setLoadingMatchId(match.id);
     try {
-      const res = await fetch("/api/matches/start-chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          matchId: match.id,
-          sellerId: match.listing.sellerId,
-          buyerId: match.request.buyerId,
-        }),
+      const res = await startChatAction({
+        matchId: match.id,
+        sellerId: match.listing.sellerId,
+        buyerId: match.request.buyerId,
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.conversationId) {
-          router.push(`/chat/${data.conversationId}`);
-        }
-      } else if (res.status === 401) {
-        router.push("/login");
+
+      if (res.success && res.conversationId) {
+        router.push(`/chat/${res.conversationId}`);
       } else {
-        throw new Error("Gagal memulai percakapan");
+        alert(res.error || "Gagal memulai percakapan");
       }
     } catch (err) {
       console.error(err);
