@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Upload, MapPin, RefreshCw, Sparkles, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Upload, MapPin, RefreshCw, Sparkles, CheckCircle2, Navigation } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createListingSchema, CreateListingInput } from "@/validations/listing.schema";
 import { createListingAction } from "@/actions/listing.actions";
 import { classifyWasteAction } from "@/actions/ai.actions";
-import { geocodeAddressAction } from "@/actions/geo.actions";
+import { geocodeAddressAction, reverseGeocodeAction } from "@/actions/geo.actions";
 
 interface CreateListingClientProps {
   categories: { id: string; name: string }[];
@@ -23,6 +23,7 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
     "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600"
   );
   const [isClassifying, setIsClassifying] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const [aiResult, setAiResult] = useState<{
@@ -121,6 +122,39 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
     } finally {
       setIsClassifying(false);
     }
+  };
+
+  const handleGetLocation = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      alert("Browser Anda tidak mendukung deteksi lokasi Geolocation.");
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setValue("latitude", lat);
+        setValue("longitude", lng);
+
+        try {
+          const rev = await reverseGeocodeAction({ lat, lng });
+          if (rev.success && rev.displayName) {
+            setValue("address", rev.displayName);
+          }
+        } catch {
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (err) => {
+        console.error("GPS error:", err);
+        setIsLocating(false);
+        alert("Gagal membaca GPS: Pastikan izin lokasi telah diaktifkan.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   const onSubmit = async (data: CreateListingInput) => {
@@ -338,9 +372,22 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
             />
           </div>
 
-          {/* Alamat dengan Auto Geocoding */}
+          {/* Alamat dengan Auto Geocoding & GPS */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Alamat Lokasi Penjemputan *</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700">
+                Alamat Lokasi Penjemputan *
+              </label>
+              <button
+                type="button"
+                onClick={handleGetLocation}
+                disabled={isLocating}
+                className="inline-flex items-center gap-1 text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold cursor-pointer disabled:opacity-50 transition-colors"
+              >
+                <Navigation className={`w-3 h-3 text-emerald-600 ${isLocating ? "animate-spin" : ""}`} />
+                <span>{isLocating ? "Membaca GPS..." : "📍 Ambil Lokasi GPS Saya"}</span>
+              </button>
+            </div>
             <div className="relative">
               <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
