@@ -9,12 +9,23 @@ import {
   updateListingSchema,
   UpdateListingInput,
 } from "@/validations/listing.schema";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { revalidatePath } from "next/cache";
 
 export async function createListingAction(input: CreateListingInput) {
   try {
     const validated = createListingSchema.parse(input);
     const sessionUser = await getSessionUser();
+
+    // Rate limiting: maksimal 10 posting listing per 60 detik
+    const userIdForRate = sessionUser?.id || validated.sellerId || "anonymous";
+    const rateCheck = checkRateLimit(`listing:${userIdForRate}`, 10, 60);
+    if (!rateCheck.success) {
+      return {
+        success: false,
+        error: `Terlalu banyak membuat listing. Tunggu ${rateCheck.resetInSeconds} detik.`,
+      };
+    }
 
     let sellerId = validated.sellerId;
     if (!sellerId) {

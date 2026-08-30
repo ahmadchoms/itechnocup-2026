@@ -4,6 +4,7 @@ import { chatService } from "@/services/chat.service";
 import { getSessionUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { sendMessageSchema, SendMessageInput, startChatSchema, StartChatInput } from "@/validations/chat.schema";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { revalidatePath } from "next/cache";
 
 export async function sendMessageAction(input: SendMessageInput) {
@@ -11,6 +12,15 @@ export async function sendMessageAction(input: SendMessageInput) {
     const sessionUser = await getSessionUser();
     if (!sessionUser) {
       return { success: false, error: "Unauthorized" };
+    }
+
+    // Rate limiting: maksimal 10 pesan per 10 detik per user
+    const rateCheck = checkRateLimit(`chat:${sessionUser.id}`, 10, 10);
+    if (!rateCheck.success) {
+      return {
+        success: false,
+        error: `Anda mengirim pesan terlalu cepat. Tunggu ${rateCheck.resetInSeconds} detik.`,
+      };
     }
 
     const validated = sendMessageSchema.parse(input);

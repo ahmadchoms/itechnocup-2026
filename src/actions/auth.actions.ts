@@ -4,12 +4,23 @@ import { authService } from "@/services/auth.service";
 import { userService } from "@/services/user.service";
 import { loginSchema, registerSchema, LoginInput, RegisterInput } from "@/validations/auth.schema";
 import { clearSession, getSessionUser } from "@/lib/session";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { ZodError } from "zod";
 import { revalidatePath } from "next/cache";
 
 export async function loginAction(data: LoginInput) {
   try {
     const validated = loginSchema.parse(data);
+
+    // Rate limiting: maksimal 5 percobaan login per email dalam 60 detik
+    const rateCheck = checkRateLimit(`login:${validated.email.toLowerCase()}`, 5, 60);
+    if (!rateCheck.success) {
+      return {
+        success: false,
+        error: `Terlalu banyak percobaan masuk. Silakan coba lagi dalam ${rateCheck.resetInSeconds} detik.`,
+      };
+    }
+
     const user = await authService.login(validated);
 
     return { success: true, user };
@@ -26,6 +37,16 @@ export async function loginAction(data: LoginInput) {
 export async function registerAction(data: RegisterInput) {
   try {
     const validated = registerSchema.parse(data);
+
+    // Rate limiting: maksimal 3 registrasi per 60 detik
+    const rateCheck = checkRateLimit(`register:${validated.email.toLowerCase()}`, 3, 60);
+    if (!rateCheck.success) {
+      return {
+        success: false,
+        error: `Terlalu banyak percobaan pendaftaran. Silakan coba lagi dalam ${rateCheck.resetInSeconds} detik.`,
+      };
+    }
+
     const user = await authService.register(validated);
 
     return { success: true, user };
