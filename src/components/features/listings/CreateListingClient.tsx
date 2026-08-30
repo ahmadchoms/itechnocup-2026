@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Upload, MapPin, RefreshCw, Sparkles, CheckCircle2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { createListingSchema, CreateListingInput } from "@/validations/listing.schema";
 import { createListingAction } from "@/actions/listing.actions";
 import { classifyWasteAction } from "@/actions/ai.actions";
 import { geocodeAddressAction } from "@/actions/geo.actions";
@@ -20,7 +23,7 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
     "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600"
   );
   const [isClassifying, setIsClassifying] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const [aiResult, setAiResult] = useState<{
     categoryName: string;
@@ -28,18 +31,30 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
     confidence: number;
   } | null>(null);
 
-  const [formData, setFormData] = useState({
-    title: "Ampas Kopi Basah Espresso Premium 25kg",
-    categoryId: categories[0]?.id || "",
-    estimatedWeightKg: "25",
-    quantity: "25",
-    unit: "kg",
-    condition: "Segar harian",
-    description: "Ampas kopi murni 100% Arabika dari ekstraksi espresso. Sangat cocok untuk bahan kompos pupuk organik.",
-    estimatedPrice: "1500",
-    address: sessionUser.address || "Jl. Siranda No. 5, Semarang",
-    latitude: "-7.0490",
-    longitude: "110.4350",
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<any>({
+    resolver: zodResolver(createListingSchema),
+    defaultValues: {
+      title: "Ampas Kopi Basah Espresso Premium 25kg",
+      categoryId: categories[0]?.id || "",
+      estimatedWeightKg: 25,
+      quantity: 25,
+      unit: "kg",
+      condition: "Segar harian",
+      description: "Ampas kopi murni 100% Arabika dari ekstraksi espresso. Sangat cocok untuk bahan kompos pupuk organik.",
+      estimatedPrice: 1500,
+      address: sessionUser?.address || "Jl. Siranda No. 5, Semarang",
+      latitude: -7.0490,
+      longitude: 110.4350,
+      photoUrl: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600",
+      cvConfidence: 94.5,
+      isCvCorrected: false,
+      sellerId: sessionUser?.id,
+    },
   });
 
   const samplePhotos = [
@@ -49,7 +64,7 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
       catName: "Ampas Kopi",
       confidence: 94.5,
       title: "Ampas Kopi Basah Espresso 25kg",
-      price: "1500",
+      price: 1500,
     },
     {
       name: "Kardus Bekas",
@@ -57,7 +72,7 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
       catName: "Anorganik",
       confidence: 91.2,
       title: "Kardus Bekas Pengepul 50kg",
-      price: "1800",
+      price: 1800,
     },
     {
       name: "Botol Plastik PET",
@@ -65,7 +80,7 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
       catName: "Anorganik",
       confidence: 98.0,
       title: "Botol Plastik PET Bersih 15kg",
-      price: "3500",
+      price: 3500,
     },
     {
       name: "Kaleng Minuman",
@@ -73,12 +88,13 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
       catName: "Logam",
       confidence: 96.1,
       title: "Kaleng Aluminium Press 10kg",
-      price: "12000",
+      price: 12000,
     },
   ];
 
   const handleSelectPhoto = async (sample: typeof samplePhotos[0]) => {
     setPhotoUrl(sample.url);
+    setValue("photoUrl", sample.url);
     setIsClassifying(true);
 
     try {
@@ -95,12 +111,10 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
       }
 
       setAiResult({ categoryName: catName, categoryId: catId, confidence: conf });
-      setFormData((prev) => ({
-        ...prev,
-        title: sample.title,
-        categoryId: catId,
-        estimatedPrice: sample.price,
-      }));
+      setValue("title", sample.title);
+      setValue("categoryId", catId);
+      setValue("estimatedPrice", sample.price);
+      setValue("cvConfidence", conf);
       setStep("form");
     } catch {
       setStep("form");
@@ -109,39 +123,25 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
+  const onSubmit = async (data: CreateListingInput) => {
+    setServerError(null);
     try {
       const res = await createListingAction({
-        title: formData.title,
-        categoryId: formData.categoryId,
-        estimatedWeightKg: formData.estimatedWeightKg ? Number(formData.estimatedWeightKg) : null,
-        quantity: formData.quantity ? Number(formData.quantity) : null,
-        unit: formData.unit,
-        condition: formData.condition,
-        description: formData.description,
-        estimatedPrice: formData.estimatedPrice ? Number(formData.estimatedPrice) : null,
-        address: formData.address,
-        latitude: formData.latitude ? Number(formData.latitude) : null,
-        longitude: formData.longitude ? Number(formData.longitude) : null,
+        ...data,
         photoUrl,
         cvConfidence: aiResult?.confidence || 90.0,
         isCvCorrected: false,
-        sellerId: sessionUser.id,
+        sellerId: sessionUser?.id,
       });
 
       if (res.success && res.listing) {
         router.push(`/listings/match/${res.listing.id}`);
         router.refresh();
       } else {
-        alert(res.error || "Gagal membuat listing");
+        setServerError(res.error || "Gagal membuat listing");
       }
     } catch {
-      alert("Terjadi kesalahan sistem. Coba lagi.");
-    } finally {
-      setIsSubmitting(false);
+      setServerError("Terjadi kesalahan sistem. Coba lagi.");
     }
   };
 
@@ -156,102 +156,142 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">Tambah Listing Sampah Baru</h1>
-          <p className="text-xs text-slate-500">Unggah foto &amp; klasifikasi otomatis berbasis AI Computer Vision</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Jual Sampah / Limbah Daur Ulang
+          </h1>
+          <p className="text-xs text-slate-500">
+            Unggah foto sampah Anda dan AI kami akan mengklasifikasikan kategorinya secara otomatis.
+          </p>
         </div>
       </div>
 
-      {step === "upload" ? (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6">
-          <div className="border-2 border-dashed border-slate-300 bg-slate-50 rounded-xl p-8 text-center space-y-3">
-            <Upload className="w-8 h-8 text-slate-400 mx-auto" />
-            <p className="text-sm font-medium text-slate-700">Pilih sampel foto di bawah untuk klasifikasi AI otomatis:</p>
+      {serverError && (
+        <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-medium">
+          {serverError}
+        </div>
+      )}
+
+      {/* Step 1: Upload Photo / Scanner */}
+      {step === "upload" && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6 shadow-xs">
+          <div>
+            <h2 className="text-base font-bold text-slate-900">1. Pilih atau Unggah Foto Sampah</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Pilih salah satu sampel foto di bawah ini untuk menguji deteksi AI secara instan:
+            </p>
           </div>
 
-          {/* Sample chooser */}
-          <div className="grid grid-cols-2 gap-3">
-            {samplePhotos.map((s, idx) => (
+          {/* Sample Photos Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {samplePhotos.map((sample) => (
               <button
-                key={idx}
-                onClick={() => handleSelectPhoto(s)}
+                key={sample.name}
+                type="button"
+                onClick={() => handleSelectPhoto(sample)}
                 disabled={isClassifying}
-                className="p-3 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-500 rounded-xl text-left flex items-center space-x-3 transition-colors cursor-pointer disabled:opacity-50"
+                className="group relative flex flex-col items-center p-2.5 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 transition-all text-left cursor-pointer overflow-hidden"
               >
-                <img src={s.url} alt={s.name} className="w-12 h-12 rounded-lg object-cover border border-slate-200" />
-                <div>
-                  <span className="text-xs font-bold text-slate-900 block">{s.name}</span>
-                  <span className="text-[10px] text-emerald-700 font-semibold">{s.catName}</span>
-                </div>
+                <img
+                  src={sample.url}
+                  alt={sample.name}
+                  className="w-full h-24 object-cover rounded-lg mb-2 group-hover:scale-105 transition-transform duration-300"
+                />
+                <span className="text-xs font-semibold text-slate-800 line-clamp-1">{sample.name}</span>
+                <span className="text-[10px] text-emerald-600 font-medium">{sample.catName}</span>
               </button>
             ))}
           </div>
 
           {isClassifying && (
-            <div className="text-center py-4 space-y-2">
-              <RefreshCw className="w-6 h-6 animate-spin text-emerald-600 mx-auto" />
-              <p className="text-xs text-slate-600">Model Computer Vision sedang menganalisis foto...</p>
+            <div className="flex items-center justify-center space-x-2 py-4 text-emerald-600 text-sm font-medium">
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              <span>AI sedang memindai dan mengenali jenis material sampah...</span>
             </div>
           )}
         </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
-          {/* AI Result Banner */}
+      )}
+
+      {/* Step 2: Form Input */}
+      {step === "form" && (
+        <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-xs">
           {aiResult && (
-            <div className="p-4 rounded-xl bg-slate-900 text-white space-y-1">
-              <span className="text-[10px] font-semibold text-purple-300 uppercase tracking-wider block">
-                Hasil Deteksi Computer Vision
-              </span>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-white">{aiResult.categoryName}</span>
-                <span className="text-xs font-semibold text-emerald-400">Akurasi {aiResult.confidence}%</span>
+            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 rounded-lg bg-emerald-500 text-white">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-semibold text-emerald-900">Terdeteksi AI:</span>
+                    <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-200 text-emerald-800">
+                      {aiResult.categoryName}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-emerald-700 mt-0.5">
+                    Tingkat keyakinan: {aiResult.confidence.toFixed(1)}%
+                  </p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setStep("upload")}
+                className="text-xs text-emerald-700 font-semibold hover:underline cursor-pointer"
+              >
+                Ganti Foto
+              </button>
             </div>
           )}
 
-          {/* Judul */}
+          {/* Judul Listing */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Judul Listing *</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Judul Listing Sampah *</label>
             <input
               type="text"
-              required
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              {...register("title")}
               className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl focus:bg-white focus:outline-none transition-colors"
             />
+            {errors.title && (
+              <p className="text-xs text-rose-600 mt-1 font-medium">{errors.title.message as string}</p>
+            )}
           </div>
 
-          {/* Kategori */}
+          {/* Kategori Sampah */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">Kategori Sampah *</label>
             <select
-              value={formData.categoryId}
-              onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+              {...register("categoryId")}
               className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl focus:bg-white focus:outline-none transition-colors"
             >
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
               ))}
             </select>
+            {errors.categoryId && (
+              <p className="text-xs text-rose-600 mt-1 font-medium">{errors.categoryId.message as string}</p>
+            )}
           </div>
 
-          {/* Quantity & Weight */}
+          {/* Estimasi Berat & Kuantitas */}
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">Berat (kg)</label>
               <input
                 type="number"
                 step="0.1"
-                value={formData.estimatedWeightKg}
-                onChange={(e) => setFormData({ ...formData, estimatedWeightKg: e.target.value })}
+                {...register("estimatedWeightKg")}
                 className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl focus:bg-white focus:outline-none transition-colors"
               />
+              {errors.estimatedWeightKg && (
+                <p className="text-xs text-rose-600 mt-1 font-medium">{errors.estimatedWeightKg.message as string}</p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">Jumlah</label>
               <input
                 type="number"
-                value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                {...register("quantity")}
                 className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl focus:bg-white focus:outline-none transition-colors"
               />
             </div>
@@ -259,8 +299,7 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">Satuan</label>
               <input
                 type="text"
-                value={formData.unit}
-                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                {...register("unit")}
                 className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl focus:bg-white focus:outline-none transition-colors"
               />
             </div>
@@ -272,8 +311,7 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">Kondisi</label>
               <input
                 type="text"
-                value={formData.condition}
-                onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
+                {...register("condition")}
                 className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl focus:bg-white focus:outline-none transition-colors"
               />
             </div>
@@ -281,10 +319,12 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">Harga Estimasi (Rp)</label>
               <input
                 type="number"
-                value={formData.estimatedPrice}
-                onChange={(e) => setFormData({ ...formData, estimatedPrice: e.target.value })}
+                {...register("estimatedPrice")}
                 className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl focus:bg-white focus:outline-none transition-colors"
               />
+              {errors.estimatedPrice && (
+                <p className="text-xs text-rose-600 mt-1 font-medium">{errors.estimatedPrice.message as string}</p>
+              )}
             </div>
           </div>
 
@@ -293,8 +333,7 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">Deskripsi Sampah</label>
             <textarea
               rows={3}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              {...register("description")}
               className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl focus:bg-white focus:outline-none transition-colors resize-none"
             />
           </div>
@@ -306,26 +345,24 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
               <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                required
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                {...register("address")}
                 onBlur={async (e) => {
                   const addr = e.target.value.trim();
                   if (addr.length < 3) return;
                   try {
                     const geo = await geocodeAddressAction({ address: addr });
                     if (geo.success) {
-                      setFormData((prev) => ({
-                        ...prev,
-                        latitude: String(geo.lat),
-                        longitude: String(geo.lng),
-                      }));
+                      setValue("latitude", geo.lat);
+                      setValue("longitude", geo.lng);
                     }
                   } catch {}
                 }}
                 className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl focus:bg-white focus:outline-none transition-colors"
               />
             </div>
+            {errors.address && (
+              <p className="text-xs text-rose-600 mt-1 font-medium">{errors.address.message as string}</p>
+            )}
           </div>
 
           {/* Submit */}

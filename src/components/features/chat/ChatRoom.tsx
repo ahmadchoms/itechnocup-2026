@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, type FormEvent } from "react";
+import { useState, useMemo, useOptimistic, startTransition, type FormEvent } from "react";
 import { cn } from "@/lib/utils";
 import { formatRupiah } from "@/lib/format";
 import { displayFont, bodyFont } from "@/lib/fonts";
@@ -14,6 +14,10 @@ import { EmptyChatState } from "./EmptyChatState";
 import { sendMessageAction } from "@/actions/chat.actions";
 import { updateTransactionStatusAction } from "@/actions/transaction.actions";
 import type { ChatClientProps, ChatConversation, ChatMessage } from "@/types";
+
+type OptimisticAction =
+  | { type: "add_message"; conversationId: string; message: ChatMessage }
+  | { type: "update_tx"; conversationId: string; transaction: any };
 
 export function ChatClient({
   conversations,
@@ -31,15 +35,47 @@ export function ChatClient({
 
   const [messageInput, setMessageInput] = useState("");
   const [convList, setConvList] = useState<ChatConversation[]>(conversations);
+
+  // React 19 Optimistic State for zero-lag messaging
+  const [optimisticConvs, setOptimisticUpdate] = useOptimistic(
+    convList,
+    (state: ChatConversation[], action: OptimisticAction) => {
+      if (action.type === "add_message") {
+        return state.map((c) =>
+          c.id === action.conversationId
+            ? { ...c, messages: [...(c.messages || []), action.message] }
+            : c
+        );
+      }
+      if (action.type === "update_tx") {
+        return state.map((c) =>
+          c.id === action.conversationId
+            ? {
+                ...c,
+                transactions: [
+                  {
+                    ...action.transaction,
+                    finalPrice: Number(action.transaction.finalPrice),
+                    finalQuantity: Number(action.transaction.finalQuantity || 0),
+                  },
+                ],
+              }
+            : c
+        );
+      }
+      return state;
+    }
+  );
+
   const [isSending, setIsSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterTab, setFilterTab] = useState<ChatFilterTab>("semua");
   const [isDealBoxExpanded, setIsDealBoxExpanded] = useState(true);
 
-  // Active conversation
+  // Active conversation from optimistic state
   const activeConv = useMemo(() => {
-    return convList.find((c) => c.id === selectedConvId) || convList[0] || null;
-  }, [convList, selectedConvId]);
+    return optimisticConvs.find((c) => c.id === selectedConvId) || optimisticConvs[0] || null;
+  }, [optimisticConvs, selectedConvId]);
 
   const activeTx = activeConv?.transactions?.[0] || null;
 
@@ -107,7 +143,7 @@ export function ChatClient({
 
   // Filtered conversation list
   const filteredConversations = useMemo(() => {
-    return convList.filter((conv) => {
+    return optimisticConvs.filter((conv) => {
       const isUserSeller = conv.sellerId === effectiveUserId;
       const partner = isUserSeller ? conv.buyer : conv.seller;
       const title = conv.match?.listing?.title || "";
@@ -126,7 +162,7 @@ export function ChatClient({
       if (filterTab === "selesai") return matchSearch && isCompleted;
       return matchSearch;
     });
-  }, [convList, searchQuery, filterTab, effectiveUserId]);
+  }, [optimisticConvs, searchQuery, filterTab, effectiveUserId]);
 
   const handleSelectConversation = (id: string) => {
     setSelectedConvId(id);
@@ -142,29 +178,47 @@ export function ChatClient({
     if (!messageInput.trim() || !activeConv) return;
 
     const currentMsg = messageInput.trim();
+    const convId = activeConv.id;
     setMessageInput("");
-    setIsSending(true);
 
-    try {
-      const res = await sendMessageAction({
-        conversationId: activeConv.id,
-        content: currentMsg,
+    // Optimistic message object
+    const optimisticMessage: ChatMessage = {
+      id: `temp-${Date.now()}`,
+      conversationId: convId,
+      senderId: effectiveUserId,
+      content: currentMsg,
+      sentAt: new Date(),
+    };
+
+    startTransition(async () => {
+      setOptimisticUpdate({
+        type: "add_message",
+        conversationId: convId,
+        message: optimisticMessage,
       });
 
-      if (res.success && res.message) {
-        setConvList((prev) =>
-          prev.map((c) =>
-            c.id === activeConv.id
-              ? { ...c, messages: [...(c.messages || []), res.message as unknown as ChatMessage] }
-              : c,
-          ),
-        );
+      setIsSending(true);
+      try {
+        const res = await sendMessageAction({
+          conversationId: convId,
+          content: currentMsg,
+        });
+
+        if (res.success && res.message) {
+          setConvList((prev) =>
+            prev.map((c) =>
+              c.id === convId
+                ? { ...c, messages: [...(c.messages || []), res.message as unknown as ChatMessage] }
+                : c,
+            ),
+          );
+        }
+      } catch (err) {
+        console.error("[ChatClient] sendMessage error:", err);
+      } finally {
+        setIsSending(false);
       }
-    } catch (err) {
-      console.error("[ChatClient] sendMessage error:", err);
-    } finally {
-      setIsSending(false);
-    }
+    });
   };
 
   const handleQuickMessage = (text: string) => {
@@ -175,74 +229,88 @@ export function ChatClient({
     status: "menunggu_konfirmasi" | "selesai" | "dibatalkan",
   ) => {
     if (!activeConv) return;
+    const convId = activeConv.id;
     setIsUpdatingTx(true);
 
     const priceNum = Number(currentDealInput.price) || 0;
     const qtyNum = Number(currentDealInput.quantity) || 0;
 
-    try {
-      const res = await updateTransactionStatusAction({
-        conversationId: activeConv.id,
-        status,
-        finalPrice: priceNum,
-        finalQuantity: qtyNum,
-        unit: activeConv.match?.listing?.unit || "kg",
+    let milestoneText = "";
+    if (status === "menunggu_konfirmasi") {
+      milestoneText = `📦 [KESEPAKATAN COD DIAJUKAN] Total harga: ${formatRupiah(priceNum)} (${qtyNum} kg). Menunggu serah terima material di lokasi.`;
+    } else if (status === "selesai") {
+      milestoneText = `✅ [TRANSAKSI SELESAI] Penjemputan dan pembayaran tunai COD senilai ${formatRupiah(priceNum)} telah berhasil diselesaikan.`;
+    } else if (status === "dibatalkan") {
+      milestoneText = `❌ [TRANSAKSI DIBATALKAN] Kesepakatan transaksi ini telah dibatalkan oleh salah satu pihak.`;
+    }
+
+    startTransition(async () => {
+      // Optimistic update for deal drawer
+      setOptimisticUpdate({
+        type: "update_tx",
+        conversationId: convId,
+        transaction: {
+          id: `temp-tx-${Date.now()}`,
+          status,
+          finalPrice: priceNum,
+          finalQuantity: qtyNum,
+          unit: activeConv.match?.listing?.unit || "kg",
+        },
       });
 
-      if (res.success && res.transaction) {
-        const updatedTx = res.transaction;
+      try {
+        const res = await updateTransactionStatusAction({
+          conversationId: convId,
+          status,
+          finalPrice: priceNum,
+          finalQuantity: qtyNum,
+          unit: activeConv.match?.listing?.unit || "kg",
+        });
 
-        // Update in-memory state
-        setConvList((prev) =>
-          prev.map((c) =>
-            c.id === activeConv.id
-              ? {
-                  ...c,
-                  transactions: [
-                    {
-                      ...updatedTx,
-                      finalPrice: Number(updatedTx.finalPrice),
-                      finalQuantity: updatedTx.finalQuantity
-                        ? Number(updatedTx.finalQuantity)
-                        : qtyNum,
-                    },
-                  ],
-                }
-              : c,
-          ),
-        );
+        if (res.success && res.transaction) {
+          const updatedTx = res.transaction;
 
-        // Send a system message recording the milestone
-        let milestoneText = "";
-        if (status === "menunggu_konfirmasi") {
-          milestoneText = `📦 [KESEPAKATAN COD DIAJUKAN] Total harga: ${formatRupiah(priceNum)} (${qtyNum} kg). Menunggu serah terima material di lokasi.`;
-        } else if (status === "selesai") {
-          milestoneText = `✅ [TRANSAKSI SELESAI] Penjemputan dan pembayaran tunai COD senilai ${formatRupiah(priceNum)} telah berhasil diselesaikan.`;
-        } else if (status === "dibatalkan") {
-          milestoneText = `❌ [TRANSAKSI DIBATALKAN] Kesepakatan transaksi ini telah dibatalkan oleh salah satu pihak.`;
-        }
+          setConvList((prev) =>
+            prev.map((c) =>
+              c.id === convId
+                ? {
+                    ...c,
+                    transactions: [
+                      {
+                        ...updatedTx,
+                        finalPrice: Number(updatedTx.finalPrice),
+                        finalQuantity: updatedTx.finalQuantity
+                          ? Number(updatedTx.finalQuantity)
+                          : qtyNum,
+                      },
+                    ],
+                  }
+                : c,
+            ),
+          );
 
-        if (milestoneText) {
-          const msgRes = await sendMessageAction({
-            conversationId: activeConv.id,
-            content: milestoneText,
-          });
-          if (msgRes.success && msgRes.message) {
-            setConvList((prev) =>
-              prev.map((c) =>
-                c.id === activeConv.id
-                  ? { ...c, messages: [...(c.messages || []), msgRes.message as unknown as ChatMessage] }
-                  : c,
-              ),
-            );
+          if (milestoneText) {
+            const msgRes = await sendMessageAction({
+              conversationId: convId,
+              content: milestoneText,
+            });
+            if (msgRes.success && msgRes.message) {
+              setConvList((prev) =>
+                prev.map((c) =>
+                  c.id === convId
+                    ? { ...c, messages: [...(c.messages || []), msgRes.message as unknown as ChatMessage] }
+                    : c,
+                ),
+              );
+            }
           }
         }
+      } catch (err) {
+        console.error("[ChatClient] updateTransactionStatus error:", err);
+      } finally {
+        setIsUpdatingTx(false);
       }
-    } catch (err) {
-      console.error("[ChatClient] updateTransactionStatus error:", err);
-    } finally {
-      setIsUpdatingTx(false);
-    }
+    });
   };
 
   return (
@@ -263,7 +331,7 @@ export function ChatClient({
             )}
           >
             <ConversationList
-              conversations={convList}
+              conversations={optimisticConvs}
               filteredConversations={filteredConversations}
               selectedConvId={selectedConvId}
               searchQuery={searchQuery}
