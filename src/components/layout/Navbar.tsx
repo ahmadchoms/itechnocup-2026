@@ -144,15 +144,15 @@ export function Navbar({ onOpenScanner, initialSessionUser = null }: NavbarProps
 
           {/* Right Actions Container */}
           <div className="flex items-center space-x-3">
-            {/* Chat Icon Link (Desktop Only >= 768px) */}
+            {/* Chat Icon (Desktop) */}
             {sessionUser && (
               <Link
-                href={`/${roleBase}/chat`}
+                href="/chat"
                 className="hidden md:flex p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors relative"
                 title="Pesan & Negosiasi"
               >
                 <MessageSquare className="w-5 h-5" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-600" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
               </Link>
             )}
 

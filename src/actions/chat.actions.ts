@@ -107,3 +107,33 @@ export async function startChatAction(input: StartChatInput) {
     return { success: false, error: message };
   }
 }
+
+export async function getUserConversationsAction() {
+  try {
+    const sessionUser = await getSessionUser();
+    if (!sessionUser) {
+      return { success: false, error: "Unauthorized", conversations: [] };
+    }
+
+    const conversations = await chatService.getUserConversations(sessionUser.id);
+    return { success: true, conversations };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Gagal mengambil percakapan";
+    return { success: false, error: message, conversations: [] };
+  }
+}
+
+export async function getConversationDetailAction(conversationId: string) {
+  try {
+    const sessionUser = await getSessionUser();
+    if (!sessionUser) {
+      return { success: false, error: "Unauthorized", conversation: null };
+    }
+
+    const conversation = await chatService.getConversationDetail(conversationId, sessionUser.id);
+    return { success: true, conversation };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Gagal mengambil detail percakapan";
+    return { success: false, error: message, conversation: null };
+  }
+}

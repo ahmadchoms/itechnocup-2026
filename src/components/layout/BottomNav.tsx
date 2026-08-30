@@ -62,15 +62,18 @@ export function BottomNav({ onOpenScanner, initialSessionUser = null }: BottomNa
 
       {/* Tab 3: Pesan */}
       <Link
-        href={`/${roleBase}/chat`}
+        href="/chat"
         className={cn(
-          "flex flex-col items-center justify-center space-y-1 text-[11px] font-medium transition-colors",
+          "flex flex-col items-center justify-center space-y-1 text-[11px] font-medium transition-colors relative",
           pathname.includes("/chat")
             ? "text-emerald-600 font-bold"
             : "text-slate-500 hover:text-slate-800"
         )}
       >
-        <MessageSquare className="w-5 h-5" />
+        <div className="relative">
+          <MessageSquare className="w-5 h-5" />
+          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
+        </div>
         <span className="sr-only">Pesan</span>
       </Link>
 

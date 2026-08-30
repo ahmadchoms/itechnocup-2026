@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useOptimistic, startTransition, type FormEvent } from "react";
+import { useState, useMemo, useEffect, useOptimistic, startTransition, type FormEvent } from "react";
 import { cn } from "@/lib/utils";
 import { formatRupiah } from "@/lib/format";
 import { displayFont, bodyFont } from "@/lib/fonts";
@@ -11,7 +11,7 @@ import { DealDrawer } from "./DealDrawer";
 import { MessageStream } from "./MessageStream";
 import { ChatInputBar } from "./ChatInputBar";
 import { EmptyChatState } from "./EmptyChatState";
-import { sendMessageAction } from "@/actions/chat.actions";
+import { sendMessageAction, getUserConversationsAction } from "@/actions/chat.actions";
 import { updateTransactionStatusAction } from "@/actions/transaction.actions";
 import type { ChatClientProps, ChatConversation, ChatMessage } from "@/types";
 
@@ -35,6 +35,20 @@ export function ChatClient({
 
   const [messageInput, setMessageInput] = useState("");
   const [convList, setConvList] = useState<ChatConversation[]>(conversations);
+
+  // Smart Real-time polling every 3.5 seconds for incoming messages & updates
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (typeof document !== "undefined" && document.hidden) return;
+
+      const res = await getUserConversationsAction();
+      if (res.success && res.conversations) {
+        setConvList(res.conversations);
+      }
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // React 19 Optimistic State for zero-lag messaging
   const [optimisticConvs, setOptimisticUpdate] = useOptimistic(
