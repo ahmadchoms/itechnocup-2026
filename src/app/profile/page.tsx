@@ -20,7 +20,7 @@ export default async function ProfilePage() {
     return <div>User not found</div>;
   }
 
-  const { user, stats, listings, transactions, reviews, buyerApplication } = profileData;
+  const { user, stats, listings, wasteRequests, transactions, reviews, buyerApplication } = profileData;
 
   const formattedCategories = categories.map((c) => ({
     id: c.id,
@@ -28,11 +28,12 @@ export default async function ProfilePage() {
   }));
 
   return (
-    <AppShell categories={categories} sessionUser={user as any}>
+    <AppShell categories={formattedCategories} sessionUser={sessionUser}>
       <ProfileClient
         user={user}
         stats={stats}
         listings={listings}
+        wasteRequests={wasteRequests}
         transactions={transactions}
         reviews={reviews}
         categories={formattedCategories}

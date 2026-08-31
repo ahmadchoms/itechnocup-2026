@@ -11,6 +11,8 @@ export interface ProfileUser {
   email: string;
   phone?: string | null;
   address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   avatarUrl?: string | null;
   activeRole: "seller" | "buyer";
   isBuyerApproved: boolean;
@@ -67,4 +69,24 @@ export interface ProfileListing {
   category?: CategoryRef | null;
 }
 
+export interface ProfileWasteRequest {
+  id: string;
+  buyerId: string;
+  categoryId: string;
+  title: string;
+  description?: string | null;
+  quantityWanted?: number | null;
+  unit?: string | null;
+  offeredPrice: number;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  status: "aktif" | "terpenuhi" | "dihapus" | string;
+  createdAt: string | Date | null;
+  updatedAt: string | Date | null;
+  category?: CategoryRef | null;
+  matchCount?: number;
+}
+
 export type WasteCategoryOption = CategoryRef;
+

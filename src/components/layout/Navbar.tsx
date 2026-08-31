@@ -156,18 +156,6 @@ export function Navbar({ onOpenScanner, initialSessionUser = null }: NavbarProps
               </Link>
             )}
 
-            {/* Primary Action Button: "Foto & Jual Sampah" (Desktop Only >= 768px) */}
-            {sessionUser?.activeRole === "seller" && (
-              <button
-                onClick={onOpenScanner}
-                type="button"
-                className="hidden md:flex items-center space-x-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold transition-colors cursor-pointer"
-              >
-                <Camera className="w-4 h-4" />
-                <span>Foto &amp; Jual Sampah</span>
-              </button>
-            )}
-
             {/* Profile Dropdown */}
             {sessionUser ? (
               <div className="relative">

@@ -42,23 +42,36 @@ export class BuyerApplicationService {
       throw new Error("Anda sudah memiliki pengajuan yang sedang diproses");
     }
 
+    let app;
     if (existingApp) {
-      return this.repo.updateByUserId(userId, {
+      app = await this.repo.updateByUserId(userId, {
         ktpPhotoUrl: dto.ktpPhotoUrl,
         outletPhotoUrl: dto.outletPhotoUrl,
         npwp: dto.npwp || null,
         address: dto.address,
         status: "menunggu",
       });
+    } else {
+      app = await this.repo.create({
+        userId,
+        ktpPhotoUrl: dto.ktpPhotoUrl,
+        outletPhotoUrl: dto.outletPhotoUrl,
+        npwp: dto.npwp || null,
+        address: dto.address,
+      });
     }
 
-    return this.repo.create({
-      userId,
-      ktpPhotoUrl: dto.ktpPhotoUrl,
-      outletPhotoUrl: dto.outletPhotoUrl,
-      npwp: dto.npwp || null,
-      address: dto.address,
-    });
+    return {
+      id: app.id,
+      userId: app.userId,
+      ktpPhotoUrl: app.ktpPhotoUrl,
+      outletPhotoUrl: app.outletPhotoUrl,
+      npwp: app.npwp,
+      address: app.address,
+      status: app.status,
+      createdAt: app.createdAt ? app.createdAt.toISOString() : null,
+      updatedAt: app.updatedAt ? app.updatedAt.toISOString() : null,
+    };
   }
 
   async approveApplication(applicationId: string) {

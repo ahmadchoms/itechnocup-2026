@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { FileUploadField } from "./FileUploadField";
 import { buyerApplicationSchema, BuyerApplicationInput } from "@/validations/user.schema";
 import { submitBuyerApplicationAction } from "@/actions/user.actions";
+import { toast } from "@/components/ui/sonner";
 
 interface BuyerRegistrationDialogProps {
   open: boolean;
@@ -84,10 +85,14 @@ export function BuyerRegistrationDialog({
     const result = await submitBuyerApplicationAction(data);
 
     if (result.success) {
+      toast.success("Pengajuan Mitra Berhasil Terkirim", {
+        description: "Admin kami akan memverifikasi data usaha Anda dalam 1x24 jam.",
+      });
       onOpenChange(false);
       router.refresh();
     } else {
       setSubmitError(result.error || "Gagal mengajukan pendaftaran");
+      toast.error("Gagal mengajukan pendaftaran", { description: result.error });
     }
   };
 

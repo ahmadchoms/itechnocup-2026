@@ -59,6 +59,17 @@ export default async function ListingMatchPage({
     offeredPrice: Number(req.offeredPrice),
     latitude: req.latitude ? Number(req.latitude) : null,
     longitude: req.longitude ? Number(req.longitude) : null,
+    createdAt: req.createdAt ? req.createdAt.toISOString() : null,
+    updatedAt: req.updatedAt ? req.updatedAt.toISOString() : null,
+    buyer: req.buyer
+      ? {
+          ...req.buyer,
+          latitude: req.buyer.latitude ? Number(req.buyer.latitude) : null,
+          longitude: req.buyer.longitude ? Number(req.buyer.longitude) : null,
+          createdAt: req.buyer.createdAt ? req.buyer.createdAt.toISOString() : null,
+          updatedAt: req.buyer.updatedAt ? req.buyer.updatedAt.toISOString() : null,
+        }
+      : null,
   }));
 
   const safeSessionUser = {

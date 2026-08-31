@@ -1,39 +1,37 @@
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/layout/AppShell";
-import { ChatClient } from "@/components/features/chat/ChatRoom";
 import { getSessionUser } from "@/lib/session";
-import { chatService } from "@/services/chat.service";
+import { userService } from "@/services/user.service";
+import { TransactionsPageClient } from "@/components/features/profile/pages/TransactionsPageClient";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-type RouteParams = { params: Promise<{ id: string }> };
-
-export default async function UnifiedChatDetailPage({ params }: RouteParams) {
-  const { id } = await params;
+export default async function ProfileTransactionsPage() {
   const sessionUser = await getSessionUser();
-
   if (!sessionUser) {
-    redirect(`/login?redirect=/chat/${id}`);
+    redirect("/login?redirect=/profile/transactions");
   }
 
   const rawCategories = await prisma.wasteCategory.findMany({
     orderBy: { name: "asc" },
   });
+
   const categories = rawCategories.map((c) => ({
     id: c.id,
     name: c.name,
     description: c.description,
   }));
 
-  const conversations = await chatService.getUserConversations(sessionUser.id);
+  const profileData = await userService.getUserProfile(sessionUser.email);
+  const transactions = profileData?.transactions || [];
+  const isSeller = (sessionUser.activeRole as "seller" | "buyer") === "seller";
 
   return (
     <AppShell categories={categories} sessionUser={sessionUser}>
-      <ChatClient
-        conversations={conversations}
-        activeId={id}
-        currentUserId={sessionUser.id}
+      <TransactionsPageClient
+        transactions={transactions}
+        isSeller={isSeller}
       />
     </AppShell>
   );

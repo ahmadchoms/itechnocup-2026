@@ -12,9 +12,15 @@ export default async function RequestDetailPage({ params }: RouteParams) {
   const { id } = await params;
   const sessionUser = await getSessionUser();
 
-  const categories = await prisma.wasteCategory.findMany({
+  const rawCategories = await prisma.wasteCategory.findMany({
     orderBy: { name: "asc" },
   });
+
+  const categories = rawCategories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    description: c.description,
+  }));
 
   const request = await prisma.wasteRequest.findUnique({
     where: { id },

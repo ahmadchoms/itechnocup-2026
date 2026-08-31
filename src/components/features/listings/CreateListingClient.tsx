@@ -182,12 +182,8 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
 
   const onSubmit = async (data: CreateListingInput) => {
     setServerError(null);
-    if (isSamplePhoto) {
-      setServerError("Harap unggah foto asli sampah Anda untuk melanjutkan.");
-      return;
-    }
     if (!selectedFile && !photoUrl) {
-      setServerError("Foto sampah wajib diunggah.");
+      setServerError("Foto sampah wajib diunggah atau dipilih.");
       return;
     }
 

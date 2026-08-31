@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Camera } from "lucide-react";
 import { Navbar } from "./Navbar";
 import { BottomNav } from "./BottomNav";
 import { AIScannerModal } from "./AIScannerModal";
-
 import { getCategoriesAction } from "@/actions/category.actions";
 
 interface AppShellProps {
@@ -35,14 +35,27 @@ export function AppShell({ children, categories = [], sessionUser: serverSession
   }, [categories]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans antialiased">
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans antialiased relative">
       {/* Top Clean Consumer Navbar */}
       <Navbar onOpenScanner={() => setIsScannerOpen(true)} initialSessionUser={serverSessionUser} />
 
       {/* Main Page Viewport */}
-      <main className="flex-1 px-4 sm:px-6 md:px-8 py-6 max-w-7xl mx-auto w-full pb-20 md:pb-8">
+      <main className="flex-1 px-4 sm:px-6 md:px-8 py-6 max-w-7xl mx-auto w-full pb-24 md:pb-12">
         {children}
       </main>
+
+      {/* Desktop Floating Action Button (FAB) Pojok Kanan Bawah */}
+      <div className="hidden md:block fixed bottom-8 right-8 z-40">
+        <button
+          onClick={() => setIsScannerOpen(true)}
+          type="button"
+          aria-label="Pindai & Jual Sampah"
+          className="flex items-center gap-2.5 px-5 py-3 rounded-full bg-[#171717] hover:bg-[#2B2B26] text-white font-semibold text-xs shadow-md hover:shadow-lg transition-all cursor-pointer border border-black/10 hover:-translate-y-0.5"
+        >
+          <Camera className="w-4 h-4 text-[#86EFAC]" />
+          <span>Foto &amp; Jual Sampah</span>
+        </button>
+      </div>
 
       {/* Mobile Bottom Navigation (<768px sticky 64px) */}
       <BottomNav onOpenScanner={() => setIsScannerOpen(true)} initialSessionUser={serverSessionUser} />

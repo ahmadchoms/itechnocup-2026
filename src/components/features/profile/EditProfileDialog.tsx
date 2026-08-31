@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { updateProfileSchema, UpdateProfileInput } from "@/validations/user.schema";
 import { updateUserProfileAction } from "@/actions/user.actions";
+import { toast } from "@/components/ui/sonner";
 import type { ProfileUser } from "@/types";
 
 interface EditProfileDialogProps {
@@ -51,10 +52,12 @@ export function EditProfileDialog({
     const result = await updateUserProfileAction(data);
 
     if (result.success) {
+      toast.success("Profil berhasil diperbarui");
       onOpenChange(false);
       router.refresh();
     } else {
       setServerError(result.error || "Gagal memperbarui profil");
+      toast.error("Gagal memperbarui profil", { description: result.error });
     }
   };
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Camera, Sparkles, X, CheckCircle, RefreshCw, Upload, AlertCircle, MapPin } from "lucide-react";
+import { useState, useRef } from "react";
+import { Camera, Sparkles, X, CheckCircle, RefreshCw, Upload, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createListingAction } from "@/actions/listing.actions";
 import { geocodeAddressAction } from "@/actions/geo.actions";
@@ -21,7 +21,7 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
   // Step state: 1: Upload/Camera, 2: Scanning AI, 3: AI Result & Form Input
   const [step, setStep] = useState<"upload" | "scanning" | "form">("upload");
   const [photoUrl, setPhotoUrl] = useState<string>("");
-  
+
   // AI Scan Result State
   const [aiResult, setAiResult] = useState<{
     categoryName: string;
@@ -32,7 +32,7 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
   const [isManualOverride, setIsManualOverride] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isClassifying, setIsClassifying] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form Fields State
@@ -42,14 +42,13 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
     estimatedWeightKg: "",
     quantity: "",
     unit: "kg",
-    condition: "",
+    condition: "Baik & Kering",
     description: "",
     estimatedPrice: "",
     address: "",
     latitude: "",
     longitude: "",
   });
-
 
   if (!isOpen) return null;
 
@@ -84,22 +83,40 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
       tensor.dispose();
       prediction.dispose();
 
-      const classesList = ['battery', 'biological', 'brown-glass', 'cardboard', 'green-glass', 'metal', 'paper', 'plastic', 'trash', 'white-glass'];
+      const classesList = [
+        "battery",
+        "biological",
+        "brown-glass",
+        "cardboard",
+        "green-glass",
+        "metal",
+        "paper",
+        "plastic",
+        "trash",
+        "white-glass",
+      ];
       const maxScore = Math.max(...Array.from(scores));
       const maxIdx = scores.indexOf(maxScore);
       const predictedLabel = classesList[maxIdx];
       const confidence = Number((maxScore * 100).toFixed(1));
 
       const humanName = getHumanReadableName(predictedLabel);
-      const targetCat = categories.find((c) => c.name.toLowerCase() === humanName.toLowerCase());
+      const targetCat = categories.find(
+        (c) => c.name.toLowerCase() === humanName.toLowerCase()
+      );
       const catId = targetCat?.id || categories[0]?.id || "";
 
       setAiResult({ categoryName: humanName, categoryId: catId, confidence });
       setFormData((prev) => ({
         ...prev,
-        title: (targetCat?.name === "Sisa Makanan" || humanName === "Sisa Makanan") ? "" : humanName,
+        title:
+          targetCat?.name === "Sisa Makanan" || humanName === "Sisa Makanan"
+            ? ""
+            : humanName,
         categoryId: catId,
-        estimatedPrice: String(targetCat?.averagePrice || getBasePrice(predictedLabel)),
+        estimatedPrice: String(
+          targetCat?.averagePrice || getBasePrice(predictedLabel)
+        ),
       }));
       setStep("form");
     } catch (e) {
@@ -113,22 +130,29 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
   const handleSelectSample = (sample: typeof samplePhotos[0]) => {
     setPhotoUrl(sample.url);
     const humanName = getHumanReadableName(sample.targetLabel);
-    const targetCat = categories.find((c) => c.name.toLowerCase() === humanName.toLowerCase());
+    const targetCat = categories.find(
+      (c) => c.name.toLowerCase() === humanName.toLowerCase()
+    );
     const catId = targetCat?.id || categories[0]?.id || "";
 
     setAiResult({
       categoryName: humanName,
       categoryId: catId,
-      confidence: 98.5
+      confidence: 98.5,
     });
-    
+
     setFormData((prev) => ({
       ...prev,
-      title: (targetCat?.name === "Sisa Makanan" || humanName === "Sisa Makanan") ? "" : humanName,
+      title:
+        targetCat?.name === "Sisa Makanan" || humanName === "Sisa Makanan"
+          ? ""
+          : humanName,
       categoryId: catId,
-      estimatedPrice: String(targetCat?.averagePrice || getBasePrice(sample.targetLabel)),
+      estimatedPrice: String(
+        targetCat?.averagePrice || getBasePrice(sample.targetLabel)
+      ),
     }));
-    
+
     setStep("form");
   };
 
@@ -148,12 +172,16 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
       const res = await createListingAction({
         title: formData.title,
         categoryId: formData.categoryId,
-        estimatedWeightKg: formData.estimatedWeightKg ? Number(formData.estimatedWeightKg) : null,
+        estimatedWeightKg: formData.estimatedWeightKg
+          ? Number(formData.estimatedWeightKg)
+          : null,
         quantity: formData.quantity ? Number(formData.quantity) : null,
         unit: formData.unit,
         condition: formData.condition,
         description: formData.description,
-        estimatedPrice: formData.estimatedPrice ? Number(formData.estimatedPrice) : null,
+        estimatedPrice: formData.estimatedPrice
+          ? Number(formData.estimatedPrice)
+          : null,
         address: formData.address,
         photoUrl,
         cvPredictedCategoryId: aiResult.categoryId,
@@ -178,34 +206,36 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 animate-in fade-in">
-      <div className="relative w-full max-w-xl bg-slate-900 border border-slate-800 rounded-2xl text-slate-100 overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in">
+      <div className="relative w-full max-w-xl bg-white border border-zinc-200/80 rounded-3xl sm:rounded-[32px] text-[#171717] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-600/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+        <div className="px-6 py-5 border-b border-zinc-100 flex items-center justify-between bg-white">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-2xl bg-[#E8EEDD] text-[#6B7B4F] flex items-center justify-center shrink-0">
               <Camera className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-white tracking-tight">
-                Foto &amp; Deteksi Sampah Otomatis
+              <h2 className="font-display text-base sm:text-lg font-bold text-[#171717] tracking-tight">
+                Foto &amp; Deteksi Sampah
               </h2>
-              <p className="text-xs text-slate-400">Foto sampahmu, sistem akan mendeteksi kategorinya secara otomatis</p>
+              <p className="text-xs text-[#78766B]">
+                Pindai foto sampah Anda untuk mengenali kategori secara otomatis
+              </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            className="p-2 rounded-full hover:bg-[#F7F4EE] text-[#78766B] hover:text-[#171717] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1">
+        <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-white">
           {/* STEP 1: UPLOAD / CAMERA PREVIEW */}
           {step === "upload" && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <input
                 type="file"
                 accept="image/*"
@@ -214,43 +244,47 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
                 className="hidden"
                 onChange={handleFileUpload}
               />
-              <div 
+              <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-700 hover:border-emerald-500/50 bg-slate-950/40 rounded-xl p-8 text-center space-y-3 transition-colors cursor-pointer group"
+                className="border-2 border-dashed border-zinc-200 hover:border-[#6B7B4F] bg-[#FAF8F5] hover:bg-[#F7F4EE] rounded-2xl p-8 text-center space-y-3 transition-colors cursor-pointer group"
               >
-                <div className="w-14 h-14 mx-auto rounded-full bg-slate-800 group-hover:bg-emerald-950/50 text-slate-400 group-hover:text-emerald-400 flex items-center justify-center transition-colors">
-                  <Upload className="w-7 h-7" />
+                <div className="w-12 h-12 mx-auto rounded-2xl bg-white group-hover:bg-[#E8EEDD] text-[#78766B] group-hover:text-[#6B7B4F] shadow-xs flex items-center justify-center transition-colors">
+                  <Upload className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-200">
+                  <p className="text-xs sm:text-sm font-semibold text-[#171717]">
                     Klik untuk unggah foto sampah atau ambil via kamera
                   </p>
-                  <p className="text-xs text-slate-400 mt-1">Format JPG, PNG, WEBP hingga 10MB</p>
+                  <p className="text-[11px] text-[#78766B] mt-0.5">
+                    Mendukung format JPG, PNG, WEBP hingga 10MB
+                  </p>
                 </div>
               </div>
 
-              {/* Sample Photo Chooser for Fast Demo */}
+              {/* Sample Photo Chooser */}
               <div>
-                <span className="text-xs font-semibold text-slate-400 block mb-2">
-                  Atau pilih contoh sampel foto di bawah untuk pengujian cepat:
+                <span className="text-[11px] font-bold text-[#78766B] block mb-2.5 uppercase tracking-wider">
+                  Atau coba sampel foto pengujian:
                 </span>
                 <div className="grid grid-cols-2 gap-2.5">
                   {samplePhotos.map((s, idx) => (
                     <button
                       key={idx}
                       onClick={() => handleSelectSample(s)}
-                      className="p-2.5 bg-slate-800/80 hover:bg-emerald-950/40 border border-slate-700 hover:border-emerald-500/40 rounded-xl text-left flex items-center space-x-3 transition-all group"
+                      className="p-2.5 bg-[#FAF8F5] hover:bg-[#F7F4EE] border border-zinc-200/80 hover:border-[#6B7B4F]/40 rounded-2xl text-left flex items-center space-x-3 transition-all group cursor-pointer"
                     >
                       <img
                         src={s.url}
                         alt={s.name}
-                        className="w-10 h-10 rounded-lg object-cover border border-slate-700"
+                        className="w-10 h-10 rounded-xl object-cover border border-zinc-200/60"
                       />
-                      <div>
-                        <span className="text-xs font-semibold text-slate-200 block group-hover:text-emerald-400">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-xs font-bold text-[#171717] block truncate">
                           {s.name}
                         </span>
-                        <span className="text-[10px] text-slate-400">{getCategoryMapping(s.targetLabel)}</span>
+                        <span className="text-[10px] font-semibold text-[#6B7B4F] bg-[#E8EEDD] px-2 py-0.5 rounded-full inline-block mt-0.5">
+                          {getCategoryMapping(s.targetLabel)}
+                        </span>
                       </div>
                     </button>
                   ))}
@@ -259,53 +293,59 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
             </div>
           )}
 
-          {/* STEP 2: SCANNING LASER ANIMATION */}
+          {/* STEP 2: SCANNING ANIMATION */}
           {step === "scanning" && (
-            <div className="py-8 text-center space-y-6">
-              <div className="relative w-48 h-48 mx-auto rounded-2xl overflow-hidden border-2 border-emerald-500/40">
-                <img src={photoUrl} alt="Scanning" className="w-full h-full object-cover" />
-                {/* Laser Scanning Overlay Line */}
-                <div className="absolute left-0 right-0 h-1 bg-emerald-500 animate-laser" />
-                <div className="absolute inset-0 bg-emerald-950/20" />
+            <div className="py-8 text-center space-y-5">
+              <div className="relative w-44 h-44 mx-auto rounded-2xl overflow-hidden border border-zinc-200 shadow-sm bg-[#FAF8F5]">
+                <img
+                  src={photoUrl}
+                  alt="Scanning"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/10" />
               </div>
 
               <div className="space-y-1">
-                <p className="text-sm font-semibold text-emerald-400 flex items-center justify-center gap-2">
-                  <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
-                  Model Computer Vision sedang menganalisis foto...
+                <p className="text-xs sm:text-sm font-bold text-[#171717] flex items-center justify-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin text-[#6B7B4F]" />
+                  Sedang menganalisis jenis material sampah...
                 </p>
-                <p className="text-xs text-slate-400">Mencocokkan fitur visual & tekstur permukaan limbah</p>
+                <p className="text-[11px] text-[#78766B]">
+                  Mencocokkan karakteristik visual dan tekstur limbah
+                </p>
               </div>
             </div>
           )}
 
           {/* STEP 3: AI RESULT & FORM INPUT */}
           {step === "form" && (
-            <form onSubmit={handleSubmitListing} className="space-y-5">
+            <form onSubmit={handleSubmitListing} className="space-y-4">
               {/* Photo Preview & AI Result Badge Card */}
-              <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl flex items-center space-x-4">
+              <div className="p-3.5 bg-[#FAF8F5] border border-zinc-200/80 rounded-2xl flex items-center space-x-3.5">
                 <img
                   src={photoUrl}
                   alt="Preview"
-                  className="w-16 h-16 rounded-lg object-cover border border-slate-700 shrink-0"
+                  className="w-14 h-14 rounded-xl object-cover border border-zinc-200 shrink-0"
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-950/80 text-purple-300 border border-purple-700/50 mb-1">
-                    <Sparkles className="w-3 h-3 text-purple-400" />
-                    <span>🤖 Terdeteksi: {aiResult.categoryName} ({aiResult.confidence}% Keyakinan)</span>
+                  <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#E8EEDD] text-[#2B3A1C] border border-[#6B7B4F]/20 mb-0.5">
+                    <Sparkles className="w-3 h-3 text-[#6B7B4F]" />
+                    <span>
+                      Terdeteksi: {aiResult.categoryName} ({aiResult.confidence}%)
+                    </span>
                   </div>
 
                   {!isManualOverride ? (
                     <button
                       type="button"
                       onClick={() => setIsManualOverride(true)}
-                      className="text-xs text-amber-400 hover:underline block font-medium mt-0.5"
+                      className="text-[11px] text-[#6B7B4F] hover:underline block font-semibold mt-0.5 cursor-pointer"
                     >
                       Bukan {aiResult.categoryName.toLowerCase()}? Ubah manual
                     </button>
                   ) : (
-                    <span className="text-[11px] text-amber-400 font-medium block mt-0.5">
-                      ⚠️ Mode Koreksi Manual Aktif
+                    <span className="text-[11px] text-amber-700 font-semibold block mt-0.5">
+                      Mode Koreksi Manual Aktif
                     </span>
                   )}
                 </div>
@@ -314,22 +354,24 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
               {/* Form Input Fields */}
               <div className="space-y-3">
                 {/* Title */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Nama / Judul Barang Sampah *
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-[#171717]">
+                    Judul Barang Sampah *
                   </label>
                   <input
                     type="text"
                     required
                     value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 text-sm bg-slate-800 border border-slate-700 focus:border-emerald-500 rounded-xl text-slate-100 focus:outline-none"
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
+                    className="w-full px-3.5 py-2.5 text-xs bg-[#F7F4EE] border border-zinc-200 focus:border-[#171717] focus:bg-white rounded-xl text-[#171717] focus:outline-none transition-colors"
                   />
                 </div>
 
                 {/* Category Select */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-[#171717]">
                     Kategori Sampah *
                   </label>
                   <select
@@ -338,7 +380,7 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
                       setFormData({ ...formData, categoryId: e.target.value });
                       setIsManualOverride(true);
                     }}
-                    className="w-full px-3 py-2 text-sm bg-slate-800 border border-slate-700 focus:border-emerald-500 rounded-xl text-slate-100 focus:outline-none"
+                    className="w-full px-3.5 py-2.5 text-xs bg-[#F7F4EE] border border-zinc-200 focus:border-[#171717] focus:bg-white rounded-xl text-[#171717] focus:outline-none transition-colors cursor-pointer"
                   >
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -350,95 +392,120 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
 
                 {/* Weight, Quantity & Unit */}
                 <div className="grid grid-cols-3 gap-2.5">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Berat Estimasi (kg)
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-[#171717]">
+                      Berat (kg)
                     </label>
                     <input
                       type="number"
                       step="0.1"
+                      placeholder="25"
                       value={formData.estimatedWeightKg}
-                      onChange={(e) => setFormData({ ...formData, estimatedWeightKg: e.target.value })}
-                      className="w-full px-3 py-2 text-sm bg-slate-800 border border-slate-700 focus:border-emerald-500 rounded-xl text-slate-100 focus:outline-none"
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          estimatedWeightKg: e.target.value,
+                        })
+                      }
+                      className="w-full px-3.5 py-2.5 text-xs bg-[#F7F4EE] border border-zinc-200 focus:border-[#171717] focus:bg-white rounded-xl text-[#171717] focus:outline-none transition-colors"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Jumlah Unit
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-[#171717]">
+                      Jumlah
                     </label>
                     <input
                       type="number"
+                      placeholder="1"
                       value={formData.quantity}
-                      onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                      className="w-full px-3 py-2 text-sm bg-slate-800 border border-slate-700 focus:border-emerald-500 rounded-xl text-slate-100 focus:outline-none"
+                      onChange={(e) =>
+                        setFormData({ ...formData, quantity: e.target.value })
+                      }
+                      className="w-full px-3.5 py-2.5 text-xs bg-[#F7F4EE] border border-zinc-200 focus:border-[#171717] focus:bg-white rounded-xl text-[#171717] focus:outline-none transition-colors"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-[#171717]">
                       Satuan
                     </label>
                     <input
                       type="text"
-                      placeholder="kg, L, karung"
+                      placeholder="kg"
                       value={formData.unit}
-                      onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                      className="w-full px-3 py-2 text-sm bg-slate-800 border border-slate-700 focus:border-emerald-500 rounded-xl text-slate-100 focus:outline-none"
+                      onChange={(e) =>
+                        setFormData({ ...formData, unit: e.target.value })
+                      }
+                      className="w-full px-3.5 py-2.5 text-xs bg-[#F7F4EE] border border-zinc-200 focus:border-[#171717] focus:bg-white rounded-xl text-[#171717] focus:outline-none transition-colors"
                     />
                   </div>
                 </div>
 
                 {/* Condition & Price */}
                 <div className="grid grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Kondisi Sampah
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-[#171717]">
+                      Kondisi
                     </label>
                     <input
                       type="text"
-                      placeholder="contoh: Kering, Segar harian"
+                      placeholder="contoh: Bersih & Kering"
                       value={formData.condition}
-                      onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
-                      className="w-full px-3 py-2 text-sm bg-slate-800 border border-slate-700 focus:border-emerald-500 rounded-xl text-slate-100 focus:outline-none"
+                      onChange={(e) =>
+                        setFormData({ ...formData, condition: e.target.value })
+                      }
+                      className="w-full px-3.5 py-2.5 text-xs bg-[#F7F4EE] border border-zinc-200 focus:border-[#171717] focus:bg-white rounded-xl text-[#171717] focus:outline-none transition-colors"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Harga Estimasi (Rp / Satuan)
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-[#171717]">
+                      Harga (Rp)
                     </label>
                     <input
                       type="number"
+                      placeholder="45000"
                       value={formData.estimatedPrice}
-                      onChange={(e) => setFormData({ ...formData, estimatedPrice: e.target.value })}
-                      className="w-full px-3 py-2 text-sm bg-slate-800 border border-slate-700 focus:border-emerald-500 rounded-xl text-slate-100 focus:outline-none"
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          estimatedPrice: e.target.value,
+                        })
+                      }
+                      className="w-full px-3.5 py-2.5 text-xs bg-[#F7F4EE] border border-zinc-200 focus:border-[#171717] focus:bg-white rounded-xl text-[#171717] focus:outline-none transition-colors"
                     />
                   </div>
                 </div>
 
                 {/* Description */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Deskripsi Detail
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-[#171717]">
+                    Deskripsi Tambahan
                   </label>
                   <textarea
                     rows={2}
+                    placeholder="Keterangan singkat sampah..."
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3 py-2 text-sm bg-slate-800 border border-slate-700 focus:border-emerald-500 rounded-xl text-slate-100 focus:outline-none"
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    className="w-full px-3.5 py-2.5 text-xs bg-[#F7F4EE] border border-zinc-200 focus:border-[#171717] focus:bg-white rounded-xl text-[#171717] focus:outline-none transition-colors resize-none"
                   />
                 </div>
 
-                  {/* Address with Auto-Geocode */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Alamat Lokasi Penjemputan *
+                {/* Address */}
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-[#171717]">
+                    Alamat Penjemputan *
                   </label>
                   <div className="relative">
-                    <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       required
+                      placeholder="Jl. Simpang Lima No. 1, Semarang"
                       value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, address: e.target.value })
+                      }
                       onBlur={async (e) => {
                         const addr = e.target.value.trim();
                         if (addr.length < 3) return;
@@ -451,42 +518,37 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
                               longitude: String(geo.lng),
                             }));
                           }
-                        } catch { /* Geocoding gagal, tetap gunakan nilai manual */ }
+                        } catch {}
                       }}
-                      className="w-full pl-9 pr-3 py-2 text-sm bg-slate-800 border border-slate-700 focus:border-emerald-500 rounded-xl text-slate-100 focus:outline-none"
+                      className="w-full pl-10 pr-3.5 py-2.5 text-xs bg-[#F7F4EE] border border-zinc-200 focus:border-[#171717] focus:bg-white rounded-xl text-[#171717] focus:outline-none transition-colors"
                     />
                   </div>
-                  {formData.latitude && formData.longitude && (
-                    <span className="text-[10px] text-emerald-400 mt-0.5 block pl-1">
-                      📍 Koordinat: {Number(formData.latitude).toFixed(4)}, {Number(formData.longitude).toFixed(4)}
-                    </span>
-                  )}
                 </div>
               </div>
 
               {/* Submit CTA Button */}
-              <div className="pt-2 flex items-center justify-end space-x-3 border-t border-slate-800">
+              <div className="pt-3 flex items-center justify-end space-x-2.5 border-t border-zinc-100">
                 <button
                   type="button"
                   onClick={() => setStep("upload")}
-                  className="px-4 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition-colors"
+                  className="px-4 py-2.5 rounded-full text-xs font-semibold text-[#78766B] hover:text-[#171717] hover:bg-[#F7F4EE] transition-colors cursor-pointer"
                 >
                   Ulangi Scan
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2.5 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white shadow-lg shadow-emerald-950 transition-all flex items-center space-x-2"
+                  className="px-6 py-2.5 rounded-full text-xs font-bold bg-[#171717] hover:bg-[#2B2B26] text-white transition-all flex items-center space-x-2 cursor-pointer shadow-xs disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                       <span>Menyimpan...</span>
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="w-4 h-4" />
-                      <span>Pasang Lapak Sampah</span>
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      <span>Publikasikan Listing</span>
                     </>
                   )}
                 </button>

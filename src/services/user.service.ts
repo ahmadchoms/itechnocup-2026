@@ -53,18 +53,20 @@ export class UserService {
     }));
 
     const safeUser = {
-      ...user,
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
       latitude: user.latitude ? Number(user.latitude) : null,
       longitude: user.longitude ? Number(user.longitude) : null,
+      avatarUrl: user.avatarUrl,
+      isAdmin: user.isAdmin,
+      isBuyerApproved: user.isBuyerApproved,
+      activeRole: (user.activeRole as "seller" | "buyer") || "seller",
+      createdAt: user.createdAt ? new Date(user.createdAt).toISOString() : null,
+      updatedAt: user.updatedAt ? new Date(user.updatedAt).toISOString() : null,
     };
-    // @ts-expect-error remove raw nested fields from safeUser
-    delete safeUser.sellerTransactions;
-    // @ts-expect-error remove raw nested fields from safeUser
-    delete safeUser.buyerTransactions;
-    // @ts-expect-error remove raw nested fields from safeUser
-    delete safeUser.receivedReviews;
-    // @ts-expect-error remove raw nested fields from safeUser
-    delete safeUser.listings;
 
     const formattedReviews = user.receivedReviews.map((r) => ({
       ...r,
@@ -87,7 +89,40 @@ export class UserService {
       cvConfidence: l.cvConfidence ? Number(l.cvConfidence) : null,
     }));
 
-    const activeListingsCount = formattedListings.filter((l) => l.status === "aktif").length;
+    const formattedBuyerApplication = user.buyerApplication
+      ? {
+          ...user.buyerApplication,
+          createdAt: user.buyerApplication.createdAt
+            ? new Date(user.buyerApplication.createdAt).toISOString()
+            : null,
+          updatedAt: user.buyerApplication.updatedAt
+            ? new Date(user.buyerApplication.updatedAt).toISOString()
+            : null,
+        }
+      : null;
+
+    const formattedWasteRequests = (user.wasteRequests || []).map((r: any) => ({
+      id: r.id,
+      buyerId: r.buyerId,
+      categoryId: r.categoryId,
+      title: r.title,
+      description: r.description,
+      quantityWanted: r.quantityWanted,
+      unit: r.unit || "kg",
+      offeredPrice: Number(r.offeredPrice),
+      address: r.address,
+      latitude: r.latitude ? Number(r.latitude) : null,
+      longitude: r.longitude ? Number(r.longitude) : null,
+      status: r.status,
+      createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : null,
+      updatedAt: r.updatedAt ? new Date(r.updatedAt).toISOString() : null,
+      category: r.category ? { id: r.category.id, name: r.category.name } : null,
+      matchCount: r.matches?.length || 0,
+    }));
+
+    const activeListingsCount = isBuyer
+      ? formattedWasteRequests.filter((r) => r.status === "aktif").length
+      : formattedListings.filter((l) => l.status === "aktif").length;
 
     return {
       user: safeUser,
@@ -99,9 +134,10 @@ export class UserService {
         activeListingsCount,
       },
       listings: formattedListings,
+      wasteRequests: formattedWasteRequests,
       transactions: formattedTransactions,
       reviews: formattedReviews,
-      buyerApplication: user.buyerApplication,
+      buyerApplication: formattedBuyerApplication,
     };
   }
 
@@ -114,7 +150,19 @@ export class UserService {
       activeRole: newRole,
     });
 
-    return updatedUser;
+    return {
+      id: updatedUser.id,
+      fullName: updatedUser.fullName,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      address: updatedUser.address,
+      latitude: updatedUser.latitude ? Number(updatedUser.latitude) : null,
+      longitude: updatedUser.longitude ? Number(updatedUser.longitude) : null,
+      avatarUrl: updatedUser.avatarUrl,
+      isAdmin: updatedUser.isAdmin,
+      isBuyerApproved: updatedUser.isBuyerApproved,
+      activeRole: (updatedUser.activeRole as "seller" | "buyer") || "seller",
+    };
   }
 
   async updateProfile(userId: string, data: { fullName?: string; phone?: string | null; address?: string | null }) {
@@ -126,6 +174,11 @@ export class UserService {
       phone: updated.phone,
       address: updated.address,
       avatarUrl: updated.avatarUrl,
+      latitude: updated.latitude ? Number(updated.latitude) : null,
+      longitude: updated.longitude ? Number(updated.longitude) : null,
+      isAdmin: updated.isAdmin,
+      isBuyerApproved: updated.isBuyerApproved,
+      activeRole: (updated.activeRole as "seller" | "buyer") || "seller",
     };
   }
 }

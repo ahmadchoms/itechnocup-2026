@@ -1,18 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useOptimistic, useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
-import { Layers, ReceiptText, Star } from "lucide-react";
+import Link from "next/link";
+import { motion, type Variants } from "framer-motion";
+import {
+  Layers,
+  ReceiptText,
+  Star,
+  ChevronRight,
+  PlusCircle,
+  MessageSquare,
+  Compass,
+  ArrowUpRight,
+} from "lucide-react";
+import { toast } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { displayFont, bodyFont } from "@/lib/fonts";
 import { ProfileHeaderCard } from "@/components/features/profile/ProfileHeaderCard";
 import { StatsGrid } from "@/components/features/profile/StatsGrid";
-import { MyListingsTab } from "@/components/features/profile/MyListingsTab";
-import { TransactionHistoryCard } from "@/components/features/profile/TransactionHistoryCard";
-import { ReviewsCard } from "@/components/features/profile/ReviewsCard";
 import { EditProfileDialog } from "@/components/features/profile/EditProfileDialog";
 import { BuyerRegistrationDialog } from "@/components/features/profile/BuyerRegistrationDialog";
 import { switchRoleAction } from "@/actions/auth.actions";
@@ -23,6 +31,7 @@ import type {
   ProfileStats,
   ProfileTransaction,
   ProfileUser,
+  ProfileWasteRequest,
   WasteCategoryOption,
 } from "@/types";
 
@@ -30,6 +39,7 @@ interface ProfileClientProps {
   user: ProfileUser;
   stats: ProfileStats;
   listings?: ProfileListing[];
+  wasteRequests?: ProfileWasteRequest[];
   transactions: ProfileTransaction[];
   reviews: ProfileReview[];
   categories?: WasteCategoryOption[];
@@ -40,237 +50,271 @@ const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.05 },
+    transition: { staggerChildren: 0.07, delayChildren: 0.05 },
   },
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 12 },
+  hidden: { opacity: 0, y: 10 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.35, ease: "easeOut" },
+    transition: { duration: 0.3, ease: "easeOut" },
   },
 };
-
-type ProfileTabKey = "listings" | "transactions" | "reviews";
 
 export function ProfileClient({
   user,
   stats,
   listings = [],
+  wasteRequests = [],
   transactions,
   reviews,
-  categories = [],
   buyerApplication,
 }: ProfileClientProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<ProfileTabKey>("listings");
-  const [isSwitching, setIsSwitching] = useState(false);
   const [showBuyerModal, setShowBuyerModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
-  const isSeller = user.activeRole === "seller";
+  // Optimistic role state using React 19 useOptimistic
+  const [optimisticRole, setOptimisticRole] = useOptimistic(
+    user.activeRole || "seller",
+    (_current, newRole: "seller" | "buyer") => newRole
+  );
 
-  const handleSetRole = async (targetRole: "seller" | "buyer") => {
-    if (user.activeRole === targetRole) return;
+  const isSeller = optimisticRole === "seller";
+
+  const handleSetRole = (targetRole: "seller" | "buyer") => {
+    if (optimisticRole === targetRole) return;
 
     if (targetRole === "buyer" && !user.isBuyerApproved) {
       setShowBuyerModal(true);
       return;
     }
 
-    setIsSwitching(true);
-    try {
-      const res = await switchRoleAction(targetRole);
+    startTransition(async () => {
+      setOptimisticRole(targetRole);
 
-      if (res.success) {
-        router.refresh();
-      } else {
-        alert(res.error || "Gagal mengganti role");
+      try {
+        const res = await switchRoleAction(targetRole);
+
+        if (res.success) {
+          toast.success(
+            targetRole === "seller" ? "Mode Penjual Aktif" : "Mode Pengepul Aktif",
+            {
+              description:
+                targetRole === "seller"
+                  ? "Anda kini berada dalam mode Penjual Sampah."
+                  : "Anda kini berada dalam mode Pengepul / Mitra Pengolah.",
+            }
+          );
+          router.refresh();
+        } else {
+          toast.error("Gagal beralih mode", {
+            description: res.error || "Terjadi kesalahan server. Mode dikembalikan.",
+          });
+        }
+      } catch {
+        toast.error("Gagal beralih mode", {
+          description: "Koneksi terputus. Mode dikembalikan ke posisi semula.",
+        });
       }
-    } catch {
-      alert("Terjadi kesalahan pada server");
-    } finally {
-      setIsSwitching(false);
-    }
+    });
   };
 
-  const tabs = [
+  const activeItemsCount = isSeller
+    ? listings.filter((l) => l.status === "aktif").length
+    : wasteRequests.filter((r) => r.status === "aktif").length;
+
+  const menuItems = [
     {
-      key: "listings" as const,
-      label: isSeller ? "Listing Sampah Saya" : "Permintaan Pasokan",
-      icon: Layers,
-      count: listings.length,
+      href: "/profile/listings",
+      icon: isSeller ? Layers : Compass,
+      iconBg: "bg-[#E8EEDD] text-[#6B7B4F]",
+      title: isSeller ? "Listing Sampah Saya" : "Permintaan Pasokan",
+      subtitle: isSeller
+        ? "Kelola barang sampah yang Anda jual, perbarui harga, atau tambah stok."
+        : "Kelola kebutuhan pasokan material sampah yang sedang dicari pengepul.",
+      badge: `${activeItemsCount} Aktif`,
+      badgeColor: "bg-[#E8EEDD] text-[#2B3A1C]",
     },
     {
-      key: "transactions" as const,
-      label: "Riwayat Transaksi COD",
+      href: "/profile/transactions",
       icon: ReceiptText,
-      count: transactions.length,
+      iconBg: "bg-blue-50 text-blue-700",
+      title: isSeller ? "Riwayat Penjualan" : "Riwayat Pembelian",
+      subtitle: isSeller
+        ? "Pantau catatan uang masuk, serah terima sampah, dan status COD selesai."
+        : "Catatan pengeluaran pembelian pasokan material dari warga & UMKM.",
+      badge: `${transactions.length} Transaksi`,
+      badgeColor: "bg-blue-100 text-blue-800",
     },
     {
-      key: "reviews" as const,
-      label: "Ulasan & Reputasi",
+      href: "/profile/reviews",
       icon: Star,
-      count: reviews.length,
+      iconBg: "bg-amber-50 text-amber-600",
+      title: "Ulasan & Rating",
+      subtitle: "Lihat testimoni kepuasan, rating bintang, dan reputasi akun Anda.",
+      badge: `${stats.avgRating} ★ (${reviews.length})`,
+      badgeColor: "bg-amber-100 text-amber-800",
     },
   ];
 
   return (
-    <TooltipProvider>
-      <div
+    <TooltipProvider delay={150}>
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
         className={cn(
-          displayFont.variable,
           bodyFont.variable,
-          "mx-auto max-w-6xl p-3 sm:p-6 lg:p-8",
+          displayFont.variable,
+          "font-sans",
+          "mx-auto max-w-5xl space-y-6 pb-12 pt-2"
         )}
       >
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="space-y-6 sm:space-y-7"
-        >
-          {/* 1. Header Profile Card */}
-          <motion.div variants={itemVariants}>
-            <ProfileHeaderCard
-              user={user}
-              buyerApplication={buyerApplication}
-              isSwitching={isSwitching}
-              onSwitchRole={handleSetRole}
-              onEditProfile={() => setShowEditProfileModal(true)}
-              onRegisterBuyer={() => setShowBuyerModal(true)}
-            />
-          </motion.div>
+        {/* 1. Header Profil Card */}
+        <motion.div variants={itemVariants}>
+          <ProfileHeaderCard
+            user={{ ...user, activeRole: optimisticRole }}
+            buyerApplication={buyerApplication}
+            isSwitching={isPending}
+            onSwitchRole={handleSetRole}
+            onEditProfile={() => setShowEditProfileModal(true)}
+            onRegisterBuyer={() => setShowBuyerModal(true)}
+          />
+        </motion.div>
 
-          {/* 2. Key Metrics Stats Overview (4 Cards) */}
-          <motion.div variants={itemVariants}>
-            <StatsGrid
-              stats={stats}
-              reviewCount={reviews.length}
-              isSeller={isSeller}
-            />
-          </motion.div>
+        {/* 2. Stats Grid Ringkasan */}
+        <motion.div variants={itemVariants}>
+          <StatsGrid
+            stats={stats}
+            reviewCount={reviews.length}
+            isSeller={isSeller}
+          />
+        </motion.div>
 
-          {/* 3. Segmented Navigation Tabs */}
-          <motion.div variants={itemVariants} className="space-y-4">
-            <div className="flex items-center gap-1.5 p-1.5 bg-[#FAF8F5] rounded-2xl sm:rounded-full border border-zinc-200/80 shadow-2xs overflow-x-auto scrollbar-none">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.key;
+        {/* 3. Action Hub Menu Cards (3 Menu Utama) */}
+        <motion.div variants={itemVariants} className="space-y-3 pt-2">
+          <div className="flex items-center justify-between px-1">
+            <div>
+              <h2 className="font-display text-base font-bold text-[#171717]">
+                Menu Kelola Akun
+              </h2>
+              <p className="text-xs text-[#78766B]">
+                Akses cepat untuk inventaris, pembukuan COD, dan reputasi Anda
+              </p>
+            </div>
+          </div>
 
-                return (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setActiveTab(tab.key)}
-                    className={cn(
-                      "relative flex items-center justify-center gap-2 py-2.5 px-4 sm:px-5 rounded-xl sm:rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 flex-1",
-                      isActive
-                        ? "text-[#171717]"
-                        : "text-[#78766B] hover:text-[#171717] hover:bg-white/60",
-                    )}
-                  >
-                    {isActive && (
-                      <motion.div
-                        layoutId="activeProfileSegmentedTab"
-                        className="absolute inset-0 rounded-xl sm:rounded-full bg-white shadow-xs border border-zinc-200/90"
-                        transition={{
-                          type: "spring",
-                          stiffness: 450,
-                          damping: 35,
-                        }}
-                      />
-                    )}
-                    <span className="relative z-10 flex items-center gap-2">
-                      <Icon
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="group relative flex flex-col justify-between rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-xs transition-all hover:border-[#171717] hover:shadow-md cursor-pointer"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div
                         className={cn(
-                          "w-3.5 h-3.5",
-                          isActive ? "text-[#6B7B4F]" : "text-[#8A8778]",
+                          "flex h-11 w-11 items-center justify-center rounded-2xl",
+                          item.iconBg
                         )}
-                      />
-                      <span>{tab.label}</span>
+                      >
+                        <Icon className="h-5 w-5" />
+                      </div>
                       <Badge
                         variant="secondary"
                         className={cn(
-                          "px-2 py-0.2 rounded-full text-[10px] font-bold border-none",
-                          isActive
-                            ? "bg-sage text-[#6B7B4F]"
-                            : "bg-zinc-100 text-[#78766B]",
+                          "rounded-full px-2.5 py-0.5 text-[11px] font-bold",
+                          item.badgeColor
                         )}
                       >
-                        {tab.count}
+                        {item.badge}
                       </Badge>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                    </div>
 
-            {/* 4. Tab Content Body */}
-            <div className="mt-4">
-              <AnimatePresence mode="wait">
-                {activeTab === "listings" && (
-                  <motion.div
-                    key="listings"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <MyListingsTab
-                      initialListings={listings}
-                      categories={categories}
-                      isSeller={isSeller}
-                    />
-                  </motion.div>
-                )}
+                    <div>
+                      <h3 className="font-display text-sm font-bold text-[#171717] group-hover:text-[#6B7B4F] transition-colors">
+                        {item.title}
+                      </h3>
+                      <p className="mt-1 text-xs leading-relaxed text-[#78766B]">
+                        {item.subtitle}
+                      </p>
+                    </div>
+                  </div>
 
-                {activeTab === "transactions" && (
-                  <motion.div
-                    key="transactions"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <TransactionHistoryCard
-                      transactions={transactions}
-                      isSeller={isSeller}
-                    />
-                  </motion.div>
-                )}
-
-                {activeTab === "reviews" && (
-                  <motion.div
-                    key="reviews"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <ReviewsCard reviews={reviews} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
+                  <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-[#171717] group-hover:translate-x-0.5 transition-transform pt-2 border-t border-zinc-100">
+                    <span>Buka Halaman</span>
+                    <ChevronRight className="h-3.5 w-3.5 text-[#78766B] group-hover:text-[#171717]" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         </motion.div>
 
-        {/* Dialog Modals */}
+        {/* 4. Quick Shortcut Bar */}
+        <motion.div
+          variants={itemVariants}
+          className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-zinc-200/80 bg-[#FAF8F5] p-5"
+        >
+          <div className="space-y-0.5">
+            <h3 className="font-display text-sm font-bold text-[#171717]">
+              Pintasan Cepat
+            </h3>
+            <p className="text-xs text-[#78766B]">
+              Lakukan aksi transaksi atau jelajahi kebutuhan pasar
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Link
+              href={isSeller ? "/listings/create" : "/requests/create"}
+              className="inline-flex items-center gap-2 rounded-full bg-[#171717] px-4 py-2 text-xs font-bold text-white hover:bg-[#2B2B26] transition-colors shadow-xs"
+            >
+              <PlusCircle className="h-4 w-4" />
+              <span>
+                {isSeller ? "Pasang Sampah Baru" : "Buat Permintaan Baru"}
+              </span>
+            </Link>
+
+            <Link
+              href="/chat"
+              className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-[#171717] hover:bg-[#F7F4EE] transition-colors shadow-2xs"
+            >
+              <MessageSquare className="h-3.5 w-3.5 text-[#6B7B4F]" />
+              <span>Pesan &amp; Negosiasi</span>
+            </Link>
+
+            <Link
+              href="/requests"
+              className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-4 py-2 text-xs font-semibold text-[#171717] hover:bg-[#F7F4EE] transition-colors shadow-2xs"
+            >
+              <span>Jelajahi Permintaan</span>
+              <ArrowUpRight className="h-3.5 w-3.5 text-[#78766B]" />
+            </Link>
+          </div>
+        </motion.div>
+
+        {/* Edit Profile Modal */}
         <EditProfileDialog
           open={showEditProfileModal}
           onOpenChange={setShowEditProfileModal}
           user={user}
         />
 
+        {/* Buyer Mitra Registration Modal */}
         <BuyerRegistrationDialog
           open={showBuyerModal}
           onOpenChange={setShowBuyerModal}
           initialAddress={user.address}
         />
-      </div>
+      </motion.div>
     </TooltipProvider>
   );
 }

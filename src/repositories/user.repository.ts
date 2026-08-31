@@ -83,6 +83,13 @@ export class UserRepository {
           },
           orderBy: { createdAt: "desc" },
         },
+        wasteRequests: {
+          include: {
+            category: true,
+            matches: true,
+          },
+          orderBy: { createdAt: "desc" },
+        },
         buyerApplication: true,
       },
     });

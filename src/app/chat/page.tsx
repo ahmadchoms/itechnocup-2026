@@ -18,9 +18,14 @@ export default async function UnifiedChatPage({
   }
 
   const params = await searchParams;
-  const categories = await prisma.wasteCategory.findMany({
+  const rawCategories = await prisma.wasteCategory.findMany({
     orderBy: { name: "asc" },
   });
+  const categories = rawCategories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    description: c.description,
+  }));
 
   const conversations = await chatService.getUserConversations(sessionUser.id);
 

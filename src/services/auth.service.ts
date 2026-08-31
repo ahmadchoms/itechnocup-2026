@@ -56,7 +56,16 @@ export class AuthService {
 
     await setSession(user.id);
 
-    return user;
+    return {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
+      avatarUrl: user.avatarUrl,
+      isAdmin: user.isAdmin,
+      activeRole: user.activeRole,
+    };
   }
 }
 
