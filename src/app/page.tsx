@@ -21,6 +21,7 @@ import Link from "next/link";
 import { Listing, WasteRequest } from "@/types";
 import Image from "next/image";
 import { getSessionUser } from "@/lib/session";
+import { categoryService } from "@/services/category.service";
 
 export const dynamic = "force-dynamic";
 
@@ -692,9 +693,7 @@ function SiteFooter() {
 export default async function HomePage() {
   const sessionUser = await getSessionUser();
 
-  const categories = await prisma.wasteCategory.findMany({
-    orderBy: { name: "asc" },
-  });
+  const categories = await categoryService.getAllCategoriesWithAveragePrice();
 
   const listings = await prisma.listing.findMany({
     where: { status: { not: "dihapus" } },

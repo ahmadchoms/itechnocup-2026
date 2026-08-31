@@ -8,22 +8,25 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createListingSchema, CreateListingInput } from "@/validations/listing.schema";
 import { createListingAction } from "@/actions/listing.actions";
-import { classifyWasteAction } from "@/actions/ai.actions";
 import { geocodeAddressAction, reverseGeocodeAction } from "@/actions/geo.actions";
+import * as tf from "@tensorflow/tfjs";
+import { getCategoryMapping, getHumanReadableName, getBasePrice, samplePhotos } from "@/lib/model";
+import { supabase } from "@/lib/supabase";
 
 interface CreateListingClientProps {
-  categories: { id: string; name: string }[];
+  categories: { id: string; name: string; averagePrice?: number }[];
   sessionUser: any;
 }
 
 export function CreateListingClient({ categories, sessionUser }: CreateListingClientProps) {
   const router = useRouter();
   const [step, setStep] = useState<"upload" | "form">("upload");
-  const [photoUrl, setPhotoUrl] = useState(
-    "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600"
-  );
+  const [photoUrl, setPhotoUrl] = useState("");
   const [isClassifying, setIsClassifying] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [isSamplePhoto, setIsSamplePhoto] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const [aiResult, setAiResult] = useState<{
@@ -40,87 +43,107 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
   } = useForm<any>({
     resolver: zodResolver(createListingSchema),
     defaultValues: {
-      title: "Ampas Kopi Basah Espresso Premium 25kg",
+      title: "",
       categoryId: categories[0]?.id || "",
-      estimatedWeightKg: 25,
-      quantity: 25,
+      estimatedWeightKg: "",
+      quantity: "",
       unit: "kg",
       condition: "Segar harian",
-      description: "Ampas kopi murni 100% Arabika dari ekstraksi espresso. Sangat cocok untuk bahan kompos pupuk organik.",
-      estimatedPrice: 1500,
+      description: "",
+      estimatedPrice: "",
       address: sessionUser?.address || "Jl. Siranda No. 5, Semarang",
       latitude: -7.0490,
       longitude: 110.4350,
-      photoUrl: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600",
+      photoUrl: "",
       cvConfidence: 94.5,
       isCvCorrected: false,
       sellerId: sessionUser?.id,
     },
   });
 
-  const samplePhotos = [
-    {
-      name: "Ampas Kopi",
-      url: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600",
-      catName: "Ampas Kopi",
-      confidence: 94.5,
-      title: "Ampas Kopi Basah Espresso 25kg",
-      price: 1500,
-    },
-    {
-      name: "Kardus Bekas",
-      url: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600",
-      catName: "Anorganik",
-      confidence: 91.2,
-      title: "Kardus Bekas Pengepul 50kg",
-      price: 1800,
-    },
-    {
-      name: "Botol Plastik PET",
-      url: "https://images.unsplash.com/photo-1605600659873-d808a13e4d2a?w=600",
-      catName: "Anorganik",
-      confidence: 98.0,
-      title: "Botol Plastik PET Bersih 15kg",
-      price: 3500,
-    },
-    {
-      name: "Kaleng Minuman",
-      url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600",
-      catName: "Logam",
-      confidence: 96.1,
-      title: "Kaleng Aluminium Press 10kg",
-      price: 12000,
-    },
-  ];
-
   const handleSelectPhoto = async (sample: typeof samplePhotos[0]) => {
+    setIsSamplePhoto(true);
+    setSelectedFile(null);
     setPhotoUrl(sample.url);
     setValue("photoUrl", sample.url);
     setIsClassifying(true);
 
+    const humanName = getHumanReadableName(sample.targetLabel);
+    const targetCat = categories.find((c) => c.name.toLowerCase() === humanName.toLowerCase());
+    const catId = targetCat?.id || categories[0]?.id || "";
+
+    setAiResult({ categoryName: humanName, categoryId: catId, confidence: 98.5 });
+    const isSisaMakanan = targetCat?.name === "Sisa Makanan" || humanName === "Sisa Makanan";
+    setValue("title", isSisaMakanan ? "" : humanName);
+    setValue("categoryId", catId);
+    setValue("estimatedPrice", targetCat?.averagePrice || getBasePrice(sample.targetLabel));
+    setValue("cvConfidence", 98.5);
+    setStep("form");
+    setIsClassifying(false);
+  };
+
+  const processImagePrediction = async (imageUrl: string, file?: File) => {
+    setIsSamplePhoto(false);
+    if (file) setSelectedFile(file);
+    setPhotoUrl(imageUrl);
+    setValue("photoUrl", imageUrl);
+    setStep("upload");
+    setIsClassifying(true);
+
     try {
-      const classifyRes = await classifyWasteAction({ photoUrl: sample.url });
+      const imgElement = document.createElement("img");
+      imgElement.crossOrigin = "anonymous";
+      imgElement.src = imageUrl;
+      await new Promise((resolve, reject) => {
+        imgElement.onload = resolve;
+        imgElement.onerror = reject;
+      });
 
-      let catName = sample.catName;
-      let conf = sample.confidence;
-      let catId = categories.find((c) => c.name.toLowerCase() === catName.toLowerCase())?.id || categories[0]?.id || "";
+      const tensor = tf.tidy(() => {
+        let img = tf.browser.fromPixels(imgElement).resizeBilinear([224, 224]).toFloat();
+        img = img.reverse(-1);
+        const meanTensor = tf.tensor1d([103.939, 116.779, 123.680]);
+        img = img.sub(meanTensor);
+        return img.expandDims(0);
+      });
 
-      if (classifyRes.success) {
-        catName = classifyRes.categoryName || catName;
-        conf = classifyRes.confidence || conf;
-        catId = classifyRes.categoryId || catId;
-      }
+      const modelUrl = "/model_ai_class/model.json";
+      const model = await tf.loadGraphModel(modelUrl);
+      const prediction = model.predict(tensor) as tf.Tensor;
+      const scores = prediction.dataSync();
+      tensor.dispose();
+      prediction.dispose();
 
-      setAiResult({ categoryName: catName, categoryId: catId, confidence: conf });
-      setValue("title", sample.title);
+      const classesList = ['battery', 'biological', 'brown-glass', 'cardboard', 'green-glass', 'metal', 'paper', 'plastic', 'trash', 'white-glass'];
+      const maxScore = Math.max(...Array.from(scores));
+      const maxIdx = scores.indexOf(maxScore);
+      const predictedLabel = classesList[maxIdx];
+      const confidence = Number((maxScore * 100).toFixed(1));
+
+      const humanName = getHumanReadableName(predictedLabel);
+      const targetCat = categories.find((c) => c.name.toLowerCase() === humanName.toLowerCase());
+      const catId = targetCat?.id || categories[0]?.id || "";
+
+      setAiResult({ categoryName: humanName, categoryId: catId, confidence });
+      const isSisaMakanan = targetCat?.name === "Sisa Makanan" || humanName === "Sisa Makanan";
+    setValue("title", isSisaMakanan ? "" : humanName);
       setValue("categoryId", catId);
-      setValue("estimatedPrice", sample.price);
-      setValue("cvConfidence", conf);
+      setValue("estimatedPrice", targetCat?.averagePrice || getBasePrice(predictedLabel));
+      setValue("cvConfidence", confidence);
       setStep("form");
-    } catch {
+    } catch (e) {
+      console.error(e);
       setStep("form");
     } finally {
       setIsClassifying(false);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      processImagePrediction(url, file);
     }
   };
 
@@ -159,10 +182,42 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
 
   const onSubmit = async (data: CreateListingInput) => {
     setServerError(null);
+    if (isSamplePhoto) {
+      setServerError("Harap unggah foto asli sampah Anda untuk melanjutkan.");
+      return;
+    }
+    if (!selectedFile && !photoUrl) {
+      setServerError("Foto sampah wajib diunggah.");
+      return;
+    }
+
     try {
+      setIsUploading(true);
+      let finalPhotoUrl = photoUrl;
+
+      if (selectedFile) {
+        const fileExt = selectedFile.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        const filePath = `${sessionUser?.id || 'guest'}/${fileName}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('listing-image')
+          .upload(filePath, selectedFile, { cacheControl: '3600', upsert: false });
+
+        if (uploadError) {
+          throw new Error("Gagal mengunggah foto: " + uploadError.message);
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('listing-image')
+          .getPublicUrl(uploadData.path);
+
+        finalPhotoUrl = publicUrlData.publicUrl;
+      }
+
       const res = await createListingAction({
         ...data,
-        photoUrl,
+        photoUrl: finalPhotoUrl,
         cvConfidence: aiResult?.confidence || 90.0,
         isCvCorrected: false,
         sellerId: sessionUser?.id,
@@ -174,14 +229,16 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
       } else {
         setServerError(res.error || "Gagal membuat listing");
       }
-    } catch {
-      setServerError("Terjadi kesalahan sistem. Coba lagi.");
+    } catch (err: any) {
+      console.error(err);
+      setServerError(err.message || "Terjadi kesalahan sistem. Coba lagi.");
+    } finally {
+      setIsUploading(false);
     }
   };
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex items-center space-x-3">
         <Link
           href="/profile"
@@ -205,7 +262,6 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
         </div>
       )}
 
-      {/* Step 1: Upload Photo / Scanner */}
       {step === "upload" && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6 shadow-xs">
           <div>
@@ -215,7 +271,25 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
             </p>
           </div>
 
-          {/* Sample Photos Grid */}
+          <div className="space-y-4">
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              id="file-upload"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
+            <label
+              htmlFor="file-upload"
+              className="border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-500 rounded-xl p-8 text-center space-y-3 cursor-pointer transition-colors block"
+            >
+              <Upload className="w-8 h-8 text-slate-400 mx-auto" />
+              <p className="text-sm font-medium text-slate-700">Klik untuk unggah foto sampah atau ambil via kamera</p>
+              <p className="text-xs text-slate-500">Format JPG, PNG, WEBP hingga 10MB</p>
+            </label>
+          </div>
+
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {samplePhotos.map((sample) => (
               <button
@@ -231,7 +305,7 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
                   className="w-full h-24 object-cover rounded-lg mb-2 group-hover:scale-105 transition-transform duration-300"
                 />
                 <span className="text-xs font-semibold text-slate-800 line-clamp-1">{sample.name}</span>
-                <span className="text-[10px] text-emerald-600 font-medium">{sample.catName}</span>
+                <span className="text-[10px] text-emerald-600 font-medium">{getCategoryMapping(sample.targetLabel)}</span>
               </button>
             ))}
           </div>
@@ -245,9 +319,43 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
         </div>
       )}
 
-      {/* Step 2: Form Input */}
       {step === "form" && (
         <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-xs">
+          <div className="flex items-center space-x-4 p-4 rounded-xl border border-slate-200 bg-slate-50">
+            <img src={photoUrl} alt="Preview Sampah" className="w-16 h-16 rounded-lg object-cover border border-slate-300 shadow-sm" />
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-slate-800">Foto Sampah Anda</h3>
+              {isSamplePhoto ? (
+                <p className="text-xs text-rose-600 font-medium mt-0.5">⚠️ Ini adalah foto sampel uji cepat. Harap unggah foto asli.</p>
+              ) : (
+                <p className="text-xs text-slate-500 mt-0.5">Foto asli berhasil dimuat.</p>
+              )}
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              id="replace-photo"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const url = URL.createObjectURL(file);
+                  setPhotoUrl(url);
+                  setValue("photoUrl", url);
+                  setSelectedFile(file);
+                  setIsSamplePhoto(false);
+                }
+              }}
+            />
+            <label
+              htmlFor="replace-photo"
+              className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              Ubah Foto
+            </label>
+          </div>
+
           {aiResult && (
             <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -266,17 +374,9 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setStep("upload")}
-                className="text-xs text-emerald-700 font-semibold hover:underline cursor-pointer"
-              >
-                Ganti Foto
-              </button>
             </div>
           )}
 
-          {/* Judul Listing */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">Judul Listing Sampah *</label>
             <input
@@ -289,7 +389,6 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
             )}
           </div>
 
-          {/* Kategori Sampah */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">Kategori Sampah *</label>
             <select
@@ -307,7 +406,6 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
             )}
           </div>
 
-          {/* Estimasi Berat & Kuantitas */}
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">Berat (kg)</label>
@@ -339,7 +437,6 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
             </div>
           </div>
 
-          {/* Kondisi & Harga */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">Kondisi</label>
@@ -362,7 +459,6 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
             </div>
           </div>
 
-          {/* Deskripsi */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">Deskripsi Sampah</label>
             <textarea
@@ -372,7 +468,6 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
             />
           </div>
 
-          {/* Alamat dengan Auto Geocoding & GPS */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="block text-xs font-semibold text-slate-700">
@@ -412,14 +507,13 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
             )}
           </div>
 
-          {/* Submit */}
           <div className="pt-2 flex justify-end">
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploading}
               className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm transition-colors flex items-center space-x-2 disabled:opacity-60 cursor-pointer"
             >
-              {isSubmitting ? (
+              {(isSubmitting || isUploading) ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />
               ) : (
                 <span>Publikasikan Listing Sampah</span>

@@ -1,16 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Camera, Sparkles, X, CheckCircle, RefreshCw, Upload, AlertCircle, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createListingAction } from "@/actions/listing.actions";
-import { classifyWasteAction } from "@/actions/ai.actions";
 import { geocodeAddressAction } from "@/actions/geo.actions";
+import * as tf from "@tensorflow/tfjs";
+import { getCategoryMapping, getHumanReadableName, getBasePrice, samplePhotos } from "@/lib/model";
 
 interface AIScannerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  categories: { id: string; name: string }[];
+  categories: { id: string; name: string; averagePrice?: number }[];
   sellerId?: string;
 }
 
@@ -19,109 +20,123 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
 
   // Step state: 1: Upload/Camera, 2: Scanning AI, 3: AI Result & Form Input
   const [step, setStep] = useState<"upload" | "scanning" | "form">("upload");
-  const [photoUrl, setPhotoUrl] = useState<string>(
-    "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600"
-  );
+  const [photoUrl, setPhotoUrl] = useState<string>("");
   
   // AI Scan Result State
   const [aiResult, setAiResult] = useState<{
     categoryName: string;
     categoryId: string;
     confidence: number;
-  }>({
-    categoryName: "Ampas Kopi",
-    categoryId: categories.find((c) => c.name.toLowerCase().includes("kopi"))?.id || categories[0]?.id || "",
-    confidence: 94.5,
-  });
+  }>({ categoryName: "", categoryId: "", confidence: 0 });
 
   const [isManualOverride, setIsManualOverride] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isClassifying, setIsClassifying] = useState(false);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form Fields State
   const [formData, setFormData] = useState({
-    title: "Ampas Kopi Basah Espresso Premium 25kg",
+    title: "",
     categoryId: "",
-    estimatedWeightKg: "25",
-    quantity: "25",
+    estimatedWeightKg: "",
+    quantity: "",
     unit: "kg",
-    condition: "Segar harian",
-    description: "Ampas kopi murni 100% Arabika dari ekstraksi espresso cafe. Sangat cocok untuk bahan kompos pupuk organik atau media budidaya jamur.",
-    estimatedPrice: "1500",
-    address: "Jl. Siranda No. 5, Semarang",
-    latitude: "-7.0490",
-    longitude: "110.4350",
+    condition: "",
+    description: "",
+    estimatedPrice: "",
+    address: "",
+    latitude: "",
+    longitude: "",
   });
+
 
   if (!isOpen) return null;
 
-  // Preset Sample Photos for Fast Interactive Testing
-  const samplePhotos = [
-    {
-      name: "Ampas Kopi",
-      url: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600",
-      catName: "Ampas Kopi",
-      confidence: 94.5,
-      title: "Ampas Kopi Basah Espresso 25kg",
-      price: "1500",
-    },
-    {
-      name: "Kardus Bekas",
-      url: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=600",
-      catName: "Anorganik",
-      confidence: 91.2,
-      title: "Kardus Bekas Pack Tebal 50kg",
-      price: "2000",
-    },
-    {
-      name: "Botol Plastik PET",
-      url: "https://images.unsplash.com/photo-1605600659873-d808a13e4d2a?w=600",
-      catName: "Anorganik",
-      confidence: 98.0,
-      title: "Botol Plastik PET Bening 10kg",
-      price: "3500",
-    },
-    {
-      name: "Kaleng Alumunium",
-      url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600",
-      catName: "Logam",
-      confidence: 96.1,
-      title: "Kaleng Alumunium Minuman 5kg",
-      price: "12000",
-    },
-  ];
-
-  const handleSelectSample = async (sample: typeof samplePhotos[0]) => {
-    setPhotoUrl(sample.url);
+  const processImagePrediction = async (imageUrl: string) => {
+    setPhotoUrl(imageUrl);
     setStep("scanning");
+    setIsClassifying(true);
 
     try {
-      const classifyRes = await classifyWasteAction({ photoUrl: sample.url });
+      const imgElement = document.createElement("img");
+      imgElement.crossOrigin = "anonymous";
+      imgElement.src = imageUrl;
+      await new Promise((resolve, reject) => {
+        imgElement.onload = resolve;
+        imgElement.onerror = reject;
+      });
 
-      let categoryName = sample.catName;
-      let confidence = sample.confidence;
-      let catId = categories.find((c) => c.name.toLowerCase() === categoryName.toLowerCase())?.id || categories[0]?.id || "";
+      const tensor = tf.tidy(() => {
+        let img = tf.browser.fromPixels(imgElement).resizeBilinear([224, 224]).toFloat();
+        // Convert RGB to BGR
+        img = img.reverse(-1);
+        // Subtract ImageNet Mean
+        const meanTensor = tf.tensor1d([103.939, 116.779, 123.680]);
+        img = img.sub(meanTensor);
+        return img.expandDims(0);
+      });
 
-      if (classifyRes.success) {
-        categoryName = classifyRes.categoryName || categoryName;
-        confidence = classifyRes.confidence || confidence;
-        catId = classifyRes.categoryId || catId;
-      }
+      const modelUrl = "/model_ai_class/model.json";
+      const model = await tf.loadGraphModel(modelUrl);
+      const prediction = model.predict(tensor) as tf.Tensor;
+      const scores = prediction.dataSync();
+      tensor.dispose();
+      prediction.dispose();
 
-      setAiResult({ categoryName, categoryId: catId, confidence });
+      const classesList = ['battery', 'biological', 'brown-glass', 'cardboard', 'green-glass', 'metal', 'paper', 'plastic', 'trash', 'white-glass'];
+      const maxScore = Math.max(...Array.from(scores));
+      const maxIdx = scores.indexOf(maxScore);
+      const predictedLabel = classesList[maxIdx];
+      const confidence = Number((maxScore * 100).toFixed(1));
+
+      const humanName = getHumanReadableName(predictedLabel);
+      const targetCat = categories.find((c) => c.name.toLowerCase() === humanName.toLowerCase());
+      const catId = targetCat?.id || categories[0]?.id || "";
+
+      setAiResult({ categoryName: humanName, categoryId: catId, confidence });
       setFormData((prev) => ({
         ...prev,
-        title: sample.title,
+        title: (targetCat?.name === "Sisa Makanan" || humanName === "Sisa Makanan") ? "" : humanName,
         categoryId: catId,
-        estimatedPrice: sample.price,
+        estimatedPrice: String(targetCat?.averagePrice || getBasePrice(predictedLabel)),
       }));
       setStep("form");
-    } catch {
-      // Fallback ke mock data jika aksi gagal
-      const targetCat = categories.find((c) => c.name.toLowerCase() === sample.catName.toLowerCase());
-      const catId = targetCat?.id || categories[0]?.id || "";
-      setAiResult({ categoryName: sample.catName, categoryId: catId, confidence: sample.confidence });
-      setFormData((prev) => ({ ...prev, title: sample.title, categoryId: catId, estimatedPrice: sample.price }));
+    } catch (e) {
+      console.error(e);
       setStep("form");
+    } finally {
+      setIsClassifying(false);
+    }
+  };
+
+  const handleSelectSample = (sample: typeof samplePhotos[0]) => {
+    setPhotoUrl(sample.url);
+    const humanName = getHumanReadableName(sample.targetLabel);
+    const targetCat = categories.find((c) => c.name.toLowerCase() === humanName.toLowerCase());
+    const catId = targetCat?.id || categories[0]?.id || "";
+
+    setAiResult({
+      categoryName: humanName,
+      categoryId: catId,
+      confidence: 98.5
+    });
+    
+    setFormData((prev) => ({
+      ...prev,
+      title: (targetCat?.name === "Sisa Makanan" || humanName === "Sisa Makanan") ? "" : humanName,
+      categoryId: catId,
+      estimatedPrice: String(targetCat?.averagePrice || getBasePrice(sample.targetLabel)),
+    }));
+    
+    setStep("form");
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      processImagePrediction(url);
     }
   };
 
@@ -191,7 +206,18 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
           {/* STEP 1: UPLOAD / CAMERA PREVIEW */}
           {step === "upload" && (
             <div className="space-y-4">
-              <div className="border-2 border-dashed border-slate-700 hover:border-emerald-500/50 bg-slate-950/40 rounded-xl p-8 text-center space-y-3 transition-colors cursor-pointer group">
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-slate-700 hover:border-emerald-500/50 bg-slate-950/40 rounded-xl p-8 text-center space-y-3 transition-colors cursor-pointer group"
+              >
                 <div className="w-14 h-14 mx-auto rounded-full bg-slate-800 group-hover:bg-emerald-950/50 text-slate-400 group-hover:text-emerald-400 flex items-center justify-center transition-colors">
                   <Upload className="w-7 h-7" />
                 </div>
@@ -224,7 +250,7 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
                         <span className="text-xs font-semibold text-slate-200 block group-hover:text-emerald-400">
                           {s.name}
                         </span>
-                        <span className="text-[10px] text-slate-400">{s.catName}</span>
+                        <span className="text-[10px] text-slate-400">{getCategoryMapping(s.targetLabel)}</span>
                       </div>
                     </button>
                   ))}

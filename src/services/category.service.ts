@@ -6,6 +6,10 @@ export class CategoryService {
   async getAllCategories() {
     return this.repo.findAll();
   }
+
+  async getAllCategoriesWithAveragePrice() {
+    return this.repo.findAllWithAveragePrice();
+  }
 }
 
 export const categoryService = new CategoryService();
