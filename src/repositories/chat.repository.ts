@@ -20,11 +20,11 @@ export interface UpsertTransactionData {
 }
 
 export class ChatRepository {
-  async findUserConversations(userId: string, role: "seller" | "buyer" = "seller") {
-    const whereClause = role === "seller" ? { sellerId: userId } : { buyerId: userId };
-
+  async findUserConversations(userId: string) {
     return prisma.conversation.findMany({
-      where: whereClause,
+      where: {
+        OR: [{ sellerId: userId }, { buyerId: userId }],
+      },
       include: {
         seller: true,
         buyer: true,
@@ -106,6 +106,7 @@ export class ChatRepository {
       where: {
         sellerId,
         buyerId,
+        matchId: matchId || null,
       },
     });
 

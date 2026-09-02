@@ -60,8 +60,8 @@ function serializeConversation(conv: RawConversation): ChatConversation {
 export class ChatService {
   constructor(private repo: ChatRepository = chatRepository) {}
 
-  async getUserConversations(userId: string, role: "seller" | "buyer" = "seller"): Promise<ChatConversation[]> {
-    const rawList = await this.repo.findUserConversations(userId, role);
+  async getUserConversations(userId: string): Promise<ChatConversation[]> {
+    const rawList = await this.repo.findUserConversations(userId);
     return rawList.map(serializeConversation);
   }
 

@@ -45,7 +45,7 @@ export function ChatClient({
       if (res.success && res.conversations) {
         setConvList(res.conversations);
       }
-    }, 3500);
+    }, 1500);
 
     return () => clearInterval(interval);
   }, []);
@@ -276,7 +276,12 @@ export function ChatClient({
 
       try {
         const res = await updateTransactionStatusAction({
+          transactionId: activeTx?.id,
           conversationId: convId,
+          sellerId: activeConv.sellerId,
+          buyerId: activeConv.buyerId,
+          listingId: activeConv.match?.listing?.id,
+          categoryId: activeConv.match?.listing?.categoryId,
           status,
           finalPrice: priceNum,
           finalQuantity: qtyNum,
@@ -284,6 +289,12 @@ export function ChatClient({
         });
 
         if (res.success && res.transaction) {
+          // Perbarui status optimistik dengan ID dan data asli dari database
+          setOptimisticUpdate({
+            type: "update_tx",
+            conversationId: convId,
+            transaction: res.transaction,
+          });
           const updatedTx = res.transaction;
 
           setConvList((prev) =>
