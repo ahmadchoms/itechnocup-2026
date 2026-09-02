@@ -16,7 +16,7 @@ export async function updateTransactionStatusAction(input: UpdateTransactionStat
     }
 
     const validated = updateTransactionStatusSchema.parse(input);
-    const transaction = await chatService.updateDealStatus(sessionUser.id, {
+    const rawTx = await chatService.updateDealStatus(sessionUser.id, {
       transactionId: validated.transactionId || undefined,
       conversationId: validated.conversationId,
       listingId: validated.listingId || undefined,
@@ -29,9 +29,26 @@ export async function updateTransactionStatusAction(input: UpdateTransactionStat
       status: validated.status,
     });
 
+    // Serialize Prisma Decimal and Date objects into plain JSON primitives
+    const transaction = {
+      id: rawTx.id,
+      conversationId: rawTx.conversationId,
+      listingId: rawTx.listingId,
+      sellerId: rawTx.sellerId,
+      buyerId: rawTx.buyerId,
+      categoryId: rawTx.categoryId,
+      finalPrice: Number(rawTx.finalPrice),
+      finalQuantity: Number(rawTx.finalQuantity || 0),
+      unit: rawTx.unit,
+      status: rawTx.status,
+      createdAt: rawTx.createdAt ? rawTx.createdAt.toISOString() : null,
+      completedAt: rawTx.completedAt ? rawTx.completedAt.toISOString() : null,
+    };
+
     revalidatePath(`/chat/${validated.conversationId}`);
     revalidatePath("/chat");
     revalidatePath("/profile");
+    revalidatePath("/profile/transactions");
     return { success: true, transaction };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Gagal memperbarui status transaksi";

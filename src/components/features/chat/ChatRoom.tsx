@@ -11,9 +11,32 @@ import { DealDrawer } from "./DealDrawer";
 import { MessageStream } from "./MessageStream";
 import { ChatInputBar } from "./ChatInputBar";
 import { EmptyChatState } from "./EmptyChatState";
+import { CreateReviewDialog } from "./CreateReviewDialog";
 import { sendMessageAction, getUserConversationsAction } from "@/actions/chat.actions";
 import { updateTransactionStatusAction } from "@/actions/transaction.actions";
 import type { ChatClientProps, ChatConversation, ChatMessage } from "@/types";
+
+import { supabase } from "@/lib/supabase";
+
+function mergeUniqueMessages(existingList: ChatMessage[] = [], newMsg: ChatMessage): ChatMessage[] {
+  const existingIdIndex = existingList.findIndex((m) => m.id === newMsg.id);
+  if (existingIdIndex !== -1) {
+    const next = [...existingList];
+    next[existingIdIndex] = newMsg;
+    return next;
+  }
+
+  const tempIndex = existingList.findIndex(
+    (m) => String(m.id).startsWith("temp-") && m.content === newMsg.content && m.senderId === newMsg.senderId
+  );
+  if (tempIndex !== -1) {
+    const next = [...existingList];
+    next[tempIndex] = newMsg;
+    return next;
+  }
+
+  return [...existingList, newMsg];
+}
 
 type OptimisticAction =
   | { type: "add_message"; conversationId: string; message: ChatMessage }
@@ -35,19 +58,106 @@ export function ChatClient({
 
   const [messageInput, setMessageInput] = useState("");
   const [convList, setConvList] = useState<ChatConversation[]>(conversations);
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [reviewedTxIds, setReviewedTxIds] = useState<string[]>([]);
 
-  // Smart Real-time polling every 3.5 seconds for incoming messages & updates
+  // Pure Supabase Realtime WebSocket Connection (0 spam polling)
   useEffect(() => {
-    const interval = setInterval(async () => {
-      if (typeof document !== "undefined" && document.hidden) return;
-
-      const res = await getUserConversationsAction();
-      if (res.success && res.conversations) {
-        setConvList(res.conversations);
+    // Sync on tab re-focus only
+    const syncConversations = async () => {
+      try {
+        const res = await getUserConversationsAction();
+        if (res.success && res.conversations && res.conversations.length > 0) {
+          setConvList(res.conversations);
+        }
+      } catch (err) {
+        console.error("[ChatClient] Sync error:", err);
       }
-    }, 1500);
+    };
 
-    return () => clearInterval(interval);
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        syncConversations();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // 2. Supabase Realtime Channel
+    const channel = supabase
+      .channel("realtime-daurnusa-chat")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+        },
+        (payload) => {
+          const newMsg = payload.new as any;
+          if (!newMsg || !newMsg.conversation_id) return;
+
+          const formattedMessage: ChatMessage = {
+            id: newMsg.id,
+            conversationId: newMsg.conversation_id,
+            senderId: newMsg.sender_id,
+            content: newMsg.content,
+            sentAt: newMsg.sent_at ? new Date(newMsg.sent_at) : new Date(),
+          };
+
+          setConvList((prev) =>
+            prev.map((conv) => {
+              if (conv.id === newMsg.conversation_id) {
+                return {
+                  ...conv,
+                  messages: mergeUniqueMessages(conv.messages || [], formattedMessage),
+                };
+              }
+              return conv;
+            })
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "transactions",
+        },
+        (payload) => {
+          console.log("[Supabase Realtime] Transaction Event:", payload);
+          const updatedTx = payload.new as any;
+          if (!updatedTx || !updatedTx.conversation_id) return;
+
+          setConvList((prev) =>
+            prev.map((conv) => {
+              if (conv.id === updatedTx.conversation_id) {
+                return {
+                  ...conv,
+                  transactions: [
+                    {
+                      ...updatedTx,
+                      finalPrice: Number(updatedTx.final_price || updatedTx.finalPrice || 0),
+                      finalQuantity: Number(updatedTx.final_quantity || updatedTx.finalQuantity || 0),
+                      unit: updatedTx.unit || "kg",
+                    },
+                  ],
+                };
+              }
+              return conv;
+            })
+          );
+        }
+      )
+      .subscribe((status) => {
+        console.log("[Supabase Realtime Channel Status]:", status);
+      });
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // React 19 Optimistic State for zero-lag messaging
@@ -102,6 +212,10 @@ export function ChatClient({
       : activeConv.seller
     : null;
 
+  const currentUserAddress = isSeller
+    ? activeConv?.seller?.address
+    : activeConv?.buyer?.address;
+
   // Track customized inputs per conversation
   const [dealInputs, setDealInputs] = useState<
     Record<string, { price: string; quantity: string }>
@@ -123,11 +237,21 @@ export function ChatClient({
       };
     }
 
-    const p = Number(activeConv.match?.request?.offeredPrice) || Number(activeConv.match?.listing?.estimatedPrice) || 1800;
-    const q = Number(activeConv.match?.listing?.quantity) || Number(activeConv.match?.listing?.estimatedWeightKg) || 25;
+    const pricePerUnit =
+      Number(activeConv.match?.request?.offeredPrice) ||
+      Number(activeConv.match?.listing?.estimatedPrice) ||
+      0;
+    const qty =
+      Number(activeConv.match?.listing?.quantity) ||
+      Number(activeConv.match?.listing?.estimatedWeightKg) ||
+      Number(activeConv.match?.request?.quantityWanted) ||
+      1;
+
+    const totalPrice = pricePerUnit > 0 ? pricePerUnit * qty : 50000;
+
     return {
-      price: String(p * q),
-      quantity: String(q),
+      price: String(totalPrice),
+      quantity: String(qty),
     };
   }, [activeConv, dealInputs]);
 
@@ -160,7 +284,8 @@ export function ChatClient({
     return optimisticConvs.filter((conv) => {
       const isUserSeller = conv.sellerId === effectiveUserId;
       const partner = isUserSeller ? conv.buyer : conv.seller;
-      const title = conv.match?.listing?.title || "";
+      const title =
+        conv.match?.listing?.title || conv.match?.request?.title || "";
       const q = searchQuery.toLowerCase().trim();
 
       const matchSearch =
@@ -222,7 +347,13 @@ export function ChatClient({
           setConvList((prev) =>
             prev.map((c) =>
               c.id === convId
-                ? { ...c, messages: [...(c.messages || []), res.message as unknown as ChatMessage] }
+                ? {
+                    ...c,
+                    messages: mergeUniqueMessages(
+                      c.messages || [],
+                      res.message as unknown as ChatMessage
+                    ),
+                  }
                 : c,
             ),
           );
@@ -248,16 +379,21 @@ export function ChatClient({
 
     const priceNum = Number(currentDealInput.price) || 0;
     const qtyNum = Number(currentDealInput.quantity) || 0;
+    const unit =
+      activeConv.match?.listing?.unit ||
+      activeConv.match?.request?.unit ||
+      "kg";
 
+    // Clean & concise milestone status text
     let milestoneText = "";
     if (status === "menunggu_persetujuan") {
-      milestoneText = `📢 [TAWARAN DIAJUKAN] Pembeli mengajukan tawaran harga total sebesar ${formatRupiah(priceNum)} (${qtyNum} ${activeConv.match?.listing?.unit || "kg"}). Menunggu persetujuan penjual.`;
+      milestoneText = `[TAWARAN DIAJUKAN] Tawaran harga ${formatRupiah(priceNum)} (${qtyNum} ${unit}) diajukan.`;
     } else if (status === "menunggu_konfirmasi") {
-      milestoneText = `🤝 [TAWARAN DISETUJUI] Penjual telah menyetujui harga kesepakatan. Silakan jadwalkan penjemputan COD.`;
+      milestoneText = `[TAWARAN DISETUJUI] Kesepakatan harga ${formatRupiah(priceNum)} (${qtyNum} ${unit}) disetujui. Silakan koordinasikan jadwal penjemputan COD.`;
     } else if (status === "selesai") {
-      milestoneText = `✅ [TRANSAKSI SELESAI] Penjemputan dan pembayaran tunai COD senilai ${formatRupiah(priceNum)} telah berhasil diselesaikan.`;
+      milestoneText = `[TRANSAKSI SELESAI] Penjemputan limbah dan pembayaran tunai senilai ${formatRupiah(priceNum)} telah berhasil diselesaikan.`;
     } else if (status === "dibatalkan") {
-      milestoneText = `❌ [TRANSAKSI DIBATALKAN] Kesepakatan transaksi ini telah dibatalkan oleh salah satu pihak.`;
+      milestoneText = `[TRANSAKSI DIBATALKAN] Kesepakatan transaksi telah dibatalkan.`;
     }
 
     startTransition(async () => {
@@ -270,31 +406,32 @@ export function ChatClient({
           status,
           finalPrice: priceNum,
           finalQuantity: qtyNum,
-          unit: activeConv.match?.listing?.unit || "kg",
+          unit,
         },
       });
 
       try {
+        const txIdToSend =
+          activeTx?.status === "selesai" || activeTx?.status === "dibatalkan"
+            ? undefined
+            : activeTx?.id;
+
         const res = await updateTransactionStatusAction({
-          transactionId: activeTx?.id,
+          transactionId: txIdToSend,
           conversationId: convId,
           sellerId: activeConv.sellerId,
           buyerId: activeConv.buyerId,
           listingId: activeConv.match?.listing?.id,
-          categoryId: activeConv.match?.listing?.categoryId,
+          categoryId:
+            activeConv.match?.listing?.categoryId ||
+            activeConv.match?.request?.categoryId,
           status,
           finalPrice: priceNum,
           finalQuantity: qtyNum,
-          unit: activeConv.match?.listing?.unit || "kg",
+          unit,
         });
 
         if (res.success && res.transaction) {
-          // Perbarui status optimistik dengan ID dan data asli dari database
-          setOptimisticUpdate({
-            type: "update_tx",
-            conversationId: convId,
-            transaction: res.transaction,
-          });
           const updatedTx = res.transaction;
 
           setConvList((prev) =>
@@ -325,7 +462,13 @@ export function ChatClient({
               setConvList((prev) =>
                 prev.map((c) =>
                   c.id === convId
-                    ? { ...c, messages: [...(c.messages || []), msgRes.message as unknown as ChatMessage] }
+                    ? {
+                        ...c,
+                        messages: mergeUniqueMessages(
+                          c.messages || [],
+                          msgRes.message as unknown as ChatMessage
+                        ),
+                      }
                     : c,
                 ),
               );
@@ -399,25 +542,52 @@ export function ChatClient({
                   isSeller={isSeller}
                   currentDealInput={currentDealInput}
                   isUpdatingTx={isUpdatingTx}
+                  hasReviewed={Boolean(
+                    activeTx &&
+                      (reviewedTxIds.includes(activeTx.id) ||
+                        (activeTx.reviews || []).some(
+                          (r) => r.reviewerId === effectiveUserId
+                        ))
+                  )}
                   onPriceChange={handlePriceChange}
                   onQuantityChange={handleQuantityChange}
                   onUpdateStatus={handleUpdateTransactionStatus}
+                  onOpenReviewDialog={() => setShowReviewDialog(true)}
                 />
 
-                {/* 3. Message Stream Bubbles */}
+                {/* 3. Message Stream Bubbles with System Milestone Cards */}
                 <MessageStream
                   messages={activeConv.messages || []}
                   effectiveUserId={effectiveUserId}
                 />
 
-                {/* 4. Chat Input & Quick Suggestion Bar */}
+                {/* 4. Chat Input & Adaptive Quick Suggestion Bar */}
                 <ChatInputBar
                   messageInput={messageInput}
                   isSending={isSending}
+                  isSeller={isSeller}
+                  userAddress={currentUserAddress}
                   onInputChange={setMessageInput}
                   onSendMessage={handleSendMessage}
                   onQuickMessage={handleQuickMessage}
                 />
+
+                {/* 5. In-Chat Review Rating Dialog */}
+                {activeTx && partnerUser && (
+                  <CreateReviewDialog
+                    open={showReviewDialog}
+                    onOpenChange={setShowReviewDialog}
+                    transactionId={activeTx.id}
+                    reviewerId={effectiveUserId}
+                    revieweeId={partnerUser.id}
+                    partnerName={partnerUser.fullName || "Mitra DaurNusa"}
+                    onSuccess={() => {
+                      if (activeTx) {
+                        setReviewedTxIds((prev) => [...prev, activeTx.id]);
+                      }
+                    }}
+                  />
+                )}
               </>
             ) : (
               <EmptyChatState />

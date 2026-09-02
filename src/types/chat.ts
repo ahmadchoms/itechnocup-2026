@@ -20,8 +20,16 @@ export interface ChatListing extends GeoLocation {
   cvConfidence?: number | null;
 }
 
+export interface ChatReviewItem {
+  id: string;
+  reviewerId: string;
+  rating: number;
+  comment?: string | null;
+}
+
 export interface ChatTransaction extends TransactionCore {
   completedAt?: string | Date | null;
+  reviews?: ChatReviewItem[];
 }
 
 export interface ChatMessage {

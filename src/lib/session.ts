@@ -36,8 +36,9 @@ function hexToBuffer(hex: string): Uint8Array {
  * Membuat token session yang ditandatangani secara kriptografis (HMAC-SHA256)
  */
 export async function signSessionToken(userId: string): Promise<string> {
+  const cleanId = String(userId || "").trim();
   const expiresAt = Date.now() + SESSION_MAX_AGE * 1000;
-  const payload = `${userId}.${expiresAt}`;
+  const payload = `${cleanId}.${expiresAt}`;
   const key = await getCryptoKey();
   const encoder = new TextEncoder();
   const signatureBuffer = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
@@ -49,20 +50,34 @@ export async function signSessionToken(userId: string): Promise<string> {
  * Memverifikasi integritas dan masa berlaku token session (Edge-compatible)
  */
 export async function verifySessionToken(token: string | undefined | null): Promise<string | null> {
-  if (!token) return null;
+  if (
+    !token ||
+    typeof token !== "string" ||
+    token.trim() === "" ||
+    token === "undefined" ||
+    token === "null" ||
+    token === "deleted"
+  ) {
+    return null;
+  }
 
-  const parts = token.split(".");
+  const cleanToken = token.trim();
+  const parts = cleanToken.split(".");
   if (parts.length !== 3) {
-    // Fallback migration jika cookie lama masih plain userId (hanya jika valid format)
-    if (token.length >= 10 && !token.includes(".")) {
-      return token;
+    // Validasi format UUID v4 jika cookie lama masih plain userId
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanToken);
+    if (isUuid) {
+      return cleanToken;
     }
     return null;
   }
 
   const [userId, expiresAtStr, signatureHex] = parts;
-  const expiresAt = Number(expiresAtStr);
+  if (!userId || userId.trim() === "" || userId === "undefined" || userId === "null") {
+    return null;
+  }
 
+  const expiresAt = Number(expiresAtStr);
   if (isNaN(expiresAt) || Date.now() > expiresAt) {
     return null; // Token kedaluwarsa
   }
@@ -80,7 +95,7 @@ export async function verifySessionToken(token: string | undefined | null): Prom
       encoder.encode(payload)
     );
 
-    return isValid ? userId : null;
+    return isValid && userId.trim() ? userId.trim() : null;
   } catch (error) {
     console.error("[verifySessionToken] Error verifying signature:", error);
     return null;
@@ -89,7 +104,10 @@ export async function verifySessionToken(token: string | undefined | null): Prom
 
 /** Simpan session bertanda tangan ke cookie HttpOnly (server-side only) */
 export async function setSession(userId: string): Promise<void> {
-  const token = await signSessionToken(userId);
+  const cleanId = String(userId || "").trim();
+  if (!cleanId) return;
+
+  const token = await signSessionToken(cleanId);
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -104,23 +122,46 @@ export async function setSession(userId: string): Promise<void> {
 export async function clearSession(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(SESSION_COOKIE);
+  cookieStore.set(SESSION_COOKIE, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 0,
+    path: "/",
+    expires: new Date(0),
+  });
 }
 
 /** Baca dan verifikasi userId dari cookie, atau null jika tidak ada/tidak valid */
 export async function getSessionUserId(): Promise<string | null> {
-  const cookieStore = await cookies();
-  const cookie = cookieStore.get(SESSION_COOKIE);
-  return verifySessionToken(cookie?.value);
+  try {
+    const cookieStore = await cookies();
+    const cookie = cookieStore.get(SESSION_COOKIE);
+    return verifySessionToken(cookie?.value);
+  } catch {
+    return null;
+  }
 }
 
 /** Ambil data user lengkap dari session terverifikasi, atau null */
 export async function getSessionUser() {
   const userId = await getSessionUserId();
-  if (!userId) return null;
+  if (
+    !userId ||
+    typeof userId !== "string" ||
+    userId.trim() === "" ||
+    userId === "undefined" ||
+    userId === "null"
+  ) {
+    return null;
+  }
+
+  const cleanId = userId.trim();
+  if (!cleanId) return null;
 
   try {
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: cleanId },
       select: {
         id: true,
         fullName: true,

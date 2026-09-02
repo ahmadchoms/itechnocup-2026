@@ -13,10 +13,24 @@ export async function createReviewAction(input: CreateReviewInput) {
     }
 
     const validated = createReviewSchema.parse(input);
-    const review = await reviewService.createReview(validated);
+    const review = await reviewService.createReview({
+      ...validated,
+      reviewerId: sessionUser.id,
+    });
 
     revalidatePath("/profile");
-    return { success: true, review };
+    revalidatePath("/profile/reviews");
+    revalidatePath("/chat");
+
+    // Plain JSON object return
+    return {
+      success: true,
+      review: {
+        id: review.id,
+        rating: review.rating,
+        comment: review.comment,
+      },
+    };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Gagal memberikan ulasan";
     return { success: false, error: message };

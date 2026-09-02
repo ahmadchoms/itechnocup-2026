@@ -63,6 +63,9 @@ export async function registerAction(data: RegisterInput) {
 export async function logoutAction() {
   try {
     await clearSession();
+    revalidatePath("/");
+    revalidatePath("/profile");
+    revalidatePath("/chat");
     return { success: true };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Gagal keluar sesi";

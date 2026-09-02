@@ -53,6 +53,13 @@ function serializeConversation(conv: RawConversation): ChatConversation {
     transactions: (conv.transactions || []).map((t: any) => ({
       ...t,
       finalPrice: Number(t.finalPrice),
+      finalQuantity: Number(t.finalQuantity || 0),
+      reviews: (t.reviews || []).map((r: any) => ({
+        id: r.id,
+        reviewerId: r.reviewerId,
+        rating: r.rating,
+        comment: r.comment,
+      })),
     })),
   };
 }

@@ -44,6 +44,16 @@ export class ChatRepository {
         transactions: {
           orderBy: { createdAt: "desc" },
           take: 1,
+          include: {
+            reviews: {
+              select: {
+                id: true,
+                reviewerId: true,
+                rating: true,
+                comment: true,
+              },
+            },
+          },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -75,6 +85,16 @@ export class ChatRepository {
         transactions: {
           orderBy: { createdAt: "desc" },
           take: 1,
+          include: {
+            reviews: {
+              select: {
+                id: true,
+                reviewerId: true,
+                rating: true,
+                comment: true,
+              },
+            },
+          },
         },
       },
     });

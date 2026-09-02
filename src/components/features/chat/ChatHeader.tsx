@@ -110,8 +110,10 @@ export function ChatHeader({
               activeTx.status === "selesai"
                 ? "bg-[#E8EEDD] text-[#6B7B4F] border-[#7A8F5C]/30"
                 : activeTx.status === "menunggu_konfirmasi"
-                  ? "bg-[#FEF3D6] text-[#C98A0B] border-[#C98A0B]/30 animate-pulse"
-                  : "bg-red-50 text-red-700 border-red-200",
+                  ? "bg-[#E0F2FE] text-[#0369A1] border-[#0284C7]/30"
+                  : activeTx.status === "menunggu_persetujuan"
+                    ? "bg-[#FEF3D6] text-[#C98A0B] border-[#C98A0B]/30 animate-pulse"
+                    : "bg-red-50 text-red-700 border-red-200",
             )}
           >
             {activeTx.status === "selesai" && (
@@ -120,13 +122,20 @@ export function ChatHeader({
             {activeTx.status === "menunggu_konfirmasi" && (
               <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             )}
+            {activeTx.status === "menunggu_persetujuan" && (
+              <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            )}
             {activeTx.status === "dibatalkan" && (
               <XCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             )}
             <span className="truncate max-w-[80px] sm:max-w-none">
-              {activeTx.status === "menunggu_konfirmasi"
-                ? "Menunggu COD"
-                : activeTx.status}
+              {activeTx.status === "menunggu_persetujuan"
+                ? "Tawaran Diajukan"
+                : activeTx.status === "menunggu_konfirmasi"
+                  ? "Jadwal COD"
+                  : activeTx.status === "selesai"
+                    ? "Selesai"
+                    : "Dibatalkan"}
             </span>
           </Badge>
         )}
