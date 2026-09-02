@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   ArrowLeft,
   MessageCircle,
@@ -12,6 +12,7 @@ import {
   ExternalLink,
   SlidersHorizontal,
   TrendingUp,
+  CheckCircle2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -58,6 +59,7 @@ interface WasteRequest {
   buyer: { id: string; fullName: string; avatarUrl: string | null };
   category: { id: string; name: string };
   createdAt: string;
+  aiScore?: number;
 }
 
 interface Props {
@@ -69,23 +71,45 @@ interface Props {
 function calculateSimilarity(str1: string, str2: string): number {
   if (!str1 || !str2) return 0;
 
-  const words1 = str1.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter((w) => w.length > 2);
-  const words2 = str2.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter((w) => w.length > 2);
+  const clean = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, "");
+  const words1 = clean(str1).split(/\s+/).filter((w) => w.length > 2); // Abaikan kata < 3 huruf
+  const words2 = clean(str2).split(/\s+/).filter((w) => w.length > 2);
 
   if (words1.length === 0 || words2.length === 0) return 0;
 
   let matches = 0;
   for (const w1 of words1) {
-    if (words2.includes(w1)) matches++;
+    // Cek apakah ada kata yang mengandung (partial match)
+    if (words2.some((w2) => w2.includes(w1) || w1.includes(w2))) {
+      matches++;
+    }
   }
 
-  return matches / Math.max(words1.length, words2.length);
+  // Gunakan rasio rata-rata agar adil untuk kalimat panjang vs pendek
+  const matchRatio1 = matches / words1.length;
+  const matchRatio2 = matches / words2.length;
+  
+  return (matchRatio1 + matchRatio2) / 2;
 }
 
 export function ListingMatchClient({ listing, wasteRequests, sessionUser }: Props) {
   const router = useRouter();
   const [startingChat, setStartingChat] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"smart" | "distance" | "price">("smart");
+
+  // Splash screen state
+  const [showSplash, setShowSplash] = useState(true);
+  const [animateOut, setAnimateOut] = useState(false);
+
+  useEffect(() => {
+    // Tampilkan success splash lebih lama agar animasi jalan full (2.2 detik), lalu fade-out
+    const t1 = setTimeout(() => setAnimateOut(true), 2200);
+    const t2 = setTimeout(() => setShowSplash(false), 2600);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, []);
 
   const listingLat = listing.latitude || -7.0051;
   const listingLng = listing.longitude || 110.4381;
@@ -102,9 +126,32 @@ export function ListingMatchClient({ listing, wasteRequests, sessionUser }: Prop
         const etaMinutes = calculateEtaMinutes(distanceKm);
         const directionsUrl = getGoogleMapsDirectionsUrl(reqLat, reqLng, listingLat, listingLng);
 
-        // 2. Keyword Similarity
-        const textSim = calculateSimilarity(listing.title, req.title);
-        const isSameCategory = req.categoryId === listing.categoryId;
+        // 2. AI Semantic Match Score (0.0 to 1.0) dari Gemini, fallback ke manual similarity jika tidak ada
+        let semanticScore = req.aiScore ?? 0;
+        
+        // Jika AI gagal/limit habis, gunakan pencocokan teks cerdas (cerdas tanpa AI)
+        if (semanticScore === 0) {
+          const titleSim = calculateSimilarity(listing.title, req.title);
+          const descSim = calculateSimilarity(listing.title, req.description || "");
+          const maxTextSim = Math.max(titleSim, descSim);
+          
+          const isSameCategory = req.categoryId === listing.categoryId;
+          const isTitleMatch = maxTextSim >= 0.3; // Ambang batas kemiripan kata yang cukup (minimal 30% kata sama)
+          
+          if (isSameCategory && isTitleMatch) {
+            // Prioritas 1: Kategori Sama & Judul Mirip
+            semanticScore = 0.8 + (maxTextSim * 0.2); // Hasil: 0.8 - 1.0 (Paling atas)
+          } else if (isTitleMatch && !isSameCategory) {
+            // Prioritas 2: Judul Mirip TAPI Kategori Beda (kasus user salah pilih kategori)
+            semanticScore = 0.5 + (maxTextSim * 0.2); // Hasil: 0.5 - 0.7 (Di tengah)
+          } else if (isSameCategory && !isTitleMatch) {
+            // Prioritas 3: Kategori Sama TAPI Judul Kurang Mirip
+            semanticScore = 0.35; // Hasil: 0.35 (Paling bawah, tapi tetap lolos filter > 0.3)
+          } else {
+            // Tidak ada yang sama sekali
+            semanticScore = 0;
+          }
+        }
 
         // 3. Proximity score (Max 0.3 bonus if distance <= 5km)
         let proximityScore = 0;
@@ -112,18 +159,20 @@ export function ListingMatchClient({ listing, wasteRequests, sessionUser }: Prop
         else if (distanceKm <= 7) proximityScore = 0.2;
         else if (distanceKm <= 15) proximityScore = 0.1;
 
-        // 4. Composite AI Match Score (0.0 to 1.0)
-        let totalScore = (isSameCategory ? 0.5 : 0) + textSim * 0.2 + proximityScore;
+        // 4. Composite Match Score
+        let totalScore = semanticScore * 0.7 + proximityScore;
 
         return {
           ...req,
           distanceKm,
           etaMinutes,
           directionsUrl,
+          semanticScore,
           score: totalScore,
         };
       })
-      .filter((req) => req.score > 0.1 || req.distanceKm <= 20)
+      // Hanya tampilkan request yang setidaknya memiliki sedikit kecocokan semantik (AI Score > 0.3)
+      .filter((req) => req.semanticScore > 0.3)
       .sort((a, b) => {
         if (sortBy === "distance") return a.distanceKm - b.distanceKm;
         if (sortBy === "price") return b.offeredPrice - a.offeredPrice;
@@ -154,8 +203,31 @@ export function ListingMatchClient({ listing, wasteRequests, sessionUser }: Prop
     }
   };
 
+  if (showSplash) {
+    return (
+      <div className={`min-h-screen bg-slate-50/50 flex flex-col items-center justify-center p-4 transition-opacity duration-300 ${animateOut ? 'opacity-0' : 'opacity-100'}`}>
+        <div className="bg-white border border-slate-200 rounded-3xl p-8 sm:p-12 shadow-sm max-w-md w-full text-center space-y-6">
+          <div className="relative w-24 h-24 mx-auto scale-in-center animate-in zoom-in duration-500">
+            <div className="absolute inset-0 bg-emerald-100 rounded-full animate-ping opacity-20"></div>
+            <div className="relative w-full h-full bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-200">
+              <CheckCircle2 className="w-12 h-12 text-white" />
+            </div>
+          </div>
+          <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150 fill-mode-both">
+            <h2 className="text-xl font-bold text-slate-900">
+              Pencocokan Berhasil!
+            </h2>
+            <p className="text-sm text-slate-500">
+              Menyiapkan daftar pengepul terdekat...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50/50 pb-20">
+    <div className="min-h-screen bg-slate-50/50 pb-20 animate-in fade-in duration-500">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-xs">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">

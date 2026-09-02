@@ -13,6 +13,7 @@ interface DealDrawerProps {
   activeConv: ChatConversation;
   activeTx: ChatTransaction | null;
   isExpanded: boolean;
+  isSeller: boolean;
   currentDealInput: { price: string; quantity: string };
   isUpdatingTx: boolean;
   onPriceChange: (value: string) => void;
@@ -26,6 +27,7 @@ export function DealDrawer({
   activeConv,
   activeTx,
   isExpanded,
+  isSeller,
   currentDealInput,
   isUpdatingTx,
   onPriceChange,
@@ -86,7 +88,8 @@ export function DealDrawer({
                     type="number"
                     value={currentDealInput.quantity}
                     onChange={(e) => onQuantityChange(e.target.value)}
-                    className="h-9 text-xs font-bold bg-white border-zinc-200 rounded-xl text-[#171717] focus-visible:ring-1 focus-visible:ring-[#171717]"
+                    disabled={isSeller || isUpdatingTx}
+                    className="h-9 text-xs font-bold bg-white border-zinc-200 rounded-xl text-[#171717] focus-visible:ring-1 focus-visible:ring-[#171717] disabled:opacity-60 disabled:cursor-not-allowed"
                     placeholder="25"
                   />
                 </div>
@@ -99,39 +102,69 @@ export function DealDrawer({
                     type="number"
                     value={currentDealInput.price}
                     onChange={(e) => onPriceChange(e.target.value)}
-                    className="h-9 text-xs font-mono font-extrabold bg-white border-zinc-200 rounded-xl text-[#171717] focus-visible:ring-1 focus-visible:ring-[#171717]"
+                    disabled={isSeller || isUpdatingTx}
+                    className="h-9 text-xs font-mono font-extrabold bg-white border-zinc-200 rounded-xl text-[#171717] focus-visible:ring-1 focus-visible:ring-[#171717] disabled:opacity-60 disabled:cursor-not-allowed"
                     placeholder="45000"
                   />
                 </div>
 
                 {/* Action Trigger Buttons */}
                 <div className="flex flex-wrap items-center gap-2">
-                  {activeTx?.status !== "menunggu_konfirmasi" &&
-                    activeTx?.status !== "selesai" && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => onUpdateStatus("menunggu_konfirmasi")}
-                        disabled={isUpdatingTx}
-                        className="h-9 flex-1 cursor-pointer rounded-full bg-[#171717] hover:bg-[#2B2B26] text-white text-[11.5px] font-bold shadow-xs gap-1.5"
-                      >
-                        <Clock className="w-3.5 h-3.5 text-amber-300" />
-                        <span>Sepakati COD</span>
-                      </Button>
-                    )}
+                  
+                  {/* NEW OFFER (Belum ada transaksi atau dibatalkan) -> Hanya Pembeli */}
+                  {(!activeTx || activeTx.status === "dibatalkan") && !isSeller && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => onUpdateStatus("menunggu_persetujuan")}
+                      disabled={isUpdatingTx}
+                      className="h-9 flex-1 cursor-pointer rounded-full bg-[#171717] hover:bg-[#2B2B26] text-white text-[11.5px] font-bold shadow-xs gap-1.5"
+                    >
+                      <Handshake className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Tawarkan Harga</span>
+                    </Button>
+                  )}
 
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => onUpdateStatus("selesai")}
-                    disabled={isUpdatingTx}
-                    className="h-9 flex-1 cursor-pointer rounded-full bg-[#6B7B4F] hover:bg-[#586640] text-white text-[11.5px] font-bold shadow-xs gap-1.5"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Selesaikan</span>
-                  </Button>
+                  {/* MENUNGGU PERSETUJUAN -> Hanya Penjual yg bisa setuju */}
+                  {activeTx?.status === "menunggu_persetujuan" && isSeller && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => onUpdateStatus("menunggu_konfirmasi")}
+                      disabled={isUpdatingTx}
+                      className="h-9 flex-1 cursor-pointer rounded-full bg-[#171717] hover:bg-[#2B2B26] text-white text-[11.5px] font-bold shadow-xs gap-1.5"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Setujui Harga</span>
+                    </Button>
+                  )}
+                  {activeTx?.status === "menunggu_persetujuan" && !isSeller && (
+                     <Button
+                       type="button"
+                       size="sm"
+                       disabled={true}
+                       className="h-9 flex-1 rounded-full bg-zinc-100 text-zinc-500 text-[11.5px] font-bold"
+                     >
+                       <Clock className="w-3.5 h-3.5 mr-1" /> Menunggu Penjual
+                     </Button>
+                  )}
 
-                  {activeTx?.status === "menunggu_konfirmasi" && (
+                  {/* SELESAIKAN TRANSAKSI -> Hanya Penjual (Sesuai kesepakatan bahwa seller yg tekan tombol complete) */}
+                  {activeTx?.status === "menunggu_konfirmasi" && isSeller && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => onUpdateStatus("selesai")}
+                      disabled={isUpdatingTx}
+                      className="h-9 flex-1 cursor-pointer rounded-full bg-[#6B7B4F] hover:bg-[#586640] text-white text-[11.5px] font-bold shadow-xs gap-1.5"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Selesaikan Transaksi</span>
+                    </Button>
+                  )}
+
+                  {/* BATALKAN (Bisa diakses kapanpun saat belum selesai, oleh siapapun) */}
+                  {(activeTx?.status === "menunggu_konfirmasi" || activeTx?.status === "menunggu_persetujuan") && (
                     <Button
                       type="button"
                       variant="outline"
@@ -147,16 +180,20 @@ export function DealDrawer({
               </div>
 
               {/* Informational Guidance */}
+              {activeTx?.status === "menunggu_persetujuan" && isSeller && (
+                <div className="p-2.5 rounded-xl bg-[#FEF3D6] border border-[#C98A0B]/30 flex items-start gap-2 text-xs text-[#92400E]">
+                  <Info className="w-4 h-4 shrink-0 mt-0.5 text-[#C98A0B]" />
+                  <span className="text-[11px] leading-relaxed">
+                    Pembeli mengajukan penawaran harga. Jika setuju, silakan klik <strong>Setujui Harga</strong>. Jika menolak, klik <strong>Batal</strong>.
+                  </span>
+                </div>
+              )}
               {activeTx?.status === "menunggu_konfirmasi" && (
                 <div className="p-2.5 rounded-xl bg-[#FEF3D6] border border-[#C98A0B]/30 flex items-start gap-2 text-xs text-[#92400E]">
                   <Info className="w-4 h-4 shrink-0 mt-0.5 text-[#C98A0B]" />
                   <span className="text-[11px] leading-relaxed">
-                    Kesepakatan tercatat sebesar{" "}
-                    <strong>
-                      {formatRupiah(Number(currentDealInput.price))}
-                    </strong>
-                    . Silakan tentukan waktu penjemputan dan bayar tunai di
-                    lokasi.
+                    Harga <strong>{formatRupiah(Number(currentDealInput.price))}</strong> telah disepakati. Silakan tentukan waktu penjemputan.
+                    {isSeller && " Jika sudah selesai, tekan tombol Selesaikan Transaksi."}
                   </span>
                 </div>
               )}

@@ -20,7 +20,9 @@ interface AppShellProps {
   } | null;
 }
 
-export function AppShell({ children, categories = [], sessionUser: serverSessionUser }: AppShellProps) {
+const EMPTY_CATEGORIES: { id: string; name: string }[] = [];
+
+export function AppShell({ children, categories = EMPTY_CATEGORIES, sessionUser: serverSessionUser }: AppShellProps) {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [dbCategories, setDbCategories] = useState<{ id: string; name: string }[]>(categories);
 

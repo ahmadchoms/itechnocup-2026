@@ -123,8 +123,8 @@ export function ChatClient({
       };
     }
 
-    const p = Number(activeConv.match?.listing?.estimatedPrice) || 1800;
-    const q = Number(activeConv.match?.listing?.estimatedWeightKg) || 25;
+    const p = Number(activeConv.match?.request?.offeredPrice) || Number(activeConv.match?.listing?.estimatedPrice) || 1800;
+    const q = Number(activeConv.match?.listing?.quantity) || Number(activeConv.match?.listing?.estimatedWeightKg) || 25;
     return {
       price: String(p * q),
       quantity: String(q),
@@ -240,7 +240,7 @@ export function ChatClient({
   };
 
   const handleUpdateTransactionStatus = async (
-    status: "menunggu_konfirmasi" | "selesai" | "dibatalkan",
+    status: "menunggu_persetujuan" | "menunggu_konfirmasi" | "selesai" | "dibatalkan",
   ) => {
     if (!activeConv) return;
     const convId = activeConv.id;
@@ -250,8 +250,10 @@ export function ChatClient({
     const qtyNum = Number(currentDealInput.quantity) || 0;
 
     let milestoneText = "";
-    if (status === "menunggu_konfirmasi") {
-      milestoneText = `📦 [KESEPAKATAN COD DIAJUKAN] Total harga: ${formatRupiah(priceNum)} (${qtyNum} kg). Menunggu serah terima material di lokasi.`;
+    if (status === "menunggu_persetujuan") {
+      milestoneText = `📢 [TAWARAN DIAJUKAN] Pembeli mengajukan tawaran harga total sebesar ${formatRupiah(priceNum)} (${qtyNum} ${activeConv.match?.listing?.unit || "kg"}). Menunggu persetujuan penjual.`;
+    } else if (status === "menunggu_konfirmasi") {
+      milestoneText = `🤝 [TAWARAN DISETUJUI] Penjual telah menyetujui harga kesepakatan. Silakan jadwalkan penjemputan COD.`;
     } else if (status === "selesai") {
       milestoneText = `✅ [TRANSAKSI SELESAI] Penjemputan dan pembayaran tunai COD senilai ${formatRupiah(priceNum)} telah berhasil diselesaikan.`;
     } else if (status === "dibatalkan") {
@@ -383,6 +385,7 @@ export function ChatClient({
                   activeConv={activeConv}
                   activeTx={activeTx}
                   isExpanded={isDealBoxExpanded}
+                  isSeller={isSeller}
                   currentDealInput={currentDealInput}
                   isUpdatingTx={isUpdatingTx}
                   onPriceChange={handlePriceChange}

@@ -2,6 +2,7 @@ import { getSessionUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ListingMatchClient } from "@/components/features/listings/ListingMatchClient";
+import { aiService } from "@/services/ai.service";
 
 export const dynamic = "force-dynamic";
 
@@ -78,10 +79,35 @@ export default async function ListingMatchPage({
     activeRole: sessionUser.activeRole,
   };
 
+  // Call AI on-the-fly
+  const aiListingArgs = {
+    id: safeListing.id,
+    title: safeListing.title,
+    categoryName: safeListing.category?.name || "",
+  };
+
+  const aiRequestsArgs = safeWasteRequests.map((r) => ({
+    id: r.id,
+    title: r.title,
+    categoryName: r.category?.name || "",
+  }));
+
+  const aiScores = await aiService.evaluateMatchesOnTheFly(aiListingArgs, aiRequestsArgs);
+
+  // Tambahkan delay 1 detik (1000ms) agar animasi muter (loading.tsx)
+  // tidak terlalu cepat menghilang jika backend merespon sangat cepat.
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  // Attach aiScore back to safeWasteRequests
+  const safeWasteRequestsWithAI = safeWasteRequests.map((r) => {
+    const scoreObj = aiScores.find((s) => s.requestId === r.id);
+    return { ...r, aiScore: scoreObj?.aiScore ?? 0 };
+  });
+
   return (
     <ListingMatchClient
       listing={safeListing as any}
-      wasteRequests={safeWasteRequests as any}
+      wasteRequests={safeWasteRequestsWithAI as any}
       sessionUser={safeSessionUser}
     />
   );
