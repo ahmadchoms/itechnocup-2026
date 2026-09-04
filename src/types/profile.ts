@@ -33,6 +33,12 @@ export interface ProfileTransaction extends Omit<TransactionCore, "status"> {
   category?: CategoryRef | null;
   buyer?: { fullName: string } | null;
   seller?: { fullName: string } | null;
+  listing?: {
+    id: string;
+    title: string;
+    photoUrl?: string | null;
+    category?: { name: string } | null;
+  } | null;
 }
 
 export interface ProfileReview {
@@ -60,6 +66,7 @@ export interface ProfileListing {
   description?: string | null;
   photoUrl: string;
   estimatedWeightKg?: number | null;
+  quantity?: number | null;
   estimatedPrice?: number | null;
   unit?: string | null;
   status: "aktif" | "terjual" | "dihapus" | string;

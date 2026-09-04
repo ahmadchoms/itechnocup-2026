@@ -12,8 +12,11 @@ export interface ChatUser extends GeoLocation {
 export interface ChatListing extends GeoLocation {
   id: string;
   title: string;
+  description?: string | null;
+  photoUrl?: string | null;
   estimatedPrice?: number | null;
   estimatedWeightKg?: number | null;
+  quantity?: number | null;
   unit?: string | null;
   categoryId?: string;
   category?: CategoryRef | null;
@@ -28,6 +31,11 @@ export interface ChatReviewItem {
 }
 
 export interface ChatTransaction extends TransactionCore {
+  conversationId?: string | null;
+  listingId?: string | null;
+  sellerId?: string;
+  buyerId?: string;
+  categoryId?: string | null;
   completedAt?: string | Date | null;
   reviews?: ChatReviewItem[];
 }
@@ -45,7 +53,14 @@ export interface ChatMatch {
   id: string;
   distanceKm?: number | null;
   listing?: ChatListing | null;
-  request?: ({ id: string; offeredPrice?: number | null } & GeoLocation) | null;
+  request?: ({
+    id: string;
+    title?: string | null;
+    offeredPrice?: number | null;
+    quantityWanted?: number | null;
+    unit?: string | null;
+    categoryId?: string | null;
+  } & GeoLocation) | null;
 }
 
 export interface ChatConversation {

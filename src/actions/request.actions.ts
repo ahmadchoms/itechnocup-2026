@@ -69,6 +69,24 @@ export async function deleteRequestAction(id: string) {
   }
 }
 
+export async function toggleRequestStatusAction(id: string, newStatus: "aktif" | "terpenuhi") {
+  try {
+    const wasteRequest = await prisma.wasteRequest.update({
+      where: { id },
+      data: { status: newStatus },
+      include: { category: true, buyer: true },
+    });
+    revalidatePath("/profile");
+    revalidatePath("/requests");
+    revalidatePath(`/requests/${id}`);
+    revalidatePath("/");
+    return { success: true, wasteRequest };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Gagal mengubah status permintaan";
+    return { success: false, error: message };
+  }
+}
+
 export async function getRequestsAction(filters?: { categoryId?: string; search?: string }) {
   try {
     const requests = await requestService.getRequests(filters);

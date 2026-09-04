@@ -23,9 +23,18 @@ export function TransactionCardList({ transactions, isSeller }: TransactionCardL
             <TransactionStatusBadge status={tx.status} />
           </div>
 
-          <div className="flex items-center justify-between border-t border-zinc-100 pt-2 text-xs text-[#78766B]">
-            <span>{tx.category?.name || "Limbah Sirkular"}</span>
-            <span className="font-semibold text-[#171717]">
+          <div className="flex items-center justify-between border-t border-zinc-100 pt-2 text-xs">
+            <div className="flex flex-col min-w-0 pr-2">
+              <span className="font-bold text-[#171717] truncate">
+                {tx.listing?.title || tx.category?.name || "Limbah Sirkular"}
+              </span>
+              {tx.listing?.title && tx.category?.name && (
+                <span className="text-[10px] text-[#6B7B4F] font-medium truncate">
+                  {tx.category.name}
+                </span>
+              )}
+            </div>
+            <span className="font-semibold text-[#171717] shrink-0">
               {tx.finalQuantity || 25} {tx.unit || "kg"}
             </span>
           </div>

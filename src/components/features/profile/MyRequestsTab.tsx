@@ -5,8 +5,11 @@ import Link from "next/link";
 import {
   Search,
   PlusCircle,
+  Pencil,
   Trash2,
   Compass,
+  CheckCircle2,
+  RotateCcw,
   AlertTriangle,
   RefreshCw,
   MapPin,
@@ -17,7 +20,8 @@ import { formatRupiah, formatIdDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { deleteRequestAction } from "@/actions/request.actions";
+import { EditRequestModal } from "./EditRequestModal";
+import { deleteRequestAction, toggleRequestStatusAction } from "@/actions/request.actions";
 import { toast } from "@/components/ui/sonner";
 import {
   AlertDialog,
@@ -36,16 +40,18 @@ interface MyRequestsTabProps {
   categories: WasteCategoryOption[];
 }
 
-export function MyRequestsTab({ initialRequests }: MyRequestsTabProps) {
+export function MyRequestsTab({ initialRequests, categories }: MyRequestsTabProps) {
   const [requests, setRequests] =
     useState<ProfileWasteRequest[]>(initialRequests);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<
     "semua" | "aktif" | "terpenuhi"
   >("semua");
+  const [editingRequest, setEditingRequest] = useState<ProfileWasteRequest | null>(null);
   const [requestToDelete, setRequestToDelete] =
     useState<ProfileWasteRequest | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const filteredRequests = useMemo(() => {
     return requests.filter((r) => {
@@ -63,6 +69,43 @@ export function MyRequestsTab({ initialRequests }: MyRequestsTabProps) {
       return matchSearch;
     });
   }, [requests, searchQuery, statusFilter]);
+
+  const handleToggleStatus = async (req: ProfileWasteRequest) => {
+    const newStatus = req.status === "aktif" ? "terpenuhi" : "aktif";
+    setTogglingId(req.id);
+
+    try {
+      const res = await toggleRequestStatusAction(req.id, newStatus);
+      if (res.success) {
+        setRequests((prev) =>
+          prev.map((r) =>
+            r.id === req.id ? { ...r, status: newStatus } : r
+          )
+        );
+        toast.success(
+          newStatus === "terpenuhi"
+            ? "Permintaan Ditandai Terpenuhi"
+            : "Permintaan Diaktifkan Kembali",
+          {
+            description:
+              newStatus === "terpenuhi"
+                ? `Permintaan "${req.title}" berhasil ditandai selesai/terpenuhi.`
+                : `Permintaan "${req.title}" kini kembali aktif di papan pasar.`,
+          }
+        );
+      } else {
+        toast.error("Gagal Mengubah Status", {
+          description: res.error || "Terjadi kesalahan pada server.",
+        });
+      }
+    } catch {
+      toast.error("Gagal Mengubah Status", {
+        description: "Koneksi terputus. Silakan coba lagi.",
+      });
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   const confirmDeleteRequest = async () => {
     if (!requestToDelete) return;
@@ -98,55 +141,51 @@ export function MyRequestsTab({ initialRequests }: MyRequestsTabProps) {
 
   return (
     <div className="space-y-4">
-      {/* Top Action Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border border-zinc-200/80 shadow-2xs">
-        {/* Search & Filter Bar */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 max-w-xl">
-          <div className="relative flex-1">
-            <Search className="w-3.5 h-3.5 text-[#8A8778] absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <Input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari kebutuhan pasokan material..."
-              className="pl-9 h-9 text-xs rounded-full bg-[#F7F4EE] border-zinc-200 focus:bg-white transition-colors"
-            />
-          </div>
+      {/* Search & Actions Bar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#78766B]" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari permintaan..."
+            className="pl-9 h-9 text-xs rounded-full bg-[#FAF8F5] border-zinc-200"
+          />
+        </div>
 
-          {/* Status Filter Tabs */}
-          <div className="flex items-center gap-1 bg-[#F7F4EE] p-1 rounded-full border border-zinc-200 self-start sm:self-auto shrink-0">
-            {(["semua", "aktif", "terpenuhi"] as const).map((st) => (
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+          <div className="flex items-center gap-1 bg-[#FAF8F5] p-1 rounded-full border border-zinc-200 text-xs">
+            {(["semua", "aktif", "terpenuhi"] as const).map((tab) => (
               <button
-                key={st}
+                key={tab}
                 type="button"
-                onClick={() => setStatusFilter(st)}
+                onClick={() => setStatusFilter(tab)}
                 className={cn(
-                  "px-3 py-1 text-xs font-semibold rounded-full capitalize transition-all cursor-pointer",
-                  statusFilter === st
+                  "px-3 py-1 rounded-full capitalize font-semibold transition-colors cursor-pointer",
+                  statusFilter === tab
                     ? "bg-white text-[#171717] shadow-2xs font-bold"
                     : "text-[#78766B] hover:text-[#171717]",
                 )}
               >
-                {st}
+                {tab}
               </button>
             ))}
           </div>
-        </div>
 
-        {/* Create New Request Button */}
-        <Link
-          href="/requests/create"
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full bg-[#171717] hover:bg-[#2B2B26] text-white text-xs font-bold transition-colors shrink-0 shadow-xs"
-        >
-          <PlusCircle className="w-3.5 h-3.5" />
-          <span>Buat Permintaan Baru</span>
-        </Link>
+          <Link
+            href="/requests/create"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#171717] text-white text-xs font-bold hover:bg-[#2B2B26] transition-colors shadow-2xs shrink-0"
+          >
+            <PlusCircle className="w-3.5 h-3.5 text-[#7A8F5C]" />
+            <span className="hidden sm:inline">Buka Permintaan</span>
+          </Link>
+        </div>
       </div>
 
-      {/* Grid of Requests */}
+      {/* Grid of Request Cards */}
       {filteredRequests.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-zinc-200/80 p-12 text-center space-y-3">
-          <div className="w-12 h-12 rounded-full bg-[#F7F4EE] text-[#8A8778] flex items-center justify-center mx-auto">
+        <div className="text-center py-12 px-4 rounded-3xl border border-dashed border-zinc-200 bg-[#FAF8F5] space-y-3">
+          <div className="w-12 h-12 rounded-full bg-white border border-zinc-200 flex items-center justify-center mx-auto text-[#6B7B4F] shadow-2xs">
             <Compass className="w-6 h-6" />
           </div>
           <div>
@@ -173,6 +212,7 @@ export function MyRequestsTab({ initialRequests }: MyRequestsTabProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredRequests.map((req) => {
             const isFulfilled = req.status === "terpenuhi";
+            const isToggling = togglingId === req.id;
 
             return (
               <div
@@ -180,7 +220,7 @@ export function MyRequestsTab({ initialRequests }: MyRequestsTabProps) {
                 className={cn(
                   "group relative rounded-3xl border bg-white p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between",
                   isFulfilled
-                    ? "border-zinc-200/60 opacity-80"
+                    ? "border-zinc-200/60 opacity-85 bg-[#FAF8F5]/50"
                     : "border-zinc-200/80 hover:border-[#171717]",
                 )}
               >
@@ -261,15 +301,58 @@ export function MyRequestsTab({ initialRequests }: MyRequestsTabProps) {
                 </div>
 
                 {/* Actions Toolbar */}
-                <div className="flex items-center gap-2 pt-3 mt-4 border-t border-zinc-100">
+                <div className="flex items-center gap-1.5 pt-3 mt-4 border-t border-zinc-100">
+                  {/* Manual Toggle Status Button */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isToggling}
+                    onClick={() => handleToggleStatus(req)}
+                    className={cn(
+                      "flex-1 h-8 rounded-full text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer border-zinc-200",
+                      isFulfilled
+                        ? "bg-white hover:bg-zinc-100 text-[#171717]"
+                        : "bg-[#6B7B4F] hover:bg-[#586640] text-white border-transparent"
+                    )}
+                    title={isFulfilled ? "Buka kembali permintaan pasokan" : "Tandai kebutuhan pasokan telah selesai/terpenuhi"}
+                  >
+                    {isToggling ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : isFulfilled ? (
+                      <>
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Buka Kembali</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Tandai Terpenuhi</span>
+                      </>
+                    )}
+                  </Button>
+
                   <Link
                     href={`/requests/${req.id}`}
-                    className="flex-1 h-8 rounded-full bg-[#171717] hover:bg-[#2B2B26] text-white text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                    className="h-8 w-8 rounded-full border border-zinc-200 bg-white hover:bg-[#F7F4EE] text-[#171717] flex items-center justify-center shrink-0 cursor-pointer shadow-2xs"
+                    title="Lihat detail halaman permintaan"
                   >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Lihat Detail</span>
+                    <Eye className="w-3.5 h-3.5 text-[#6B7B4F]" />
                   </Link>
 
+                  {/* Edit Request Button */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setEditingRequest(req)}
+                    className="h-8 w-8 rounded-full border-zinc-200 text-[#78766B] hover:text-[#171717] hover:bg-[#F7F4EE] shrink-0 cursor-pointer"
+                    title="Edit permintaan pasokan"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </Button>
+
+                  {/* Delete Request Button */}
                   <Button
                     type="button"
                     variant="outline"
@@ -286,6 +369,19 @@ export function MyRequestsTab({ initialRequests }: MyRequestsTabProps) {
           })}
         </div>
       )}
+
+      {/* Edit Request Modal */}
+      <EditRequestModal
+        request={editingRequest}
+        categories={categories}
+        isOpen={Boolean(editingRequest)}
+        onClose={() => setEditingRequest(null)}
+        onSuccess={(updated) => {
+          setRequests((prev) =>
+            prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r))
+          );
+        }}
+      />
 
       {/* Alert Dialog Konfirmasi Hapus Permintaan */}
       <AlertDialog

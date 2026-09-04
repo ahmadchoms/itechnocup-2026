@@ -49,6 +49,9 @@ export async function updateTransactionStatusAction(input: UpdateTransactionStat
     revalidatePath("/chat");
     revalidatePath("/profile");
     revalidatePath("/profile/transactions");
+    revalidatePath("/requests");
+    revalidatePath("/listings");
+    revalidatePath("/");
     return { success: true, transaction };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Gagal memperbarui status transaksi";

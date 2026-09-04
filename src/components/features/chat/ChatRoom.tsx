@@ -14,7 +14,7 @@ import { EmptyChatState } from "./EmptyChatState";
 import { CreateReviewDialog } from "./CreateReviewDialog";
 import { sendMessageAction, getUserConversationsAction } from "@/actions/chat.actions";
 import { updateTransactionStatusAction } from "@/actions/transaction.actions";
-import type { ChatClientProps, ChatConversation, ChatMessage } from "@/types";
+import type { ChatClientProps, ChatConversation, ChatMessage, ChatReviewItem } from "@/types";
 
 import { supabase } from "@/lib/supabase";
 
@@ -148,11 +148,20 @@ export function ChatClient({
               return conv;
             })
           );
+
+          // Realtime synchronization of calculator deal input values
+          if (updatedTx.final_price !== undefined || updatedTx.finalPrice !== undefined) {
+            setDealInputs((prev) => ({
+              ...prev,
+              [updatedTx.conversation_id]: {
+                price: String(Number(updatedTx.final_price || updatedTx.finalPrice || 0)),
+                quantity: String(Number(updatedTx.final_quantity || updatedTx.finalQuantity || 1)),
+              },
+            }));
+          }
         }
       )
-      .subscribe((status) => {
-        console.log("[Supabase Realtime Channel Status]:", status);
-      });
+      .subscribe();
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -377,8 +386,15 @@ export function ChatClient({
     const convId = activeConv.id;
     setIsUpdatingTx(true);
 
-    const priceNum = Number(currentDealInput.price) || 0;
-    const qtyNum = Number(currentDealInput.quantity) || 0;
+    // If status is 'selesai', strictly lock to the agreed transaction finalPrice and finalQuantity
+    const priceNum =
+      status === "selesai" && activeTx?.finalPrice
+        ? Number(activeTx.finalPrice)
+        : Number(currentDealInput.price) || 0;
+    const qtyNum =
+      status === "selesai" && activeTx?.finalQuantity
+        ? Number(activeTx.finalQuantity)
+        : Number(currentDealInput.quantity) || 0;
     const unit =
       activeConv.match?.listing?.unit ||
       activeConv.match?.request?.unit ||
@@ -424,7 +440,8 @@ export function ChatClient({
           listingId: activeConv.match?.listing?.id,
           categoryId:
             activeConv.match?.listing?.categoryId ||
-            activeConv.match?.request?.categoryId,
+            activeConv.match?.request?.categoryId ||
+            undefined,
           status,
           finalPrice: priceNum,
           finalQuantity: qtyNum,
@@ -442,6 +459,7 @@ export function ChatClient({
                     transactions: [
                       {
                         ...updatedTx,
+                        createdAt: updatedTx.createdAt || new Date().toISOString(),
                         finalPrice: Number(updatedTx.finalPrice),
                         finalQuantity: updatedTx.finalQuantity
                           ? Number(updatedTx.finalQuantity)
@@ -526,6 +544,7 @@ export function ChatClient({
                 <ChatHeader
                   partnerUser={partnerUser}
                   activeTx={activeTx}
+                  activeListing={activeConv.match?.listing}
                   isSeller={isSeller}
                   isDealBoxExpanded={isDealBoxExpanded}
                   onToggleDealBox={() =>
@@ -546,7 +565,7 @@ export function ChatClient({
                     activeTx &&
                       (reviewedTxIds.includes(activeTx.id) ||
                         (activeTx.reviews || []).some(
-                          (r) => r.reviewerId === effectiveUserId
+                          (r: ChatReviewItem) => r.reviewerId === effectiveUserId
                         ))
                   )}
                   onPriceChange={handlePriceChange}

@@ -49,8 +49,17 @@ export function TransactionTable({ transactions, isSeller }: TransactionTablePro
                   ? tx.buyer?.fullName || "Pengepul DaurNusa"
                   : tx.seller?.fullName || "Penjual DaurNusa"}
               </TableCell>
-              <TableCell className="font-semibold text-[#6B7B4F]">
-                {tx.category?.name || "Limbah Sirkular"}
+              <TableCell>
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-bold text-[#171717]">
+                    {tx.listing?.title || tx.category?.name || "Limbah Sirkular"}
+                  </span>
+                  {tx.listing?.title && tx.category?.name && (
+                    <span className="text-[10.5px] font-medium text-[#6B7B4F]">
+                      {tx.category.name}
+                    </span>
+                  )}
+                </div>
               </TableCell>
               <TableCell className="text-[#171717]">
                 {tx.finalQuantity || 25} {tx.unit || "kg"}

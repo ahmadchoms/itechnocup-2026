@@ -11,7 +11,7 @@ import { createListingAction } from "@/actions/listing.actions";
 import { geocodeAddressAction, reverseGeocodeAction } from "@/actions/geo.actions";
 import * as tf from "@tensorflow/tfjs";
 import { getCategoryMapping, getHumanReadableName, getBasePrice } from "@/lib/model";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/lib/supabase";
 
 interface CreateListingClientProps {

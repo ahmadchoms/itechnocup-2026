@@ -78,6 +78,23 @@ export async function deleteListingAction(id: string) {
   }
 }
 
+export async function toggleListingStatusAction(id: string, newStatus: "aktif" | "terjual") {
+  try {
+    const listing = await prisma.listing.update({
+      where: { id },
+      data: { status: newStatus },
+      include: { category: true, seller: true },
+    });
+    revalidatePath("/profile");
+    revalidatePath("/listings");
+    revalidatePath("/");
+    return { success: true, listing };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Gagal mengubah status listing";
+    return { success: false, error: message };
+  }
+}
+
 export async function getListingsAction(filters?: { categoryId?: string; search?: string }) {
   try {
     const listings = await listingService.getListings(filters);
