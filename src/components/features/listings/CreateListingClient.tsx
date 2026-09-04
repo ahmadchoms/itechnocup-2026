@@ -10,7 +10,8 @@ import { createListingSchema, CreateListingInput } from "@/validations/listing.s
 import { createListingAction } from "@/actions/listing.actions";
 import { geocodeAddressAction, reverseGeocodeAction } from "@/actions/geo.actions";
 import * as tf from "@tensorflow/tfjs";
-import { getCategoryMapping, getHumanReadableName, getBasePrice, samplePhotos } from "@/lib/model";
+import { getCategoryMapping, getHumanReadableName, getBasePrice } from "@/lib/model";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
 interface CreateListingClientProps {
@@ -24,7 +25,6 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
   const [photoUrl, setPhotoUrl] = useState("");
   const [isClassifying, setIsClassifying] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
-  const [isSamplePhoto, setIsSamplePhoto] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -61,29 +61,7 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
     },
   });
 
-  const handleSelectPhoto = async (sample: typeof samplePhotos[0]) => {
-    setIsSamplePhoto(true);
-    setSelectedFile(null);
-    setPhotoUrl(sample.url);
-    setValue("photoUrl", sample.url);
-    setIsClassifying(true);
-
-    const humanName = getHumanReadableName(sample.targetLabel);
-    const targetCat = categories.find((c) => c.name.toLowerCase() === humanName.toLowerCase());
-    const catId = targetCat?.id || categories[0]?.id || "";
-
-    setAiResult({ categoryName: humanName, categoryId: catId, confidence: 98.5 });
-    const isSisaMakanan = targetCat?.name === "Sisa Makanan" || humanName === "Sisa Makanan";
-    setValue("title", isSisaMakanan ? "" : humanName);
-    setValue("categoryId", catId);
-    setValue("estimatedPrice", targetCat?.averagePrice || getBasePrice(sample.targetLabel));
-    setValue("cvConfidence", 98.5);
-    setStep("form");
-    setIsClassifying(false);
-  };
-
   const processImagePrediction = async (imageUrl: string, file?: File) => {
-    setIsSamplePhoto(false);
     if (file) setSelectedFile(file);
     setPhotoUrl(imageUrl);
     setValue("photoUrl", imageUrl);
@@ -149,7 +127,7 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
 
   const handleGetLocation = () => {
     if (typeof window === "undefined" || !navigator.geolocation) {
-      alert("Browser Anda tidak mendukung deteksi lokasi Geolocation.");
+      toast.error("Browser Anda tidak mendukung deteksi lokasi Geolocation.");
       return;
     }
 
@@ -165,8 +143,12 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
           const rev = await reverseGeocodeAction({ lat, lng });
           if (rev.success && rev.displayName) {
             setValue("address", rev.displayName);
+            toast.success("Lokasi GPS berhasil didapatkan");
+          } else {
+            toast.error("Gagal mendeteksi nama alamat dari GPS.");
           }
         } catch {
+          toast.error("Gagal menghubungi layanan peta.");
         } finally {
           setIsLocating(false);
         }
@@ -174,7 +156,7 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
       (err) => {
         console.error("GPS error:", err);
         setIsLocating(false);
-        alert("Gagal membaca GPS: Pastikan izin lokasi telah diaktifkan.");
+        toast.error("Gagal membaca GPS: Pastikan izin lokasi telah diaktifkan.");
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -263,7 +245,7 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
           <div>
             <h2 className="text-base font-bold text-slate-900">1. Pilih atau Unggah Foto Sampah</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Pilih salah satu sampel foto di bawah ini untuk menguji deteksi AI secara instan:
+              Atau Anda dapat memilih untuk mengisi form secara manual:
             </p>
           </div>
 
@@ -284,27 +266,16 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
               <p className="text-sm font-medium text-slate-700">Klik untuk unggah foto sampah atau ambil via kamera</p>
               <p className="text-xs text-slate-500">Format JPG, PNG, WEBP hingga 10MB</p>
             </label>
+            <button
+              type="button"
+              onClick={() => setStep("form")}
+              className="w-full mt-4 py-3 border border-slate-300 bg-white rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
+            >
+              Input Data Manual (Tanpa Foto)
+            </button>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {samplePhotos.map((sample) => (
-              <button
-                key={sample.name}
-                type="button"
-                onClick={() => handleSelectPhoto(sample)}
-                disabled={isClassifying}
-                className="group relative flex flex-col items-center p-2.5 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 transition-all text-left cursor-pointer overflow-hidden"
-              >
-                <img
-                  src={sample.url}
-                  alt={sample.name}
-                  className="w-full h-24 object-cover rounded-lg mb-2 group-hover:scale-105 transition-transform duration-300"
-                />
-                <span className="text-xs font-semibold text-slate-800 line-clamp-1">{sample.name}</span>
-                <span className="text-[10px] text-emerald-600 font-medium">{getCategoryMapping(sample.targetLabel)}</span>
-              </button>
-            ))}
-          </div>
+
 
           {isClassifying && (
             <div className="flex items-center justify-center space-x-2 py-4 text-emerald-600 text-sm font-medium">
@@ -318,38 +289,47 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
       {step === "form" && (
         <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-xs">
           <div className="flex items-center space-x-4 p-4 rounded-xl border border-slate-200 bg-slate-50">
-            <img src={photoUrl} alt="Preview Sampah" className="w-16 h-16 rounded-lg object-cover border border-slate-300 shadow-sm" />
+            {photoUrl ? (
+              <img src={photoUrl} alt="Preview Sampah" className="w-16 h-16 rounded-lg object-cover border border-slate-300 shadow-sm" />
+            ) : (
+              <div className="w-16 h-16 rounded-lg bg-slate-200 border border-slate-300 shadow-sm flex items-center justify-center">
+                <span className="text-[10px] text-slate-500 font-medium">Tanpa Foto</span>
+              </div>
+            )}
             <div className="flex-1">
               <h3 className="text-sm font-semibold text-slate-800">Foto Sampah Anda</h3>
-              {isSamplePhoto ? (
-                <p className="text-xs text-rose-600 font-medium mt-0.5">⚠️ Ini adalah foto sampel uji cepat. Harap unggah foto asli.</p>
-              ) : (
+              {photoUrl ? (
                 <p className="text-xs text-slate-500 mt-0.5">Foto asli berhasil dimuat.</p>
+              ) : (
+                <p className="text-xs text-amber-600 font-medium mt-0.5">Listing dibuat tanpa foto. Disarankan memakai foto.</p>
               )}
             </div>
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              id="replace-photo"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  const url = URL.createObjectURL(file);
-                  setPhotoUrl(url);
-                  setValue("photoUrl", url);
-                  setSelectedFile(file);
-                  setIsSamplePhoto(false);
-                }
-              }}
-            />
-            <label
-              htmlFor="replace-photo"
-              className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              Ubah Foto
-            </label>
+            {!aiResult && (
+              <>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  id="replace-photo"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const url = URL.createObjectURL(file);
+                      setPhotoUrl(url);
+                      setValue("photoUrl", url);
+                      setSelectedFile(file);
+                    }
+                  }}
+                />
+                <label
+                  htmlFor="replace-photo"
+                  className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+                >
+                  Ubah Foto
+                </label>
+              </>
+            )}
           </div>
 
           {aiResult && (
@@ -503,7 +483,18 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
             )}
           </div>
 
-          <div className="pt-2 flex justify-end">
+          <div className="pt-2 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setStep("upload");
+                setPhotoUrl("");
+                setSelectedFile(null);
+              }}
+              className="px-6 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-sm transition-colors cursor-pointer"
+            >
+              Kembali
+            </button>
             <button
               type="submit"
               disabled={isSubmitting || isUploading}

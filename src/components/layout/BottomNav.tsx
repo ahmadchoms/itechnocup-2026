@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Store, Compass, MessageSquare, User, Camera } from "lucide-react";
+import { Store, Compass, MessageSquare, User, Camera, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAuthUserAction } from "@/actions/auth.actions";
 
@@ -34,12 +34,10 @@ export function BottomNav({
   } | null>(initialSessionUser);
 
   useEffect(() => {
-    getAuthUserAction().then((res) => {
-      if (res.success && res.user) {
-        setSessionUser(res.user);
-      }
-    });
-  }, []);
+    if (initialSessionUser) {
+      setSessionUser(initialSessionUser);
+    }
+  }, [initialSessionUser]);
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 h-16 px-2 flex items-center justify-around shadow-lg">
@@ -71,18 +69,28 @@ export function BottomNav({
         <span>Permintaan</span>
       </Link>
 
-      {/* 3. Center Floating Action Button (FAB): Foto & Jual Sampah */}
+      {/* 3. Center Floating Action Button (FAB): Foto & Jual Sampah / Buat Permintaan */}
       <div className="-mt-6 flex flex-col items-center shrink-0 px-2">
-        <button
-          onClick={onOpenScanner}
-          type="button"
-          aria-label="Foto & Jual Sampah"
-          className="w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-lg ring-4 ring-white flex items-center justify-center transition-transform active:scale-95 cursor-pointer relative"
-        >
-          <Camera className="w-6 h-6" />
-        </button>
+        {sessionUser?.activeRole === "buyer" ? (
+          <Link
+            href="/requests/create"
+            aria-label="Buat Permintaan"
+            className="w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-lg ring-4 ring-white flex items-center justify-center transition-transform active:scale-95 cursor-pointer relative"
+          >
+            <Plus className="w-6 h-6 text-white" />
+          </Link>
+        ) : (
+          <button
+            onClick={onOpenScanner}
+            type="button"
+            aria-label="Foto & Jual Sampah"
+            className="w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-lg ring-4 ring-white flex items-center justify-center transition-transform active:scale-95 cursor-pointer relative"
+          >
+            <Camera className="w-6 h-6 text-white" />
+          </button>
+        )}
         <span className="text-[10px] font-bold text-emerald-700 mt-1">
-          Foto Sampah
+          {sessionUser?.activeRole === "buyer" ? "Permintaan" : "Foto Sampah"}
         </span>
       </div>
 

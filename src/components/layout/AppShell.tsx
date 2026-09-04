@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Camera } from "lucide-react";
+import { Camera, Plus } from "lucide-react";
+import Link from "next/link";
 import { Navbar } from "./Navbar";
 import { BottomNav } from "./BottomNav";
 import { AIScannerModal } from "./AIScannerModal";
@@ -48,15 +49,25 @@ export function AppShell({ children, categories = EMPTY_CATEGORIES, sessionUser:
 
       {/* Desktop Floating Action Button (FAB) Pojok Kanan Bawah */}
       <div className="hidden md:block fixed bottom-8 right-8 z-40">
-        <button
-          onClick={() => setIsScannerOpen(true)}
-          type="button"
-          aria-label="Pindai & Jual Sampah"
-          className="flex items-center gap-2.5 px-5 py-3 rounded-full bg-[#171717] hover:bg-[#2B2B26] text-white font-semibold text-xs shadow-md hover:shadow-lg transition-all cursor-pointer border border-black/10 hover:-translate-y-0.5"
-        >
-          <Camera className="w-4 h-4 text-[#86EFAC]" />
-          <span>Foto &amp; Jual Sampah</span>
-        </button>
+        {serverSessionUser?.activeRole === "buyer" ? (
+          <Link
+            href="/requests/create"
+            className="flex items-center gap-2.5 px-5 py-3 rounded-full bg-[#171717] hover:bg-[#2B2B26] text-white font-semibold text-xs shadow-md hover:shadow-lg transition-all cursor-pointer border border-black/10 hover:-translate-y-0.5"
+          >
+            <Plus className="w-4 h-4 text-[#86EFAC]" />
+            <span>Buat Permintaan</span>
+          </Link>
+        ) : (
+          <button
+            onClick={() => setIsScannerOpen(true)}
+            type="button"
+            aria-label="Pindai & Jual Sampah"
+            className="flex items-center gap-2.5 px-5 py-3 rounded-full bg-[#171717] hover:bg-[#2B2B26] text-white font-semibold text-xs shadow-md hover:shadow-lg transition-all cursor-pointer border border-black/10 hover:-translate-y-0.5"
+          >
+            <Camera className="w-4 h-4 text-[#86EFAC]" />
+            <span>Foto &amp; Jual Sampah</span>
+          </button>
+        )}
       </div>
 
       {/* Mobile Bottom Navigation (<768px sticky 64px) */}

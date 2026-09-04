@@ -57,7 +57,7 @@ export function RequestDetailClient({
       });
 
       if (res.success && res.conversationId) {
-        router.push(`/chat/${res.conversationId}`);
+        router.push(`/chat/${res.conversationId}?new=1`);
       } else {
         alert(res.error || "Gagal memulai obrolan");
       }
@@ -164,7 +164,7 @@ export function RequestDetailClient({
             center={defaultCenter}
           />
 
-          {!isOwner && (
+          {!isOwner && showAction && (
             <MatchingListingsCard
               listings={matchingSellerListings}
               buyerName={request.buyer.fullName}
