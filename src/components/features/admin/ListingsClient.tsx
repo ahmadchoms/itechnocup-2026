@@ -32,6 +32,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { AdminListingItem, CategoryItem } from "@/types";
+import { toast } from "@/components/ui/sonner";
 
 interface ListingsClientProps {
   initialListings: AdminListingItem[];
@@ -96,11 +97,11 @@ export function ListingsClient({ initialListings, categories }: ListingsClientPr
         }
         setListingToDelete(null);
       } else {
-        alert(res.error || "Gagal menghapus listing.");
+        toast.error(res.error || "Gagal menghapus listing.");
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan saat memoderasi listing.");
+      toast.error("Terjadi kesalahan saat memoderasi listing.");
     } finally {
       setProcessingId(null);
     }
@@ -119,11 +120,11 @@ export function ListingsClient({ initialListings, categories }: ListingsClientPr
           setInspectingListing((prev) => (prev ? { ...prev, status: "aktif" } : null));
         }
       } else {
-        alert(res.error || "Gagal memulihkan listing.");
+        toast.error(res.error || "Gagal memulihkan listing.");
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan saat memulihkan listing.");
+      toast.error("Terjadi kesalahan saat memulihkan listing.");
     } finally {
       setProcessingId(null);
     }

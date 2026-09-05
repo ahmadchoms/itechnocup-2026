@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Upload, MapPin, RefreshCw, Sparkles, CheckCircle2, Navigation } from "lucide-react";
+import { ArrowLeft, Upload, MapPin, RefreshCw, Sparkles, CheckCircle2, Navigation, Info } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createListingSchema, CreateListingInput } from "@/validations/listing.schema";
@@ -266,6 +266,14 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
               <p className="text-sm font-medium text-slate-700">Klik untuk unggah foto sampah atau ambil via kamera</p>
               <p className="text-xs text-slate-500">Format JPG, PNG, WEBP hingga 10MB</p>
             </label>
+
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mt-4 flex items-start gap-2.5">
+              <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+              <div className="text-[11px] text-blue-800 leading-relaxed">
+                <strong>Info:</strong> Model AI Scanner mendukung deteksi 10 jenis sampah:
+                <span className="font-semibold text-blue-900"> Kardus, Kertas, Plastik, Kaca (Bening/Hijau/Cokelat), Logam/Besi, Baterai, Sampah Organik, dan Residu.</span>
+              </div>
+            </div>
             <button
               type="button"
               onClick={() => setStep("form")}

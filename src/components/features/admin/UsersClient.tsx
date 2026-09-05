@@ -31,6 +31,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { AdminUserItem } from "@/types";
+import { toast } from "@/components/ui/sonner";
 
 interface UsersClientProps {
   initialUsers: AdminUserItem[];
@@ -148,11 +149,11 @@ export function UsersClient({ initialUsers }: UsersClientProps) {
         }
         setEditingUser(null);
       } else {
-        alert(res.error || "Gagal memperbarui profil pengguna.");
+        toast.error(res.error || "Gagal memperbarui profil pengguna.");
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan saat menyimpan perubahan pengguna.");
+      toast.error("Terjadi kesalahan saat menyimpan perubahan pengguna.");
     } finally {
       setProcessingId(null);
     }
@@ -170,11 +171,11 @@ export function UsersClient({ initialUsers }: UsersClientProps) {
         }
         setUserToDelete(null);
       } else {
-        alert(res.error || "Gagal menghapus pengguna.");
+        toast.error(res.error || "Gagal menghapus pengguna.");
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan saat menghapus pengguna.");
+      toast.error("Terjadi kesalahan saat menghapus pengguna.");
     } finally {
       setProcessingId(null);
     }

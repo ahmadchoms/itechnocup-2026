@@ -28,6 +28,12 @@ export class ChatRepository {
       include: {
         seller: true,
         buyer: true,
+        listing: {
+          include: { category: true },
+        },
+        request: {
+          include: { category: true },
+        },
         match: {
           include: {
             listing: {
@@ -70,6 +76,12 @@ export class ChatRepository {
       include: {
         seller: true,
         buyer: true,
+        listing: {
+          include: { category: true },
+        },
+        request: {
+          include: { category: true },
+        },
         match: {
           include: {
             listing: {
@@ -132,11 +144,12 @@ export class ChatRepository {
     });
 
     if (conversation) {
-      // Update existing conversation with links if it's missing them (e.g. from old DB state)
+      // Selalu update context (match, listing, request) jika disuplai parameter baru, 
+      // sehingga pengguna bisa berganti konteks transaksi pada conversation yang sama.
       const dataToUpdate: any = {};
-      if (matchId && !conversation.matchId) dataToUpdate.matchId = matchId;
-      if (listingId && !conversation.listingId) dataToUpdate.listingId = listingId;
-      if (requestId && !conversation.requestId) dataToUpdate.requestId = requestId;
+      if (matchId) dataToUpdate.matchId = matchId;
+      if (listingId) dataToUpdate.listingId = listingId;
+      if (requestId) dataToUpdate.requestId = requestId;
 
       if (Object.keys(dataToUpdate).length > 0) {
         conversation = await prisma.conversation.update({

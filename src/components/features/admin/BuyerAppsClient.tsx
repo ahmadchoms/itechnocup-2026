@@ -29,6 +29,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { BuyerApplicationItem } from "@/types";
+import { toast } from "@/components/ui/sonner";
 
 interface BuyerAppsClientProps {
   initialBuyerApplications: BuyerApplicationItem[];
@@ -80,11 +81,11 @@ export function BuyerAppsClient({ initialBuyerApplications }: BuyerAppsClientPro
           setInspectingApp((prev) => (prev ? { ...prev, status: "disetujui" } : null));
         }
       } else {
-        alert(res.error || "Gagal menyetujui pengepul");
+        toast.error(res.error || "Gagal menyetujui pengepul");
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan saat memproses pengajuan");
+      toast.error("Terjadi kesalahan saat memproses pengajuan");
     } finally {
       setProcessingId(null);
     }
@@ -104,11 +105,11 @@ export function BuyerAppsClient({ initialBuyerApplications }: BuyerAppsClientPro
           setInspectingApp((prev) => (prev ? { ...prev, status: "ditolak" } : null));
         }
       } else {
-        alert(res.error || "Gagal menolak pengepul");
+        toast.error(res.error || "Gagal menolak pengepul");
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan saat memproses penolakan");
+      toast.error("Terjadi kesalahan saat memproses penolakan");
     } finally {
       setProcessingId(null);
     }

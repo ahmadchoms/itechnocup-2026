@@ -10,6 +10,7 @@ import { createRequestSchema, CreateRequestInput } from "@/validations/request.s
 import { createRequestAction } from "@/actions/request.actions";
 import { getCategoriesAction } from "@/actions/category.actions";
 import { geocodeAddressAction, reverseGeocodeAction } from "@/actions/geo.actions";
+import { toast } from "@/components/ui/sonner";
 
 interface CreateRequestClientProps {
   categories: { id: string; name: string }[];
@@ -54,7 +55,7 @@ export function CreateRequestClient({ categories: initialCategories = [] }: Crea
 
   const handleGetLocation = () => {
     if (typeof window === "undefined" || !navigator.geolocation) {
-      alert("Browser Anda tidak mendukung deteksi lokasi Geolocation.");
+      toast.error("Browser Anda tidak mendukung deteksi lokasi Geolocation.");
       return;
     }
 
@@ -79,7 +80,7 @@ export function CreateRequestClient({ categories: initialCategories = [] }: Crea
       (err) => {
         console.error("GPS error:", err);
         setIsLocating(false);
-        alert("Gagal membaca GPS: Pastikan izin lokasi telah diaktifkan.");
+        toast.error("Gagal membaca GPS: Pastikan izin lokasi telah diaktifkan.");
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );

@@ -128,7 +128,7 @@ export async function startChatAction(input: StartChatInput) {
               finalPrice: finalPrice,
               finalQuantity: Number(l.quantity) || Number(l.estimatedWeightKg) || 1,
               unit: l.unit || "kg",
-              status: "menunggu_persetujuan"
+              status: sessionUser.id === sellerId ? "menunggu_persetujuan_pembeli" : "menunggu_persetujuan_penjual"
             }
           });
         }

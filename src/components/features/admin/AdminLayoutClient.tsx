@@ -19,6 +19,7 @@ import { AdminTopbar } from "./AdminTopbar";
 import { AdminCommandDialog } from "./AdminCommandDialog";
 import { AdminLogoutModal } from "./AdminLogoutModal";
 import { logoutAction } from "@/actions/auth.actions";
+import { toast } from "@/components/ui/sonner";
 
 interface AdminLayoutClientProps {
   children: React.ReactNode;
@@ -62,11 +63,11 @@ export function AdminLayoutClient({ children, sessionUser }: AdminLayoutClientPr
         router.push("/");
         router.refresh();
       } else {
-        alert(res.error || "Gagal logout.");
+        toast.error(res.error || "Gagal logout.");
         setIsLoggingOut(false);
       }
     } catch {
-      alert("Terjadi kesalahan.");
+      toast.error("Terjadi kesalahan.");
       setIsLoggingOut(false);
     }
   };

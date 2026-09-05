@@ -7,6 +7,7 @@ import { Recycle, Camera, MessageSquare, Search, LogIn, LogOut, Store } from "lu
 import { cn } from "@/lib/utils";
 
 import { getAuthUserAction, logoutAction } from "@/actions/auth.actions";
+import { toast } from "@/components/ui/sonner";
 
 interface NavbarProps {
   onOpenScanner?: () => void;
@@ -75,11 +76,11 @@ export function Navbar({ onOpenScanner, initialSessionUser = null }: NavbarProps
       if (res.success) {
         window.location.href = "/";
       } else {
-        alert(res.error || "Gagal logout.");
+        toast.error(res.error || "Gagal logout.");
         setIsLoggingOut(false);
       }
     } catch {
-      alert("Terjadi kesalahan.");
+      toast.error("Terjadi kesalahan.");
       setIsLoggingOut(false);
     }
   };

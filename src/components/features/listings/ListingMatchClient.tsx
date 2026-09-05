@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "@/components/ui/sonner";
 
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -194,12 +195,12 @@ export function ListingMatchClient({ listing, wasteRequests, sessionUser }: Prop
       if (res.success && res.conversationId) {
         router.push(`/chat/${res.conversationId}`);
       } else {
-        alert("Gagal memulai chat: " + (res.error || "Unknown error"));
+        toast.error("Gagal memulai chat: " + (res.error || "Unknown error"));
         setStartingChat(null);
       }
     } catch (error) {
       console.error(error);
-      alert("Terjadi kesalahan.");
+      toast.error("Terjadi kesalahan.");
       setStartingChat(null);
     }
   };

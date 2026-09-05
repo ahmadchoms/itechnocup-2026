@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Clock } from "lucide-react";
+import { CheckCircle2, Clock, FileQuestion, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatRupiah, formatIdDate } from "@/lib/format";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,7 +27,20 @@ export function ConversationItem({
       ? conv.messages[conv.messages.length - 1]
       : null;
   const tx = conv.transactions?.[0];
-  const listing = conv.match?.listing;
+  
+  const listingTitle = tx?.listing?.title ||
+    conv.listing?.title ||
+    conv.match?.listing?.title ||
+    conv.request?.title ||
+    conv.match?.request?.title ||
+    "Limbah Sirkular";
+
+  const estimatedWeight = tx?.listing?.estimatedWeightKg ||
+    conv.listing?.estimatedWeightKg ||
+    conv.match?.listing?.estimatedWeightKg ||
+    conv.request?.quantityWanted ||
+    conv.match?.request?.quantityWanted;
+    
   const partnerInitials = partner?.fullName?.slice(0, 2).toUpperCase() || "DN";
 
   return (
@@ -90,11 +103,11 @@ export function ConversationItem({
           </Badge>
 
           <span className="text-[11px] font-semibold text-[#171717] truncate max-w-[140px]">
-            {listing?.title || "Limbah Sirkular"}
+            {listingTitle}
           </span>
-          {listing?.estimatedWeightKg && (
+          {estimatedWeight && (
             <span className="text-[9.5px] font-mono text-[#8A8778] shrink-0 bg-[#F7F4EE] px-1 py-0.2 rounded">
-              {Number(listing.estimatedWeightKg)} kg
+              {Number(estimatedWeight)} kg
             </span>
           )}
         </div>
@@ -114,8 +127,10 @@ export function ConversationItem({
                 tx.status === "selesai"
                   ? "bg-[#E8EEDD] text-[#6B7B4F]"
                   : tx.status === "menunggu_konfirmasi"
-                    ? "bg-[#FEF3D6] text-[#C98A0B]"
-                    : "bg-red-50 text-red-700",
+                    ? "bg-[#E0F2FE] text-[#0369A1]"
+                    : tx.status.startsWith("menunggu_persetujuan")
+                      ? "text-sky-700 bg-sky-50"
+                      : "bg-red-50 text-red-700",
               )}
             >
               {tx.status === "selesai" && (
@@ -124,10 +139,20 @@ export function ConversationItem({
               {tx.status === "menunggu_konfirmasi" && (
                 <Clock className="w-2.5 h-2.5" />
               )}
+              {tx.status.startsWith("menunggu_persetujuan") && (
+                <FileQuestion className="w-2.5 h-2.5" />
+              )}
+              {tx.status === "dibatalkan" && (
+                <XCircle className="w-2.5 h-2.5" />
+              )}
               <span>
-                {tx.status === "menunggu_konfirmasi"
-                  ? "Menunggu COD"
-                  : tx.status}
+                {tx.status.startsWith("menunggu_persetujuan")
+                  ? "Menunggu Persetujuan"
+                  : tx.status === "menunggu_konfirmasi"
+                    ? "Menunggu COD"
+                    : tx.status === "selesai"
+                      ? "Selesai"
+                      : "Dibatalkan"}
               </span>
             </Badge>
             <span className="text-[10px] font-mono font-bold text-[#171717]">

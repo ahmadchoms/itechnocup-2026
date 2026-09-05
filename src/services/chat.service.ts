@@ -20,6 +20,30 @@ function serializeConversation(conv: RawConversation): ChatConversation {
           longitude: conv.buyer.longitude ? Number(conv.buyer.longitude) : null,
         }
       : null,
+    listing: (conv as any).listing
+      ? {
+          ...(conv as any).listing,
+          estimatedPrice: (conv as any).listing.estimatedPrice
+            ? Number((conv as any).listing.estimatedPrice)
+            : null,
+          estimatedWeightKg: (conv as any).listing.estimatedWeightKg
+            ? Number((conv as any).listing.estimatedWeightKg)
+            : null,
+          cvConfidence: (conv as any).listing.cvConfidence
+            ? Number((conv as any).listing.cvConfidence)
+            : null,
+          latitude: (conv as any).listing.latitude ? Number((conv as any).listing.latitude) : null,
+          longitude: (conv as any).listing.longitude ? Number((conv as any).listing.longitude) : null,
+        }
+      : null,
+    request: (conv as any).request
+      ? {
+          ...(conv as any).request,
+          offeredPrice: Number((conv as any).request.offeredPrice),
+          latitude: (conv as any).request.latitude ? Number((conv as any).request.latitude) : null,
+          longitude: (conv as any).request.longitude ? Number((conv as any).request.longitude) : null,
+        }
+      : null,
     match: conv.match
       ? {
           ...conv.match,

@@ -2,7 +2,7 @@
 import { supabase } from "@/lib/supabase";
 
 import { useState, useRef, useEffect } from "react";
-import { Camera, Sparkles, X, CheckCircle, RefreshCw, Upload, MapPin, Navigation } from "lucide-react";
+import { Camera, Sparkles, Info, X, CheckCircle, RefreshCw, Upload, MapPin, Navigation } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createListingAction } from "@/actions/listing.actions";
 import { geocodeAddressAction, reverseGeocodeAction } from "@/actions/geo.actions";
@@ -234,10 +234,13 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
       if (selectedFile) {
         const fileExt = selectedFile.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-        const filePath = `public/${fileName}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage.from('waste-photos').upload(filePath, selectedFile, { cacheControl: '3600', upsert: false });
-        if (!uploadError && uploadData) {
-          const { data: publicUrlData } = supabase.storage.from('waste-photos').getPublicUrl(uploadData.path);
+        const filePath = `${sellerId || 'guest'}/${fileName}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage.from('listing-image').upload(filePath, selectedFile, { cacheControl: '3600', upsert: false });
+        if (uploadError) {
+          throw new Error("Gagal mengunggah foto ke Supabase: " + uploadError.message);
+        }
+        if (uploadData) {
+          const { data: publicUrlData } = supabase.storage.from('listing-image').getPublicUrl(uploadData.path);
           finalPhotoUrl = publicUrlData.publicUrl;
         }
       }
@@ -332,6 +335,14 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
                   <p className="text-[11px] text-[#78766B] mt-0.5">
                     Mendukung format JPG, PNG, WEBP hingga 10MB
                   </p>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-start gap-2.5">
+                <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                <div className="text-[11px] text-blue-800 leading-relaxed">
+                  <strong>Info:</strong> Model AI Scanner mendukung deteksi 10 jenis sampah:
+                  <span className="font-semibold text-blue-900"> Kardus, Kertas, Plastik, Kaca (Bening/Hijau/Cokelat), Logam/Besi, Baterai, Sampah Organik, dan Residu.</span>
                 </div>
               </div>
 

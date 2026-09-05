@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "@/components/ui/sonner";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -60,10 +61,10 @@ export function RequestDetailClient({
       if (res.success && res.conversationId) {
         router.push(`/chat/${res.conversationId}?new=1`);
       } else {
-        alert(res.error || "Gagal memulai obrolan");
+        toast.error(res.error || "Gagal memulai obrolan");
       }
     } catch {
-      alert("Terjadi kesalahan. Coba lagi.");
+      toast.error("Terjadi kesalahan. Coba lagi.");
     } finally {
       setIsStartingChat(false);
     }

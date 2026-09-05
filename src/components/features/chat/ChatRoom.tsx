@@ -299,6 +299,17 @@ export function ChatClient({
     }));
   };
 
+  const handleDealInputsChange = (price: string, quantity: string) => {
+    if (!activeConv) return;
+    setDealInputs((prev) => ({
+      ...prev,
+      [activeConv.id]: {
+        price,
+        quantity,
+      },
+    }));
+  };
+
   const [isUpdatingTx, setIsUpdatingTx] = useState(false);
 
   // Filtered conversation list
@@ -416,7 +427,7 @@ export function ChatClient({
   };
 
   const handleUpdateTransactionStatus = async (
-    status: "menunggu_persetujuan" | "menunggu_konfirmasi" | "selesai" | "dibatalkan",
+    status: "menunggu_persetujuan" | "menunggu_persetujuan_penjual" | "menunggu_persetujuan_pembeli" | "menunggu_konfirmasi" | "selesai" | "dibatalkan",
     selectedListingId?: string,
     selectedCategoryId?: string
   ) => {
@@ -442,7 +453,7 @@ export function ChatClient({
 
     // Clean & concise milestone status text
     let milestoneText = "";
-    if (status === "menunggu_persetujuan") {
+    if (status.startsWith("menunggu_persetujuan")) {
       milestoneText = `[TAWARAN DIAJUKAN] Tawaran harga ${formatRupiah(priceNum)} (${qtyNum} ${unit}) diajukan.`;
     } else if (status === "menunggu_konfirmasi") {
       milestoneText = `[TAWARAN DISETUJUI] Kesepakatan harga ${formatRupiah(priceNum)} (${qtyNum} ${unit}) disetujui. Silakan koordinasikan jadwal penjemputan COD.`;
@@ -612,6 +623,7 @@ export function ChatClient({
                   )}
                   onPriceChange={handlePriceChange}
                   onQuantityChange={handleQuantityChange}
+                  onDealInputsChange={handleDealInputsChange}
                   onUpdateStatus={handleUpdateTransactionStatus}
                   onOpenReviewDialog={() => setShowReviewDialog(true)}
                 />

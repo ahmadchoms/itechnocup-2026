@@ -42,12 +42,41 @@ interface DealDrawerProps {
   hasReviewed?: boolean;
   onPriceChange: (value: string) => void;
   onQuantityChange: (value: string) => void;
+  onDealInputsChange?: (price: string, quantity: string) => void;
   onUpdateStatus: (
-    status: "menunggu_persetujuan" | "menunggu_konfirmasi" | "selesai" | "dibatalkan",
+    status: "menunggu_persetujuan" | "menunggu_persetujuan_penjual" | "menunggu_persetujuan_pembeli" | "menunggu_konfirmasi" | "selesai" | "dibatalkan",
     selectedListingId?: string,
     selectedCategoryId?: string
   ) => void;
   onOpenReviewDialog?: () => void;
+}
+
+function getDistance(conv: ChatConversation) {
+  if (conv.match?.distanceKm) return conv.match.distanceKm.toFixed(1);
+  
+  // Prefer listing & request coordinates, fallback to user coordinates
+  const lat1 = Number(conv.listing?.latitude || conv.match?.listing?.latitude || conv.seller?.latitude);
+  const lon1 = Number(conv.listing?.longitude || conv.match?.listing?.longitude || conv.seller?.longitude);
+  const lat2 = Number(conv.request?.latitude || conv.match?.request?.latitude || conv.buyer?.latitude);
+  const lon2 = Number(conv.request?.longitude || conv.match?.request?.longitude || conv.buyer?.longitude);
+
+  if (lat1 && lon1 && lat2 && lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return (R * c).toFixed(1);
+  }
+  return null;
+}
+
+function getBasePrice(conv: ChatConversation, defaultItemName: string = "") {
+  return Number(conv.request?.offeredPrice) || 
+         Number(conv.match?.request?.offeredPrice) || 
+         Number(conv.listing?.estimatedPrice) ||
+         Number(conv.match?.listing?.estimatedPrice) ||
+         (defaultItemName.toLowerCase().includes("kardus") ? 1500 : 2500);
 }
 
 export function DealDrawer({
@@ -60,10 +89,12 @@ export function DealDrawer({
   hasReviewed,
   onPriceChange,
   onQuantityChange,
+  onDealInputsChange,
   onUpdateStatus,
   onOpenReviewDialog,
 }: DealDrawerProps) {
   const [isCreatingNewDeal, setIsCreatingNewDeal] = useState(false);
+  const [isEditingOffer, setIsEditingOffer] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   
   const [activeListings, setActiveListings] = useState<SellerListing[]>([]);
@@ -74,6 +105,8 @@ export function DealDrawer({
   const isCompleted = currentStatus === "selesai";
   const isCancelled = currentStatus === "dibatalkan";
   const isAgreed = currentStatus === "menunggu_konfirmasi" && !isCreatingNewDeal;
+  
+  const calculatedDistance = getDistance(activeConv);
 
   useEffect(() => {
     if (isCreatingNewDeal && isSeller && activeListings.length === 0) {
@@ -81,15 +114,20 @@ export function DealDrawer({
       setIsLoadingListings(true);
       getActiveListingsAction().then((res) => {
         if (isMounted && res.success && res.listings) {
-          setActiveListings(res.listings as unknown as SellerListing[]);
-          if (res.listings.length > 0) {
-            setSelectedListingId(res.listings[0].id);
+          const readyListings = res.listings.filter((l: any) => Number(l.quantity || 0) > 0 || Number(l.estimatedWeightKg || 0) > 0);
+          setActiveListings(readyListings as unknown as SellerListing[]);
+          if (readyListings.length > 0) {
+            setSelectedListingId(readyListings[0].id);
             // Auto-update price/qty input based on selected listing
-            const qty = res.listings[0].quantity || res.listings[0].estimatedWeightKg || 1;
-            const currentBasePrice = Number(activeConv.match?.request?.offeredPrice) || (res.listings[0].title.toLowerCase().includes("kardus") ? 1500 : 2500);
+            const qty = readyListings[0].quantity || readyListings[0].estimatedWeightKg || 1;
+            const currentBasePrice = getBasePrice(activeConv, readyListings[0].title);
             const price = currentBasePrice * qty;
-            onPriceChange(String(price));
-            onQuantityChange(String(qty));
+            if (onDealInputsChange) {
+              onDealInputsChange(String(price), String(qty));
+            } else {
+              onPriceChange(String(price));
+              onQuantityChange(String(qty));
+            }
           }
         }
         if (isMounted) setIsLoadingListings(false);
@@ -157,7 +195,7 @@ export function DealDrawer({
       id: "menunggu_persetujuan",
       label: "Tawaran Diajukan",
       done: !isCreatingNewDeal && (currentStatus === "menunggu_konfirmasi" || isCompleted),
-      active: isCreatingNewDeal || currentStatus === "menunggu_persetujuan" || currentStatus === "draft",
+      active: isCreatingNewDeal || currentStatus.startsWith("menunggu_persetujuan") || currentStatus === "draft",
     },
     {
       id: "menunggu_konfirmasi",
@@ -182,7 +220,7 @@ export function DealDrawer({
   };
 
   const handleProposeNewDeal = () => {
-    onUpdateStatus("menunggu_persetujuan", selectedListingId, selectedListing?.categoryId);
+    onUpdateStatus(isSeller ? "menunggu_persetujuan_pembeli" : "menunggu_persetujuan_penjual", selectedListingId, selectedListing?.categoryId);
     setIsCreatingNewDeal(false);
   };
 
@@ -258,15 +296,17 @@ export function DealDrawer({
                         <span>Foto</span>
                       </button>
                     )}
-                    <span className="text-[11px] text-[#78766B]">Jarak:</span>
-                    <Badge
-                      variant="outline"
-                      className="font-mono font-bold text-[#6B7B4F] bg-white px-2.5 py-0.5 rounded-full border-zinc-200 shadow-2xs"
-                    >
-                      {activeConv.match?.distanceKm
-                        ? `${activeConv.match.distanceKm} km`
-                        : "0.8 km"}
-                    </Badge>
+                    {calculatedDistance && (
+                      <>
+                        <span className="text-[11px] text-[#78766B]">Jarak:</span>
+                        <Badge
+                          variant="outline"
+                          className="font-mono font-bold text-[#6B7B4F] bg-white px-2.5 py-0.5 rounded-full border-zinc-200 shadow-2xs"
+                        >
+                          {calculatedDistance} km
+                        </Badge>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -334,10 +374,14 @@ export function DealDrawer({
                               const l = activeListings.find((x) => x.id === lid);
                               if (l) {
                                 const qty = l.quantity || l.estimatedWeightKg || 1;
-                                const currentBasePrice = Number(activeConv.match?.request?.offeredPrice) || (l.title.toLowerCase().includes("kardus") ? 1500 : 2500);
+                                const currentBasePrice = getBasePrice(activeConv, l.title);
                                 const price = currentBasePrice * qty;
-                                onPriceChange(String(price));
-                                onQuantityChange(String(qty));
+                                if (onDealInputsChange) {
+                                  onDealInputsChange(String(price), String(qty));
+                                } else {
+                                  onPriceChange(String(price));
+                                  onQuantityChange(String(qty));
+                                }
                               }
                             }}
                             className="w-full h-9 px-3 py-1.5 text-xs font-semibold rounded-xl bg-white border border-zinc-200 text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#171717] cursor-pointer"
@@ -370,26 +414,46 @@ export function DealDrawer({
                             min={1}
                             max={maxAvailableQty}
                             value={currentDealInput.quantity}
-                            readOnly
-                            disabled
-                            className="h-9 text-xs font-bold rounded-xl bg-zinc-100 text-zinc-600 border-zinc-200 cursor-not-allowed"
+                            onChange={(e) => {
+                              const newQty = e.target.value;
+                              const currentQtyNum = Number(currentDealInput.quantity) || 1;
+                              const currentPriceNum = Number(currentDealInput.price) || 0;
+                              const unitPrice = currentPriceNum / currentQtyNum;
+                              const exactNewPrice = unitPrice * (Number(newQty) || 1);
+                              // Round to nearest 100 so it doesn't give weird numbers like 26667
+                              const newPrice = Math.round(exactNewPrice / 100) * 100;
+                              
+                              if (onDealInputsChange) {
+                                onDealInputsChange(String(newPrice), newQty);
+                              } else {
+                                onQuantityChange(newQty);
+                                onPriceChange(String(newPrice));
+                              }
+                            }}
+                            disabled={isUpdatingTx || isAgreed || (!isCreatingNewDeal && currentStatus.startsWith("menunggu_persetujuan") && !isEditingOffer)}
+                            className={cn(
+                              "h-9 text-xs font-bold rounded-xl",
+                              (isAgreed || (!isCreatingNewDeal && currentStatus.startsWith("menunggu_persetujuan") && !isEditingOffer))
+                                ? "bg-zinc-100 text-zinc-600 border-zinc-200 cursor-not-allowed"
+                                : "bg-white border-zinc-200 text-[#171717] focus-visible:ring-1 focus-visible:ring-[#171717]"
+                            )}
                             placeholder="25"
                           />
                           {maxAvailableQty < 1000 && !isAgreed && (
-                            <span className="absolute right-2.5 top-2 text-[10px] text-[#78766B] font-mono pointer-events-none">
-                              Maks {maxAvailableQty} {unit}
-                            </span>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-zinc-400">
+                              Maks: {maxAvailableQty}
+                            </div>
                           )}
                         </div>
                       </div>
 
                       {/* Price Input */}
-                      <div className="space-y-1.5">
+                      <div className="space-y-1.5 flex-1">
                         <div className="flex items-center justify-between">
                           <Label className="text-[10.5px] font-bold uppercase tracking-wider text-[#78766B]">
                             Total Harga (Rp)
                           </Label>
-                          {!isAgreed && (
+                          {!isAgreed && (!(!isCreatingNewDeal && currentStatus.startsWith("menunggu_persetujuan") && !isEditingOffer)) && (
                             <div className="flex items-center gap-1">
                               <button
                                 type="button"
@@ -414,11 +478,17 @@ export function DealDrawer({
                           type="number"
                           min={0}
                           value={currentDealInput.price}
-                          onChange={(e) => onPriceChange(e.target.value)}
-                          disabled={isUpdatingTx || isAgreed}
+                          onChange={(e) => {
+                            if (onDealInputsChange) {
+                              onDealInputsChange(e.target.value, currentDealInput.quantity);
+                            } else {
+                              onPriceChange(e.target.value);
+                            }
+                          }}
+                          disabled={isUpdatingTx || isAgreed || (!isCreatingNewDeal && currentStatus.startsWith("menunggu_persetujuan") && !isEditingOffer)}
                           className={cn(
                             "h-9 text-xs font-mono font-extrabold rounded-xl",
-                            isAgreed
+                            (isAgreed || (!isCreatingNewDeal && currentStatus.startsWith("menunggu_persetujuan") && !isEditingOffer))
                               ? "bg-zinc-100 text-zinc-600 border-zinc-200 cursor-not-allowed"
                               : "bg-white border-zinc-200 text-[#171717] focus-visible:ring-1 focus-visible:ring-[#171717]"
                           )}
@@ -459,7 +529,7 @@ export function DealDrawer({
                           <Button
                             type="button"
                             size="sm"
-                            onClick={() => onUpdateStatus("menunggu_persetujuan")}
+                            onClick={() => onUpdateStatus(isSeller ? "menunggu_persetujuan_pembeli" : "menunggu_persetujuan_penjual")}
                             disabled={isUpdatingTx}
                             className="h-9 flex-1 cursor-pointer rounded-full bg-[#171717] hover:bg-[#2B2B26] text-white text-[11.5px] font-bold shadow-xs gap-1.5"
                           >
@@ -469,43 +539,77 @@ export function DealDrawer({
                         )}
 
                         {/* Status: MENUNGGU PERSETUJUAN */}
-                        {!isCreatingNewDeal && currentStatus === "menunggu_persetujuan" && isSeller && (
+                        {!isCreatingNewDeal && currentStatus.startsWith("menunggu_persetujuan") && (
                           <>
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() => onUpdateStatus("menunggu_konfirmasi")}
-                              disabled={isUpdatingTx}
-                              className="h-9 flex-1 cursor-pointer rounded-full bg-[#171717] hover:bg-[#2B2B26] text-white text-[11.5px] font-bold shadow-xs gap-1.5"
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>Setujui Harga</span>
-                            </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() => onUpdateStatus("menunggu_persetujuan")}
-                              disabled={isUpdatingTx}
-                              className="h-9 cursor-pointer rounded-full border-zinc-300 text-[11px] font-semibold text-[#171717] bg-white hover:bg-zinc-100"
-                              title="Perbarui angka tawar balik"
-                            >
-                              Tawar Balik
-                            </Button>
+                            {((isSeller && currentStatus === "menunggu_persetujuan_penjual") || 
+                              (!isSeller && currentStatus === "menunggu_persetujuan_pembeli") ||
+                              currentStatus === "menunggu_persetujuan") ? (
+                              <>
+                                {!isEditingOffer ? (
+                                  <>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      onClick={() => onUpdateStatus("menunggu_konfirmasi")}
+                                      disabled={isUpdatingTx}
+                                      className="h-9 flex-1 cursor-pointer rounded-full bg-[#171717] hover:bg-[#2B2B26] text-white text-[11.5px] font-bold shadow-xs gap-1.5"
+                                    >
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                      <span>Setujui Harga</span>
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setIsEditingOffer(true)}
+                                      disabled={isUpdatingTx}
+                                      className="h-9 cursor-pointer rounded-full border-zinc-300 text-[11px] font-semibold text-[#171717] bg-white hover:bg-zinc-100"
+                                      title="Ubah angka penawaran"
+                                    >
+                                      Tawar Balik
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      onClick={() => {
+                                        onUpdateStatus(isSeller ? "menunggu_persetujuan_pembeli" : "menunggu_persetujuan_penjual");
+                                        setIsEditingOffer(false);
+                                      }}
+                                      disabled={isUpdatingTx}
+                                      className="h-9 flex-1 cursor-pointer rounded-full bg-amber-500 hover:bg-amber-600 text-white text-[11.5px] font-bold shadow-xs gap-1.5"
+                                    >
+                                      <Handshake className="w-3.5 h-3.5" />
+                                      <span>Kirim Tawar Balik</span>
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setIsEditingOffer(false);
+                                        // Reset to activeTx values if cancelled edit
+                                        if (activeTx && onDealInputsChange) {
+                                          onDealInputsChange(String(activeTx.finalPrice), String(activeTx.finalQuantity));
+                                        }
+                                      }}
+                                      disabled={isUpdatingTx}
+                                      className="h-9 cursor-pointer rounded-full text-[11px] font-semibold text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+                                    >
+                                      Batal
+                                    </Button>
+                                  </>
+                                )}
+                              </>
+                            ) : (
+                              <div className="flex-1 h-9 flex items-center justify-center rounded-full bg-amber-50 text-amber-800 text-[11px] font-bold border border-amber-200 px-3">
+                                <Clock className="w-3.5 h-3.5 mr-1.5 text-amber-600" />
+                                <span>Menunggu Respons {isSeller ? "Pembeli" : "Penjual"}</span>
+                              </div>
+                            )}
                           </>
-                        )}
-
-                        {!isCreatingNewDeal && currentStatus === "menunggu_persetujuan" && !isSeller && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => onUpdateStatus("menunggu_persetujuan")}
-                            disabled={isUpdatingTx}
-                            className="h-9 flex-1 rounded-full bg-white border border-zinc-300 text-[#171717] text-[11px] font-bold hover:bg-zinc-100 shadow-2xs"
-                          >
-                            <Clock className="w-3.5 h-3.5 mr-1 text-amber-500" />
-                            <span>Perbarui Tawaran</span>
-                          </Button>
                         )}
 
                         {/* Status: MENUNGGU KONFIRMASI (Siap COD) */}
@@ -566,18 +670,16 @@ export function DealDrawer({
                       </div>
                     </div>
 
-                    {isSeller && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={handleStartNewDeal}
-                        disabled={isUpdatingTx}
-                        className="rounded-full h-8.5 px-4 text-xs font-bold bg-[#171717] hover:bg-[#2B2B26] text-white shadow-xs gap-1.5 shrink-0 cursor-pointer"
-                      >
-                        <RotateCcw className="w-3.5 h-3.5 text-amber-300" />
-                        <span>Mulai Tawar Ulang</span>
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleStartNewDeal}
+                      disabled={isUpdatingTx}
+                      className="rounded-full h-8.5 px-4 text-xs font-bold bg-[#171717] hover:bg-[#2B2B26] text-white shadow-xs gap-1.5 shrink-0 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Mulai Tawar Ulang</span>
+                    </Button>
                   </div>
                 )}
 
@@ -636,11 +738,24 @@ export function DealDrawer({
                 )}
 
                 {/* 6. Contextual Help Tip */}
-                {!isCreatingNewDeal && currentStatus === "menunggu_persetujuan" && isSeller && (
-                  <div className="p-2.5 rounded-xl bg-[#FEF3D6] border border-[#C98A0B]/30 flex items-start gap-2 text-xs text-[#92400E]">
-                    <Info className="w-4 h-4 shrink-0 mt-0.5 text-[#C98A0B]" />
+                {!isCreatingNewDeal && currentStatus.startsWith("menunggu_persetujuan") && (
+                  <div className={cn(
+                    "p-2.5 rounded-xl border flex items-start gap-2 text-xs",
+                    ((isSeller && currentStatus === "menunggu_persetujuan_penjual") || (!isSeller && currentStatus === "menunggu_persetujuan_pembeli") || currentStatus === "menunggu_persetujuan")
+                      ? "bg-[#FEF3D6] border-[#C98A0B]/30 text-[#92400E]"
+                      : "bg-blue-50 border-blue-200/50 text-blue-800"
+                  )}>
+                    <Info className={cn(
+                      "w-4 h-4 shrink-0 mt-0.5",
+                      ((isSeller && currentStatus === "menunggu_persetujuan_penjual") || (!isSeller && currentStatus === "menunggu_persetujuan_pembeli") || currentStatus === "menunggu_persetujuan")
+                        ? "text-[#C98A0B]" : "text-blue-500"
+                    )} />
                     <span className="text-[11px] leading-relaxed">
-                      Pembeli mengajukan penawaran harga. Jika sepakat, klik <strong>Setujui Harga</strong>. Jika ingin mengubah harga/jumlah, ketik angka baru lalu klik <strong>Tawar Balik</strong>.
+                      {((isSeller && currentStatus === "menunggu_persetujuan_penjual") || (!isSeller && currentStatus === "menunggu_persetujuan_pembeli") || currentStatus === "menunggu_persetujuan") ? (
+                        <>Mitra mengajukan penawaran harga. Jika sepakat, klik <strong>Setujui Harga</strong>. Jika ingin mengubah harga/jumlah, ketik angka baru lalu klik <strong>Tawar Balik</strong>.</>
+                      ) : (
+                        <>Tawaran Anda telah diajukan. Menunggu respons dari mitra untuk menyetujui tawaran atau menawar balik.</>
+                      )}
                     </span>
                   </div>
                 )}

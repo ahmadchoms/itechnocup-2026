@@ -27,6 +27,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { AdminRequestItem, CategoryItem } from "@/types";
+import { toast } from "@/components/ui/sonner";
 
 interface AdminRequestsClientProps {
   initialRequests: AdminRequestItem[];
@@ -88,11 +89,11 @@ export function AdminRequestsClient({ initialRequests, categories }: AdminReques
         }
         setRequestToDelete(null);
       } else {
-        alert(res.error || "Gagal memoderasi permintaan.");
+        toast.error(res.error || "Gagal memoderasi permintaan.");
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan saat memoderasi permintaan.");
+      toast.error("Terjadi kesalahan saat memoderasi permintaan.");
     } finally {
       setProcessingId(null);
     }
@@ -111,11 +112,11 @@ export function AdminRequestsClient({ initialRequests, categories }: AdminReques
           setInspectingRequest((prev) => (prev ? { ...prev, status: "aktif" } : null));
         }
       } else {
-        alert(res.error || "Gagal memulihkan permintaan.");
+        toast.error(res.error || "Gagal memulihkan permintaan.");
       }
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan saat memulihkan permintaan.");
+      toast.error("Terjadi kesalahan saat memulihkan permintaan.");
     } finally {
       setProcessingId(null);
     }

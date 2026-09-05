@@ -7,6 +7,7 @@ import { MatchItem } from "@/types";
 import { cn } from "@/lib/utils";
 
 import { startChatAction } from "@/actions/chat.actions";
+import { toast } from "@/components/ui/sonner";
 
 interface MatchesClientProps {
   matches: MatchItem[];
@@ -29,11 +30,11 @@ export function MatchList({ matches, role }: MatchesClientProps) {
       if (res.success && res.conversationId) {
         router.push(`/chat/${res.conversationId}`);
       } else {
-        alert(res.error || "Gagal memulai percakapan");
+        toast.error(res.error || "Gagal memulai percakapan");
       }
     } catch (err) {
       console.error(err);
-      alert("Gagal memulai percakapan");
+      toast.error("Gagal memulai percakapan");
     } finally {
       setLoadingMatchId(null);
     }

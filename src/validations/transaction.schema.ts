@@ -10,7 +10,7 @@ export const updateTransactionStatusSchema = z.object({
   finalPrice: z.coerce.number().min(0, "Harga minimal Rp 0"),
   finalQuantity: z.coerce.number().min(0, "Jumlah minimal 0"),
   unit: z.string().optional().default("kg"),
-  status: z.enum(["menunggu_persetujuan", "menunggu_konfirmasi", "selesai", "dibatalkan"]),
+  status: z.enum(["menunggu_persetujuan", "menunggu_persetujuan_penjual", "menunggu_persetujuan_pembeli", "menunggu_konfirmasi", "selesai", "dibatalkan"]),
 });
 
 export type UpdateTransactionStatusInput = z.infer<typeof updateTransactionStatusSchema>;
