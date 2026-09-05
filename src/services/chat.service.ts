@@ -60,6 +60,16 @@ function serializeConversation(conv: RawConversation): ChatConversation {
         rating: r.rating,
         comment: r.comment,
       })),
+      listing: t.listing
+        ? {
+            ...t.listing,
+            estimatedPrice: t.listing.estimatedPrice ? Number(t.listing.estimatedPrice) : null,
+            estimatedWeightKg: t.listing.estimatedWeightKg ? Number(t.listing.estimatedWeightKg) : null,
+            cvConfidence: t.listing.cvConfidence ? Number(t.listing.cvConfidence) : null,
+            latitude: t.listing.latitude ? Number(t.listing.latitude) : null,
+            longitude: t.listing.longitude ? Number(t.listing.longitude) : null,
+          }
+        : null,
     })),
   };
 }
@@ -69,7 +79,30 @@ export class ChatService {
 
   async getUserConversations(userId: string): Promise<ChatConversation[]> {
     const rawList = await this.repo.findUserConversations(userId);
-    return rawList.map(serializeConversation);
+    const serialized = rawList.map(serializeConversation);
+
+    // Urutkan berdasarkan aktivitas terbaru (pesan terbaru, transaksi terbaru, atau waktu dibuat)
+    serialized.sort((a, b) => {
+      const aLastMessage = a.messages && a.messages.length > 0 ? a.messages[a.messages.length - 1].sentAt : null;
+      const aLastTx = a.transactions && a.transactions.length > 0 ? a.transactions[0].createdAt : null; // transactions are already sorted desc from DB
+      const aTime = Math.max(
+        aLastMessage ? new Date(aLastMessage).getTime() : 0,
+        aLastTx ? new Date(aLastTx).getTime() : 0,
+        new Date(a.createdAt).getTime()
+      );
+
+      const bLastMessage = b.messages && b.messages.length > 0 ? b.messages[b.messages.length - 1].sentAt : null;
+      const bLastTx = b.transactions && b.transactions.length > 0 ? b.transactions[0].createdAt : null;
+      const bTime = Math.max(
+        bLastMessage ? new Date(bLastMessage).getTime() : 0,
+        bLastTx ? new Date(bLastTx).getTime() : 0,
+        new Date(b.createdAt).getTime()
+      );
+
+      return bTime - aTime;
+    });
+
+    return serialized;
   }
 
   async getConversationDetail(id: string, userId: string): Promise<ChatConversation | null> {
@@ -104,7 +137,9 @@ export class ChatService {
     sellerId: string,
     buyerId: string,
     initialMessage?: string | null,
-    matchId?: string | null
+    matchId?: string | null,
+    listingId?: string | null,
+    requestId?: string | null
   ) {
     if (!sellerId || !buyerId) {
       throw new Error("ID Penjual dan ID Pembeli wajib disertakan.");
@@ -114,7 +149,7 @@ export class ChatService {
       throw new Error("Akses ditolak: Anda tidak dapat memulai obrolan untuk pengguna lain.");
     }
 
-    const conversation = await this.repo.findOrCreateConversation(sellerId, buyerId, matchId);
+    const conversation = await this.repo.findOrCreateConversation(sellerId, buyerId, matchId, listingId, requestId);
 
     if (initialMessage && initialMessage.trim()) {
       await this.repo.createMessage({

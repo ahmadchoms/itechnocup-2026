@@ -93,6 +93,8 @@ export interface SellerListing {
   unit: string;
   estimatedWeightKg: number;
   estimatedPrice: number;
+  quantity?: number;
+  photoUrl?: string;
 }
 
 export interface MatchItem {

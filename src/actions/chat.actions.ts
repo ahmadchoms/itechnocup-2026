@@ -96,8 +96,44 @@ export async function startChatAction(input: StartChatInput) {
       sellerId,
       buyerId,
       messageToSend,
-      validated.matchId
+      validated.matchId,
+      validated.listingId,
+      validated.requestId
     );
+
+    if (validated.listingId) {
+      const activeTx = await prisma.transaction.findFirst({
+        where: {
+          conversationId: conversation.id,
+          status: { notIn: ["selesai", "dibatalkan"] }
+        }
+      });
+      
+      if (!activeTx) {
+        const l = await prisma.listing.findUnique({ where: { id: validated.listingId } });
+        if (l) {
+          const qty = Number(l.quantity) || Number(l.estimatedWeightKg) || 1;
+          let finalPrice = Number(l.estimatedPrice || 0) * qty;
+          if (validated.requestId) {
+            const r = await prisma.wasteRequest.findUnique({ where: { id: validated.requestId } });
+            if (r && r.offeredPrice) finalPrice = Number(r.offeredPrice) * qty;
+          }
+          await prisma.transaction.create({
+            data: {
+              conversationId: conversation.id,
+              listingId: l.id,
+              sellerId: sellerId,
+              buyerId: buyerId,
+              categoryId: l.categoryId,
+              finalPrice: finalPrice,
+              finalQuantity: Number(l.quantity) || Number(l.estimatedWeightKg) || 1,
+              unit: l.unit || "kg",
+              status: "menunggu_persetujuan"
+            }
+          });
+        }
+      }
+    }
 
     revalidatePath(`/chat/${conversation.id}`);
     revalidatePath("/chat");

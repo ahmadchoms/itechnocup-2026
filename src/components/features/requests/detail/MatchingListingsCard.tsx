@@ -7,7 +7,7 @@ interface MatchingListingsCardProps {
     listings: SellerListing[];
     buyerName: string;
     isStartingChat: boolean;
-    onOffer: (message: string) => void;
+    onOffer: (message: string, listingId: string) => void;
 }
 
 export function MatchingListingsCard({
@@ -54,7 +54,8 @@ export function MatchingListingsCard({
                             type="button"
                             onClick={() =>
                                 onOffer(
-                                    `Halo ${buyerName}, saya punya barang "${listing.title}" sebanyak ${listing.estimatedWeightKg} kg yang cocok dengan kebutuhan Anda.`
+                                    `Halo ${buyerName}, saya punya barang "${listing.title}" sebanyak ${listing.estimatedWeightKg} kg yang cocok dengan kebutuhan Anda.`,
+                                    listing.id
                                 )
                             }
                             disabled={isStartingChat}

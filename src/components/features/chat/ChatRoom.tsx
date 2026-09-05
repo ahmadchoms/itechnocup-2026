@@ -38,6 +38,11 @@ function mergeUniqueMessages(existingList: ChatMessage[] = [], newMsg: ChatMessa
   return [...existingList, newMsg];
 }
 
+function parseRealtimeDate(dateString: string | null | undefined): Date {
+  if (!dateString) return new Date();
+  return new Date(dateString.endsWith("Z") ? dateString : dateString + "Z");
+}
+
 type OptimisticAction =
   | { type: "add_message"; conversationId: string; message: ChatMessage }
   | { type: "update_tx"; conversationId: string; transaction: any };
@@ -102,7 +107,7 @@ export function ChatClient({
             conversationId: newMsg.conversation_id,
             senderId: newMsg.sender_id,
             content: newMsg.content,
-            sentAt: newMsg.sent_at ? new Date(newMsg.sent_at) : new Date(),
+            sentAt: parseRealtimeDate(newMsg.sent_at),
           };
 
           setConvList((prev) =>
@@ -141,6 +146,9 @@ export function ChatClient({
                       finalPrice: Number(updatedTx.final_price || updatedTx.finalPrice || 0),
                       finalQuantity: Number(updatedTx.final_quantity || updatedTx.finalQuantity || 0),
                       unit: updatedTx.unit || "kg",
+                      createdAt: parseRealtimeDate(updatedTx.created_at || updatedTx.createdAt).toISOString(),
+                      completedAt: (updatedTx.completed_at || updatedTx.completedAt) ? parseRealtimeDate(updatedTx.completed_at || updatedTx.completedAt).toISOString() : null,
+                      listing: conv.transactions?.[0]?.listing || null,
                     },
                   ],
                 };
@@ -247,12 +255,17 @@ export function ChatClient({
     }
 
     const pricePerUnit =
+      Number(activeConv.request?.offeredPrice) ||
       Number(activeConv.match?.request?.offeredPrice) ||
+      Number(activeConv.listing?.estimatedPrice) ||
       Number(activeConv.match?.listing?.estimatedPrice) ||
       0;
     const qty =
+      Number(activeConv.listing?.quantity) ||
       Number(activeConv.match?.listing?.quantity) ||
+      Number(activeConv.listing?.estimatedWeightKg) ||
       Number(activeConv.match?.listing?.estimatedWeightKg) ||
+      Number(activeConv.request?.quantityWanted) ||
       Number(activeConv.match?.request?.quantityWanted) ||
       1;
 
@@ -290,7 +303,7 @@ export function ChatClient({
 
   // Filtered conversation list
   const filteredConversations = useMemo(() => {
-    return optimisticConvs.filter((conv) => {
+    const filtered = optimisticConvs.filter((conv) => {
       const isUserSeller = conv.sellerId === effectiveUserId;
       const partner = isUserSeller ? conv.buyer : conv.seller;
       const title =
@@ -310,6 +323,29 @@ export function ChatClient({
       if (filterTab === "selesai") return matchSearch && isCompleted;
       return matchSearch;
     });
+
+    // Urutkan berdasarkan aktivitas terbaru (pesan terbaru, transaksi terbaru, atau waktu dibuat)
+    filtered.sort((a, b) => {
+      const aLastMessage = a.messages && a.messages.length > 0 ? a.messages[a.messages.length - 1].sentAt : null;
+      const aLastTx = a.transactions && a.transactions.length > 0 ? a.transactions[0].createdAt : null;
+      const aTime = Math.max(
+        aLastMessage ? new Date(aLastMessage).getTime() : 0,
+        aLastTx ? new Date(aLastTx).getTime() : 0,
+        new Date(a.createdAt).getTime()
+      );
+
+      const bLastMessage = b.messages && b.messages.length > 0 ? b.messages[b.messages.length - 1].sentAt : null;
+      const bLastTx = b.transactions && b.transactions.length > 0 ? b.transactions[0].createdAt : null;
+      const bTime = Math.max(
+        bLastMessage ? new Date(bLastMessage).getTime() : 0,
+        bLastTx ? new Date(bLastTx).getTime() : 0,
+        new Date(b.createdAt).getTime()
+      );
+
+      return bTime - aTime;
+    });
+
+    return filtered;
   }, [optimisticConvs, searchQuery, filterTab, effectiveUserId]);
 
   const handleSelectConversation = (id: string) => {
@@ -381,6 +417,8 @@ export function ChatClient({
 
   const handleUpdateTransactionStatus = async (
     status: "menunggu_persetujuan" | "menunggu_konfirmasi" | "selesai" | "dibatalkan",
+    selectedListingId?: string,
+    selectedCategoryId?: string
   ) => {
     if (!activeConv) return;
     const convId = activeConv.id;
@@ -396,7 +434,9 @@ export function ChatClient({
         ? Number(activeTx.finalQuantity)
         : Number(currentDealInput.quantity) || 0;
     const unit =
+      activeConv.listing?.unit ||
       activeConv.match?.listing?.unit ||
+      activeConv.request?.unit ||
       activeConv.match?.request?.unit ||
       "kg";
 
@@ -423,6 +463,7 @@ export function ChatClient({
           finalPrice: priceNum,
           finalQuantity: qtyNum,
           unit,
+          listing: activeTx?.listing || undefined,
         },
       });
 
@@ -437,8 +478,9 @@ export function ChatClient({
           conversationId: convId,
           sellerId: activeConv.sellerId,
           buyerId: activeConv.buyerId,
-          listingId: activeConv.match?.listing?.id,
+          listingId: selectedListingId || activeConv.match?.listing?.id,
           categoryId:
+            selectedCategoryId ||
             activeConv.match?.listing?.categoryId ||
             activeConv.match?.request?.categoryId ||
             undefined,

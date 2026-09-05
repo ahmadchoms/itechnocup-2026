@@ -31,7 +31,7 @@ export class AIService {
   ) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return requests.map((r) => ({ requestId: r.id, aiScore: 0.85 }));
+      return requests.map((r) => ({ requestId: r.id, aiScore: 0 }));
     }
 
     try {
@@ -68,18 +68,18 @@ Keluarkan hanya JSON murni (array) TANPA blok markdown, format:
       );
 
       if (!response.ok) {
-        return requests.map((r) => ({ requestId: r.id, aiScore: 0.85 }));
+        return requests.map((r) => ({ requestId: r.id, aiScore: 0 }));
       }
 
       const data = await response.json();
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!text) return requests.map((r) => ({ requestId: r.id, aiScore: 0.85 }));
+      if (!text) return requests.map((r) => ({ requestId: r.id, aiScore: 0 }));
 
       const scores: Array<{ requestId: string; aiScore: number }> = JSON.parse(text);
       return scores;
     } catch (error) {
       console.error("[evaluateMatchesOnTheFly] AI Error:", error);
-      return requests.map((r) => ({ requestId: r.id, aiScore: 0.85 }));
+      return requests.map((r) => ({ requestId: r.id, aiScore: 0 }));
     }
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -29,7 +29,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import type { ChatConversation, ChatTransaction } from "@/types";
+import { getActiveListingsAction } from "@/actions/listing.actions";
+import type { ChatConversation, ChatTransaction, SellerListing } from "@/types";
 
 interface DealDrawerProps {
   activeConv: ChatConversation;
@@ -43,6 +44,8 @@ interface DealDrawerProps {
   onQuantityChange: (value: string) => void;
   onUpdateStatus: (
     status: "menunggu_persetujuan" | "menunggu_konfirmasi" | "selesai" | "dibatalkan",
+    selectedListingId?: string,
+    selectedCategoryId?: string
   ) => void;
   onOpenReviewDialog?: () => void;
 }
@@ -62,51 +65,90 @@ export function DealDrawer({
 }: DealDrawerProps) {
   const [isCreatingNewDeal, setIsCreatingNewDeal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
+  
+  const [activeListings, setActiveListings] = useState<SellerListing[]>([]);
+  const [isLoadingListings, setIsLoadingListings] = useState(false);
+  const [selectedListingId, setSelectedListingId] = useState<string>("");
 
   const currentStatus = activeTx?.status || "draft";
   const isCompleted = currentStatus === "selesai";
   const isCancelled = currentStatus === "dibatalkan";
   const isAgreed = currentStatus === "menunggu_konfirmasi" && !isCreatingNewDeal;
 
-  // Maximum quantity available based on listing or request
+  useEffect(() => {
+    if (isCreatingNewDeal && isSeller && activeListings.length === 0) {
+      let isMounted = true;
+      setIsLoadingListings(true);
+      getActiveListingsAction().then((res) => {
+        if (isMounted && res.success && res.listings) {
+          setActiveListings(res.listings as unknown as SellerListing[]);
+          if (res.listings.length > 0) {
+            setSelectedListingId(res.listings[0].id);
+            // Auto-update price/qty input based on selected listing
+            const qty = res.listings[0].quantity || res.listings[0].estimatedWeightKg || 1;
+            const currentBasePrice = Number(activeConv.match?.request?.offeredPrice) || (res.listings[0].title.toLowerCase().includes("kardus") ? 1500 : 2500);
+            const price = currentBasePrice * qty;
+            onPriceChange(String(price));
+            onQuantityChange(String(qty));
+          }
+        }
+        if (isMounted) setIsLoadingListings(false);
+      });
+      return () => { isMounted = false; };
+    }
+  }, [isCreatingNewDeal, isSeller, activeListings.length, onPriceChange, onQuantityChange]);
+
+  const selectedListing = activeListings.find(l => l.id === selectedListingId);
+
+  // Maximum quantity available based on selected listing or current context
   const maxAvailableQty =
-    Number(activeConv.match?.listing?.estimatedWeightKg) ||
-    Number(activeConv.match?.listing?.quantity) ||
-    Number(activeConv.match?.request?.quantityWanted) ||
-    1000;
+    selectedListing
+      ? Number(selectedListing.quantity) ||
+        Number(selectedListing.estimatedWeightKg) ||
+        1000
+      : Number(activeTx?.listing?.quantity) ||
+        Number(activeTx?.listing?.estimatedWeightKg) ||
+        Number(activeConv.listing?.quantity) ||
+        Number(activeConv.listing?.estimatedWeightKg) ||
+        Number(activeConv.match?.listing?.quantity) ||
+        Number(activeConv.match?.listing?.estimatedWeightKg) ||
+        Number(activeConv.request?.quantityWanted) ||
+        Number(activeConv.match?.request?.quantityWanted) ||
+        1000;
 
-  const unit =
-    activeConv.match?.listing?.unit ||
-    activeConv.match?.request?.unit ||
-    "kg";
+  const unit = selectedListing
+    ? selectedListing.unit || "kg"
+    : activeTx?.listing?.unit ||
+      activeConv.listing?.unit ||
+      activeConv.match?.listing?.unit ||
+      activeConv.request?.unit ||
+      activeConv.match?.request?.unit ||
+      "kg";
 
-  const listingTitle =
-    activeConv.match?.listing?.title ||
-    activeConv.match?.request?.title ||
-    "Limbah Sirkular";
+  const listingTitle = selectedListing
+    ? selectedListing.title
+    : activeTx?.listing?.title ||
+      activeConv.listing?.title ||
+      activeConv.match?.listing?.title ||
+      activeConv.request?.title ||
+      activeConv.match?.request?.title ||
+      "Limbah Sirkular";
 
-  const photoUrl = activeConv.match?.listing?.photoUrl;
+  const photoUrl = selectedListing
+    ? selectedListing.photoUrl
+    : activeTx?.listing?.photoUrl ||
+      activeConv.listing?.photoUrl ||
+      activeConv.match?.listing?.photoUrl;
 
-  // Quick preset modifiers with max clamp
-  const handleModifyQuantity = (delta: number) => {
-    const current = Number(currentDealInput.quantity) || 0;
-    const nextVal = Math.min(maxAvailableQty, Math.max(1, current + delta));
-    onQuantityChange(String(nextVal));
-  };
+  const basePrice =
+    Number(activeConv.request?.offeredPrice) ||
+    Number(activeConv.match?.request?.offeredPrice) ||
+    (listingTitle.toLowerCase().includes("kardus") ? 1500 : 2500);
 
   const handleModifyPrice = (delta: number) => {
     const current = Number(currentDealInput.price) || 0;
     const nextVal = Math.max(0, current + delta);
     onPriceChange(String(nextVal));
-  };
-
-  const handleQuantityInputChange = (val: string) => {
-    const num = Number(val);
-    if (!isNaN(num) && num > maxAvailableQty) {
-      onQuantityChange(String(maxAvailableQty));
-    } else {
-      onQuantityChange(val);
-    }
   };
 
   // Step Progress State
@@ -140,7 +182,7 @@ export function DealDrawer({
   };
 
   const handleProposeNewDeal = () => {
-    onUpdateStatus("menunggu_persetujuan");
+    onUpdateStatus("menunggu_persetujuan", selectedListingId, selectedListing?.categoryId);
     setIsCreatingNewDeal(false);
   };
 
@@ -172,6 +214,7 @@ export function DealDrawer({
                           src={photoUrl}
                           alt={listingTitle}
                           fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                           className="object-cover group-hover:scale-110 transition-transform"
                         />
                         <span className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white">
@@ -189,7 +232,7 @@ export function DealDrawer({
                         <span className="font-display font-bold text-xs sm:text-sm text-[#171717] truncate">
                           Formulir Kesepakatan Harga COD
                         </span>
-                        {activeConv.match?.request && (
+                        {(activeConv.request || activeConv.match?.request) && (
                           <Badge className="bg-[#E8EEDD] text-[#2B3A1C] border-0 text-[10px] font-bold px-2 py-0 shrink-0">
                             Kebutuhan Pasokan
                           </Badge>
@@ -272,33 +315,54 @@ export function DealDrawer({
                       </div>
                     )}
 
+                    {/* Listing Selection for New Deal */}
+                    {isCreatingNewDeal && isSeller && (
+                      <div className="space-y-1.5 mb-2">
+                        <Label className="text-[10.5px] font-bold uppercase tracking-wider text-[#78766B]">
+                          Pilih Barang yang Dijual
+                        </Label>
+                        {isLoadingListings ? (
+                          <div className="h-9 rounded-xl bg-zinc-100 flex items-center px-3 text-xs text-zinc-500 animate-pulse">
+                            Memuat daftar barang...
+                          </div>
+                        ) : activeListings.length > 0 ? (
+                          <select
+                            value={selectedListingId}
+                            onChange={(e) => {
+                              const lid = e.target.value;
+                              setSelectedListingId(lid);
+                              const l = activeListings.find((x) => x.id === lid);
+                              if (l) {
+                                const qty = l.quantity || l.estimatedWeightKg || 1;
+                                const currentBasePrice = Number(activeConv.match?.request?.offeredPrice) || (l.title.toLowerCase().includes("kardus") ? 1500 : 2500);
+                                const price = currentBasePrice * qty;
+                                onPriceChange(String(price));
+                                onQuantityChange(String(qty));
+                              }
+                            }}
+                            className="w-full h-9 px-3 py-1.5 text-xs font-semibold rounded-xl bg-white border border-zinc-200 text-[#171717] focus:outline-none focus:ring-1 focus:ring-[#171717] cursor-pointer"
+                          >
+                            {activeListings.map((l) => (
+                              <option key={l.id} value={l.id}>
+                                {l.title} ({(l.quantity || l.estimatedWeightKg || 0)} {l.unit || "kg"}) - Rp {(l.estimatedPrice || 0).toLocaleString("id-ID")}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <div className="h-9 rounded-xl bg-red-50 border border-red-100 flex items-center px-3 text-xs text-red-600 font-medium">
+                            Anda belum memiliki barang aktif untuk dijual.
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-                      {/* Quantity Input */}
+                      {/* Quantity Input (Read-only) */}
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                           <Label className="text-[10.5px] font-bold uppercase tracking-wider text-[#78766B]">
                             Kuantitas ({unit})
                           </Label>
-                          {!isAgreed && (
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => handleModifyQuantity(-5)}
-                                disabled={isUpdatingTx || isAgreed}
-                                className="h-5 px-1.5 rounded-md bg-white border border-zinc-200 text-[10px] font-bold text-[#78766B] hover:text-[#171717] hover:bg-zinc-100 transition-colors cursor-pointer disabled:opacity-50"
-                              >
-                                -5
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleModifyQuantity(5)}
-                                disabled={isUpdatingTx || isAgreed}
-                                className="h-5 px-1.5 rounded-md bg-white border border-zinc-200 text-[10px] font-bold text-[#78766B] hover:text-[#171717] hover:bg-zinc-100 transition-colors cursor-pointer disabled:opacity-50"
-                              >
-                                +5
-                              </button>
-                            </div>
-                          )}
                         </div>
                         <div className="relative">
                           <Input
@@ -306,14 +370,9 @@ export function DealDrawer({
                             min={1}
                             max={maxAvailableQty}
                             value={currentDealInput.quantity}
-                            onChange={(e) => handleQuantityInputChange(e.target.value)}
-                            disabled={isUpdatingTx || isAgreed}
-                            className={cn(
-                              "h-9 text-xs font-bold rounded-xl",
-                              isAgreed
-                                ? "bg-zinc-100 text-zinc-600 border-zinc-200 cursor-not-allowed"
-                                : "bg-white border-zinc-200 text-[#171717] focus-visible:ring-1 focus-visible:ring-[#171717]"
-                            )}
+                            readOnly
+                            disabled
+                            className="h-9 text-xs font-bold rounded-xl bg-zinc-100 text-zinc-600 border-zinc-200 cursor-not-allowed"
                             placeholder="25"
                           />
                           {maxAvailableQty < 1000 && !isAgreed && (
@@ -507,16 +566,18 @@ export function DealDrawer({
                       </div>
                     </div>
 
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={handleStartNewDeal}
-                      disabled={isUpdatingTx}
-                      className="rounded-full h-8.5 px-4 text-xs font-bold bg-[#171717] hover:bg-[#2B2B26] text-white shadow-xs gap-1.5 shrink-0 cursor-pointer"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5 text-amber-300" />
-                      <span>Mulai Tawar Ulang</span>
-                    </Button>
+                    {isSeller && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleStartNewDeal}
+                        disabled={isUpdatingTx}
+                        className="rounded-full h-8.5 px-4 text-xs font-bold bg-[#171717] hover:bg-[#2B2B26] text-white shadow-xs gap-1.5 shrink-0 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 text-amber-300" />
+                        <span>Mulai Tawar Ulang</span>
+                      </Button>
+                    )}
                   </div>
                 )}
 
@@ -558,16 +619,18 @@ export function DealDrawer({
                         </Button>
                       ) : null}
 
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={handleStartNewDeal}
-                        className="rounded-full h-8.5 px-3.5 text-xs font-bold border-emerald-300 bg-white hover:bg-emerald-100 text-emerald-800 shadow-2xs gap-1.5 shrink-0 cursor-pointer"
-                      >
-                        <PlusCircle className="w-3.5 h-3.5" />
-                        <span>Transaksi Baru</span>
-                      </Button>
+                      {isSeller && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={handleStartNewDeal}
+                          className="rounded-full h-8.5 px-3.5 text-xs font-bold border-emerald-300 bg-white hover:bg-emerald-100 text-emerald-800 shadow-2xs gap-1.5 shrink-0 cursor-pointer"
+                        >
+                          <PlusCircle className="w-3.5 h-3.5" />
+                          <span>Transaksi Baru</span>
+                        </Button>
+                      )}
                     </div>
                   </div>
                 )}

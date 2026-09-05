@@ -38,6 +38,7 @@ export interface ChatTransaction extends TransactionCore {
   categoryId?: string | null;
   completedAt?: string | Date | null;
   reviews?: ChatReviewItem[];
+  listing?: ChatListing | null;
 }
 
 export interface ChatMessage {
@@ -71,6 +72,15 @@ export interface ChatConversation {
   seller?: ChatUser | null;
   buyer?: ChatUser | null;
   match?: ChatMatch | null;
+  listing?: ChatListing | null;
+  request?: ({
+    id: string;
+    title?: string | null;
+    offeredPrice?: number | null;
+    quantityWanted?: number | null;
+    unit?: string | null;
+    categoryId?: string | null;
+  } & GeoLocation) | null;
   messages: ChatMessage[];
   transactions: ChatTransaction[];
 }

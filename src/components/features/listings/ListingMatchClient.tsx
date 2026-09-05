@@ -180,13 +180,14 @@ export function ListingMatchClient({ listing, wasteRequests, sessionUser }: Prop
       });
   }, [wasteRequests, listing, listingLat, listingLng, sortBy]);
 
-  const handleStartChat = async (buyerId: string, reqTitle: string) => {
+  const handleStartChat = async (buyerId: string, reqTitle: string, requestId: string) => {
     setStartingChat(buyerId);
     try {
       const res = await startChatAction({
         sellerId: sessionUser.id,
         buyerId: buyerId,
         listingId: listing.id,
+        requestId: requestId,
         initialMessage: `Halo, saya memiliki ${listing.title} yang lokasinya cocok dengan kebutuhan Anda ("${reqTitle}"). Mari koordinasikan penjemputan.`,
       });
 
@@ -414,7 +415,7 @@ export function ListingMatchClient({ listing, wasteRequests, sessionUser }: Prop
                   {/* Actions (Chat & Google Maps Routing) */}
                   <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <button
-                      onClick={() => handleStartChat(req.buyerId, req.title)}
+                      onClick={() => handleStartChat(req.buyerId, req.title, req.id)}
                       disabled={startingChat === req.buyerId}
                       className="flex-1 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                     >

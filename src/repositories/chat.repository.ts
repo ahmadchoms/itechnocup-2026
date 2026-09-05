@@ -45,6 +45,7 @@ export class ChatRepository {
           orderBy: { createdAt: "desc" },
           take: 1,
           include: {
+            listing: true,
             reviews: {
               select: {
                 id: true,
@@ -86,6 +87,7 @@ export class ChatRepository {
           orderBy: { createdAt: "desc" },
           take: 1,
           include: {
+            listing: true,
             reviews: {
               select: {
                 id: true,
@@ -121,21 +123,35 @@ export class ChatRepository {
     });
   }
 
-  async findOrCreateConversation(sellerId: string, buyerId: string, matchId?: string | null) {
+  async findOrCreateConversation(sellerId: string, buyerId: string, matchId?: string | null, listingId?: string | null, requestId?: string | null) {
     let conversation = await prisma.conversation.findFirst({
       where: {
         sellerId,
         buyerId,
-        matchId: matchId || null,
       },
     });
 
-    if (!conversation) {
+    if (conversation) {
+      // Update existing conversation with links if it's missing them (e.g. from old DB state)
+      const dataToUpdate: any = {};
+      if (matchId && !conversation.matchId) dataToUpdate.matchId = matchId;
+      if (listingId && !conversation.listingId) dataToUpdate.listingId = listingId;
+      if (requestId && !conversation.requestId) dataToUpdate.requestId = requestId;
+
+      if (Object.keys(dataToUpdate).length > 0) {
+        conversation = await prisma.conversation.update({
+          where: { id: conversation.id },
+          data: dataToUpdate,
+        });
+      }
+    } else {
       conversation = await prisma.conversation.create({
         data: {
           sellerId,
           buyerId,
           matchId: matchId || null,
+          listingId: listingId || null,
+          requestId: requestId || null,
         },
       });
     }
@@ -154,6 +170,9 @@ export class ChatRepository {
           completedAt: data.status === "selesai" ? new Date() : undefined,
           finalPrice: data.finalPrice,
           finalQuantity: data.finalQuantity,
+        },
+        include: {
+          listing: true,
         },
       });
     } else {
@@ -195,6 +214,9 @@ export class ChatRepository {
           status: data.status,
           completedAt: data.status === "selesai" ? new Date() : null,
         },
+        include: {
+          listing: true,
+        },
       });
     }
 
@@ -227,6 +249,7 @@ export class ChatRepository {
         const conv = await prisma.conversation.findUnique({
           where: { id: transaction.conversationId },
           include: {
+            request: true,
             match: {
               include: {
                 request: true,
@@ -235,7 +258,8 @@ export class ChatRepository {
           },
         });
 
-        const request = conv?.match?.request;
+        // Use direct requestId from conversation if available, otherwise fallback to match.request
+        const request = conv?.request || conv?.match?.request;
         if (request) {
           const currentWanted = Number(request.quantityWanted || 0);
           const remainingWanted = Math.max(0, currentWanted - soldQty);

@@ -43,7 +43,7 @@ export function RequestDetailClient({
     request.quantityWanted ? Math.min(Number(request.quantityWanted), 10) : 10,
   );
 
-  const handleStartChat = async (customMessage?: string) => {
+  const handleStartChat = async (customMessage?: string, listingId?: string) => {
     if (!currentUserId) {
       router.push("/login");
       return;
@@ -53,6 +53,7 @@ export function RequestDetailClient({
       const res = await startChatAction({
         buyerId: request.buyerId,
         requestId: request.id,
+        listingId: listingId,
         initialMessage: customMessage,
       });
 

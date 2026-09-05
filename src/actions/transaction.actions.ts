@@ -43,6 +43,17 @@ export async function updateTransactionStatusAction(input: UpdateTransactionStat
       status: rawTx.status,
       createdAt: rawTx.createdAt ? rawTx.createdAt.toISOString() : null,
       completedAt: rawTx.completedAt ? rawTx.completedAt.toISOString() : null,
+      listing: 'listing' in rawTx && rawTx.listing ? {
+        ...rawTx.listing,
+        estimatedPrice: rawTx.listing.estimatedPrice ? Number(rawTx.listing.estimatedPrice) : null,
+        estimatedWeightKg: rawTx.listing.estimatedWeightKg ? Number(rawTx.listing.estimatedWeightKg) : null,
+        quantity: rawTx.listing.quantity ? Number(rawTx.listing.quantity) : null,
+        longitude: rawTx.listing.longitude ? Number(rawTx.listing.longitude) : null,
+        latitude: rawTx.listing.latitude ? Number(rawTx.listing.latitude) : null,
+        cvConfidence: rawTx.listing.cvConfidence ? Number(rawTx.listing.cvConfidence) : null,
+        createdAt: rawTx.listing.createdAt ? rawTx.listing.createdAt.toISOString() : null,
+        updatedAt: rawTx.listing.updatedAt ? rawTx.listing.updatedAt.toISOString() : null,
+      } : null,
     };
 
     revalidatePath(`/chat/${validated.conversationId}`);

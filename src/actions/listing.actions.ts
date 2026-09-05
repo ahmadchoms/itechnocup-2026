@@ -104,3 +104,45 @@ export async function getListingsAction(filters?: { categoryId?: string; search?
     return { success: false, error: message };
   }
 }
+
+export async function getActiveListingsAction() {
+  try {
+    const sessionUser = await getSessionUser();
+    if (!sessionUser) {
+      return { success: false, error: "Unauthorized", listings: [] };
+    }
+    
+    const listings = await prisma.listing.findMany({
+      where: {
+        sellerId: sessionUser.id,
+        status: "aktif",
+      },
+      include: {
+        category: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+    const mappedListings = listings.map(l => ({
+      ...l,
+      estimatedPrice: l.estimatedPrice ? Number(l.estimatedPrice) : null,
+      estimatedWeightKg: l.estimatedWeightKg ? Number(l.estimatedWeightKg) : null,
+      latitude: l.latitude ? Number(l.latitude) : null,
+      longitude: l.longitude ? Number(l.longitude) : null,
+      cvConfidence: l.cvConfidence ? Number(l.cvConfidence) : null,
+      createdAt: l.createdAt.toISOString(),
+      updatedAt: l.updatedAt.toISOString(),
+      category: l.category ? {
+        ...l.category,
+        createdAt: l.category.createdAt.toISOString(),
+        updatedAt: (l.category as any).updatedAt ? (l.category as any).updatedAt.toISOString() : undefined,
+      } : null
+    }));
+
+    return { success: true, listings: mappedListings };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Gagal mengambil daftar listing aktif";
+    return { success: false, error: message, listings: [] };
+  }
+}
