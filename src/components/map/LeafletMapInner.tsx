@@ -93,7 +93,7 @@ export default function LeafletMapInner({
     markersLayerRef.current = markersLayer;
 
     // Marker Lokasi Anda
-    const userMarker = L.marker([userLocation?.lat, userLocation?.lng], {
+    const userMarker = L.marker([userLocation?.lat || 0, userLocation?.lng || 0], {
       icon: createUserLocationIcon(),
       zIndexOffset: 1000,
     })
@@ -125,9 +125,9 @@ export default function LeafletMapInner({
     if (!mapInstanceRef.current) return;
 
     if (userMarkerRef.current) {
-      userMarkerRef.current.setLatLng([userLocation?.lat, userLocation?.lng]);
+      userMarkerRef.current.setLatLng([userLocation?.lat || 0, userLocation?.lng || 0]);
     } else {
-      userMarkerRef.current = L.marker([userLocation?.lat, userLocation?.lng], {
+      userMarkerRef.current = L.marker([userLocation?.lat || 0, userLocation?.lng || 0], {
         icon: createUserLocationIcon(),
         zIndexOffset: 1000,
       })
@@ -136,7 +136,7 @@ export default function LeafletMapInner({
     }
 
     // Pan dengan halus ke lokasi baru user
-    mapInstanceRef.current.panTo([userLocation?.lat, userLocation?.lng], {
+    mapInstanceRef.current.panTo([userLocation?.lat || 0, userLocation?.lng || 0], {
       animate: true,
       duration: 1,
     });

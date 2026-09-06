@@ -81,10 +81,10 @@ export function WastePhotoDialog({
             )}
           </div>
 
-          {listing.address && (
+          {(listing as any).address && (
             <div className="flex items-start gap-1.5 text-[11px] text-[#78766B]">
               <MapPin className="w-3.5 h-3.5 text-[#7A8F5C] shrink-0 mt-0.5" />
-              <span className="line-clamp-2">{listing.address}</span>
+              <span className="line-clamp-2">{(listing as any).address}</span>
             </div>
           )}
         </div>
