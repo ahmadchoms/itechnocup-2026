@@ -1,7 +1,3 @@
-Penyebab tampilan README rusak di GitHub adalah **tag Markdown yang bertumpuk (````markdown`)** dan **pembatas kode (`````) yang tidak tertutup secara benar** di sekitar _Folder Structure_, _Setup Env_, _Database_, _API Documentation_, dan _Testing_. Akibatnya, GitHub menganggap setengah dari isi berkas kamu sebagai kode mentah biasa.
-
-Berikut adalah isi **seluruh berkas `README.md` utuh** yang sudah diperbaiki format Markdown-nya, dibersihkan dari _wrapper/tag_ yang bocor, serta siap langsung disalin penuh ke GitHub:
-
 ```markdown
 <div align="center">
   
