@@ -7,6 +7,7 @@
 @theme inline {
   --color-emerald-primary: #059669;
   --color-emerald-active: #047857;
+  --color-sage: #EFF3E7;
   --color-amber-gold: #f59e0b;
   --color-amber-active: #d97706;
   --font-plus-jakarta: var(--font-plus-jakarta), Inter, system-ui, sans-serif;

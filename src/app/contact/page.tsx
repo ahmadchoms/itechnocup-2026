@@ -21,19 +21,19 @@ export default function ContactPage() {
   const faqs = [
     {
       q: "Bagaimana cara kerja pembayaran di DaurNusa?",
-      a: "Pada tahap MVP saat ini, transaksi dilakukan secara tunai/COD (Cash on Delivery) saat pengambilan barang di lokasi titik temu yang disepakati oleh Seller dan Buyer.",
+      a: "Pada tahap MVP saat ini, transaksi dilakukan secara tunai/COD (Cash on Delivery) saat pengambilan barang di lokasi titik temu yang disepakati oleh Penjual dan Pembeli.",
     },
     {
       q: "Apakah AI Computer Vision Scanner selalu 100% akurat?",
-      a: "Model AI kami dirancang untuk mengenali jenis sampah seperti ampas kopi, kardus, plastik PET, dan logam secara cepat. Namun Seller selalu diberikan opsi untuk mengoreksi kategori secara manual jika diperlukan.",
+      a: "Model AI kami dirancang untuk mengenali jenis sampah seperti ampas kopi, kardus, plastik PET, dan logam secara cepat. Namun Penjual selalu diberikan opsi untuk mengoreksi kategori secara manual jika diperlukan.",
     },
     {
       q: "Bagaimana sistem menghitung estimasi jarak terdekat?",
-      a: "Sistem mengonversi alamat lokasi Seller dan Buyer menjadi koordinat geografis untuk menghitung jarak proksimitas dalam satuan kilometer.",
+      a: "Sistem mengonversi alamat lokasi Penjual dan Pembeli menjadi koordinat geografis untuk menghitung jarak proksimitas dalam satuan kilometer.",
     },
     {
-      q: "Siapa saja yang bisa menjadi Seller atau Buyer?",
-      a: "Setiap pengguna terdaftar dapat berperan sebagai Seller (saat memposting sampah) maupun Buyer (saat memposting permintaan kebutuhan sampah).",
+      q: "Siapa saja yang bisa menjadi Penjual atau Pembeli?",
+      a: "Setiap pengguna terdaftar dapat berperan sebagai Penjual (saat memposting sampah) maupun Pembeli (saat memposting permintaan kebutuhan sampah).",
     },
   ];
 

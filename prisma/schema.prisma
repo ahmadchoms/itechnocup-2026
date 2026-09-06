@@ -12,6 +12,10 @@ enum Role {
   UMKM
   ADMIN
 }
+enum ActiveRole {
+  seller
+  buyer
+}
 
 model User {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -24,6 +28,8 @@ model User {
   avatarUrl     String?   @map("avatar_url")
   passwordHash  String?   @map("password_hash")
   isAdmin       Boolean   @default(false) @map("is_admin")
+  isBuyerApproved Boolean @default(false) @map("is_buyer_approved")
+  activeRole    ActiveRole @default(seller) @map("active_role")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
 
@@ -36,8 +42,25 @@ model User {
   buyerTransactions     Transaction[]        @relation("BuyerTransactions")
   givenReviews          Review[]             @relation("GivenReviews")
   receivedReviews       Review[]             @relation("ReceivedReviews")
+  buyerApplication      BuyerApplication?
 
   @@map("users")
+}
+
+model BuyerApplication {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @unique @map("user_id") @db.Uuid
+  ktpPhotoUrl    String   @map("ktp_photo_url")
+  outletPhotoUrl String   @map("outlet_photo_url")
+  npwp           String?
+  address        String
+  status         String   @default("menunggu") // menunggu, disetujui, ditolak
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@map("buyer_applications")
 }
 
 model WasteCategory {
@@ -83,6 +106,7 @@ model Listing {
   matches              Match[]
   transactions         Transaction[]
   cvLogs               CVClassificationLog[]
+  conversations        Conversation[] @relation("ConversationListing")
 
   @@map("listings")
 }
@@ -104,8 +128,9 @@ model WasteRequest {
   updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
 
   buyer    User          @relation("BuyerRequests", fields: [buyerId], references: [id])
-  category WasteCategory @relation(fields: [categoryId], references: [id])
-  matches  Match[]
+  category      WasteCategory  @relation(fields: [categoryId], references: [id])
+  matches       Match[]
+  conversations Conversation[] @relation("ConversationRequest")
 
   @@map("waste_requests")
 }
@@ -128,11 +153,15 @@ model Match {
 model Conversation {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   matchId   String?  @map("match_id") @db.Uuid
+  listingId String?  @map("listing_id") @db.Uuid
+  requestId String?  @map("request_id") @db.Uuid
   sellerId  String   @map("seller_id") @db.Uuid
   buyerId   String   @map("buyer_id") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at")
 
   match        Match?        @relation(fields: [matchId], references: [id])
+  listing      Listing?      @relation("ConversationListing", fields: [listingId], references: [id])
+  request      WasteRequest? @relation("ConversationRequest", fields: [requestId], references: [id])
   seller       User          @relation("SellerConversations", fields: [sellerId], references: [id])
   buyer        User          @relation("BuyerConversations", fields: [buyerId], references: [id])
   messages     Message[]

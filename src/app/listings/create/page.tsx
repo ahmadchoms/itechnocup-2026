@@ -1,8 +1,8 @@
-import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/layout/AppShell";
 import { getSessionUser } from "@/lib/session";
 import { redirect } from "next/navigation";
-import { CreateListingClient } from "./CreateListingClient";
+import { CreateListingClient } from "@/components/features/listings/CreateListingClient";
+import { categoryService } from "@/services/category.service";
 
 export const dynamic = "force-dynamic";
 
@@ -12,12 +12,10 @@ export default async function CreateListingPage() {
     redirect("/login?redirect=/listings/create");
   }
 
-  const categories = await prisma.wasteCategory.findMany({
-    orderBy: { name: "asc" },
-  });
+  const categories = await categoryService.getAllCategoriesWithAveragePrice();
 
   return (
-    <AppShell categories={categories}>
+    <AppShell categories={categories} sessionUser={sessionUser}>
       <CreateListingClient categories={categories} sessionUser={sessionUser} />
     </AppShell>
   );

@@ -1,0 +1,22 @@
+import { getSessionUser } from "@/lib/session";
+import { redirect } from "next/navigation";
+import { AdminLayoutClient } from "@/components/features/admin/AdminLayoutClient";
+import { AdminSessionUser } from "@/types";
+
+export default async function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const user = await getSessionUser();
+
+  if (!user || !user.isAdmin) {
+    redirect("/");
+  }
+
+  return (
+    <AdminLayoutClient sessionUser={user as AdminSessionUser}>
+      {children}
+    </AdminLayoutClient>
+  );
+}

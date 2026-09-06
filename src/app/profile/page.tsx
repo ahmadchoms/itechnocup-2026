@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/layout/AppShell";
-import { ProfileClient } from "./ProfileClient";
+import { ProfileClient } from "@/components/features/profile/ProfileClient";
 import { getSessionUser } from "@/lib/session";
+import { userService } from "@/services/user.service";
 
 export const dynamic = "force-dynamic";
 
@@ -10,66 +11,33 @@ export default async function ProfilePage() {
     orderBy: { name: "asc" },
   });
 
-  // Gunakan user dari session, fallback ke demo user jika belum login
   const sessionUser = await getSessionUser();
   const targetEmail = sessionUser?.email ?? "ahmad@daurnusa.id";
 
-  // Get user dengan data transaksi & review
-  const user = await prisma.user.findFirst({
-    where: { email: targetEmail },
-    include: {
-      sellerTransactions: {
-        include: {
-          category: true,
-          buyer: true,
-          listing: true,
-        },
-        orderBy: { createdAt: "desc" },
-      },
-      receivedReviews: {
-        include: {
-          reviewer: true,
-        },
-        orderBy: { createdAt: "desc" },
-      },
-    },
-  });
+  const profileData = await userService.getUserProfile(targetEmail);
 
-  if (!user) {
+  if (!profileData) {
     return <div>User not found</div>;
   }
 
+  const { user, stats, listings, wasteRequests, transactions, reviews, buyerApplication } = profileData;
 
-  // Compute metrics
-  const completedTx = user.sellerTransactions.filter((t) => t.status === "selesai");
-  const totalRevenue = completedTx.reduce((acc, t) => acc + Number(t.finalPrice), 0);
-  const totalKgSold = completedTx.reduce((acc, t) => acc + (t.finalQuantity || 0), 0);
-
-  const reviews = user.receivedReviews;
-  const avgRating =
-    reviews.length > 0
-      ? Number(
-          (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
-        )
-      : 4.9;
-
-  const formattedTransactions = user.sellerTransactions.map((t) => ({
-    ...t,
-    finalPrice: Number(t.finalPrice),
+  const formattedCategories = categories.map((c) => ({
+    id: c.id,
+    name: c.name,
   }));
 
   return (
-    <AppShell categories={categories}>
+    <AppShell categories={formattedCategories} sessionUser={sessionUser}>
       <ProfileClient
         user={user}
-        stats={{
-          totalRevenue,
-          totalKgSold,
-          avgRating,
-          totalTransactionsCount: user.sellerTransactions.length,
-        }}
-        transactions={formattedTransactions}
-        reviews={user.receivedReviews}
+        stats={stats}
+        listings={listings}
+        wasteRequests={wasteRequests}
+        transactions={transactions}
+        reviews={reviews}
+        categories={formattedCategories}
+        buyerApplication={buyerApplication}
       />
     </AppShell>
   );

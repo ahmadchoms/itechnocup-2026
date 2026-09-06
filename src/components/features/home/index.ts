@@ -1,0 +1,10 @@
+export { HeroSection } from "./components/HeroSection";
+export { EffortlessSection } from "./components/EffortlessSection";
+export { ProximityMapSection } from "./components/ProximityMapSection";
+export { ImpactStatsSection } from "./components/ImpactStatsSection";
+export { SecondLifeSection } from "./components/SecondLifeSection";
+export { TestimonialsSection } from "./components/TestimonialsSection";
+export { CtaSection } from "./components/CtaSection";
+export { SiteFooter } from "./components/SiteFooter";
+export * from "./types/home.types";
+export * from "./data/home.data";

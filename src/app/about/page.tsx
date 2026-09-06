@@ -7,15 +7,16 @@ export const metadata = {
   description: "Mengenal DaurNusa, platform sirkular jual-beli sampah dan limbah berbasis AI dan lokasi terdekat.",
 };
 
-export default function AboutPage() {
+import { getSessionUser } from "@/lib/session";
+
+export default async function AboutPage() {
+  const sessionUser = await getSessionUser();
+
   return (
-    <AppShell>
+    <AppShell sessionUser={sessionUser}>
       <div className="max-w-4xl mx-auto space-y-12 py-4">
         {/* Header Section */}
         <div className="text-center space-y-3">
-          <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-            Ekonomi Sirkular Indonesia
-          </span>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             Menghubungkan Penghasil Limbah dengan Industri Daur Ulang
           </h1>
@@ -57,7 +58,7 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
             <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 space-y-2">
               <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">
-                Untuk Seller (Masyarakat & UMKM)
+                Untuk Penjual (Masyarakat & UMKM)
               </span>
               <p className="text-xs text-slate-300 leading-relaxed">
                 Upload foto ampas kopi, kardus, plastik, atau minyak jelantah Anda. Model Computer Vision kami mengenali kategori secara otomatis. Dapatkan pembeli terdekat tanpa ribet.
@@ -66,10 +67,10 @@ export default function AboutPage() {
 
             <div className="bg-slate-800/80 p-5 rounded-2xl border border-slate-700 space-y-2">
               <span className="text-xs font-bold text-amber-400 uppercase tracking-wider block">
-                Untuk Buyer (Pengepul & Industri)
+                Untuk Pembeli (Pengepul & Industri)
               </span>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Post kebutuhan limbah tertentu yang Anda cari (misal ampas kopi untuk pupuk atau kardus untuk daur ulang). Sistem otomatis mencocokkan listing Seller terdekat dalam radius kilometer.
+                Post kebutuhan limbah tertentu yang Anda cari (misal ampas kopi untuk pupuk atau kardus untuk daur ulang). Sistem otomatis mencocokkan listing Penjual terdekat dalam radius kilometer.
               </p>
             </div>
           </div>
@@ -80,7 +81,7 @@ export default function AboutPage() {
           <h3 className="text-xl font-bold text-slate-900">Siap Bergabung dalam Ekosistem Sirkular?</h3>
           <div className="flex justify-center space-x-4">
             <Link
-              href="/listings"
+              href="/profile"
               className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-md transition-colors"
             >
               Jelajahi Pasar Sampah
