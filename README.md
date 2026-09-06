@@ -1,4 +1,3 @@
-```markdown
 <div align="center">
   
   # 🚀 Daur Nusa
@@ -157,6 +156,7 @@ Inovasi ini memberikan beberapa keunggulan utama dalam menyelesaikan permasalaha
 ## 🏗️ Arsitektur Sistem
 
 ### Folder Structure
+
 ```
 
 itechnocup-2026-design/
@@ -180,7 +180,7 @@ itechnocup-2026-design/
 ├── next.config.ts # Konfigurasi Utama Next.js
 └── package.json # Manajer Dependensi & Skrip Proyek
 
-````
+```
 
 ---
 
@@ -189,6 +189,7 @@ itechnocup-2026-design/
 ### Prerequisites
 
 Pastikan Anda telah menginstall:
+
 - **Node.js** (v18.x atau lebih tinggi)
 - **npm** / **yarn** / **pnpm**
 - **PostgreSQL Database**
@@ -202,7 +203,7 @@ Pastikan Anda telah menginstall:
 git clone [https://github.com/ahmadchoms/itechnocup2026.git](https://github.com/ahmadchoms/itechnocup2026.git)
 cd itechnocup2026
 
-````
+```
 
 #### 2️⃣ Install Dependencies
 
