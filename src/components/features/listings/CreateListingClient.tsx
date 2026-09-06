@@ -3,14 +3,28 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Upload, MapPin, RefreshCw, Sparkles, CheckCircle2, Navigation, Info } from "lucide-react";
+import {
+  ArrowLeft,
+  Upload,
+  MapPin,
+  RefreshCw,
+  Sparkles,
+  Navigation,
+  Info,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createListingSchema, CreateListingInput } from "@/validations/listing.schema";
+import {
+  createListingSchema,
+  CreateListingInput,
+} from "@/validations/listing.schema";
 import { createListingAction } from "@/actions/listing.actions";
-import { geocodeAddressAction, reverseGeocodeAction } from "@/actions/geo.actions";
+import {
+  geocodeAddressAction,
+  reverseGeocodeAction,
+} from "@/actions/geo.actions";
 import * as tf from "@tensorflow/tfjs";
-import { getCategoryMapping, getHumanReadableName, getBasePrice } from "@/lib/model";
+import { getHumanReadableName, getBasePrice } from "@/lib/model";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/lib/supabase";
 
@@ -19,7 +33,10 @@ interface CreateListingClientProps {
   sessionUser: any;
 }
 
-export function CreateListingClient({ categories, sessionUser }: CreateListingClientProps) {
+export function CreateListingClient({
+  categories,
+  sessionUser,
+}: CreateListingClientProps) {
   const router = useRouter();
   const [step, setStep] = useState<"upload" | "form">("upload");
   const [photoUrl, setPhotoUrl] = useState("");
@@ -52,8 +69,8 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
       description: "",
       estimatedPrice: "",
       address: sessionUser?.address || "Jl. Siranda No. 5, Semarang",
-      latitude: -7.0490,
-      longitude: 110.4350,
+      latitude: -7.049,
+      longitude: 110.435,
       photoUrl: "",
       cvConfidence: 94.5,
       isCvCorrected: false,
@@ -78,9 +95,12 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
       });
 
       const tensor = tf.tidy(() => {
-        let img = tf.browser.fromPixels(imgElement).resizeBilinear([224, 224]).toFloat();
+        let img = tf.browser
+          .fromPixels(imgElement)
+          .resizeBilinear([224, 224])
+          .toFloat();
         img = img.reverse(-1);
-        const meanTensor = tf.tensor1d([103.939, 116.779, 123.680]);
+        const meanTensor = tf.tensor1d([103.939, 116.779, 123.68]);
         img = img.sub(meanTensor);
         return img.expandDims(0);
       });
@@ -92,21 +112,38 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
       tensor.dispose();
       prediction.dispose();
 
-      const classesList = ['battery', 'biological', 'brown-glass', 'cardboard', 'green-glass', 'metal', 'paper', 'plastic', 'trash', 'white-glass'];
+      const classesList = [
+        "battery",
+        "biological",
+        "brown-glass",
+        "cardboard",
+        "green-glass",
+        "metal",
+        "paper",
+        "plastic",
+        "trash",
+        "white-glass",
+      ];
       const maxScore = Math.max(...Array.from(scores));
       const maxIdx = scores.indexOf(maxScore);
       const predictedLabel = classesList[maxIdx];
       const confidence = Number((maxScore * 100).toFixed(1));
 
       const humanName = getHumanReadableName(predictedLabel);
-      const targetCat = categories.find((c) => c.name.toLowerCase() === humanName.toLowerCase());
+      const targetCat = categories.find(
+        (c) => c.name.toLowerCase() === humanName.toLowerCase(),
+      );
       const catId = targetCat?.id || categories[0]?.id || "";
 
       setAiResult({ categoryName: humanName, categoryId: catId, confidence });
-      const isSisaMakanan = targetCat?.name === "Sisa Makanan" || humanName === "Sisa Makanan";
-    setValue("title", isSisaMakanan ? "" : humanName);
+      const isSisaMakanan =
+        targetCat?.name === "Sisa Makanan" || humanName === "Sisa Makanan";
+      setValue("title", isSisaMakanan ? "" : humanName);
       setValue("categoryId", catId);
-      setValue("estimatedPrice", targetCat?.averagePrice || getBasePrice(predictedLabel));
+      setValue(
+        "estimatedPrice",
+        targetCat?.averagePrice || getBasePrice(predictedLabel),
+      );
       setValue("cvConfidence", confidence);
       setStep("form");
     } catch (e) {
@@ -156,9 +193,11 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
       (err) => {
         console.error("GPS error:", err);
         setIsLocating(false);
-        toast.error("Gagal membaca GPS: Pastikan izin lokasi telah diaktifkan.");
+        toast.error(
+          "Gagal membaca GPS: Pastikan izin lokasi telah diaktifkan.",
+        );
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000 },
     );
   };
 
@@ -174,20 +213,23 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
       let finalPhotoUrl = photoUrl;
 
       if (selectedFile) {
-        const fileExt = selectedFile.name.split('.').pop();
+        const fileExt = selectedFile.name.split(".").pop();
         const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-        const filePath = `${sessionUser?.id || 'guest'}/${fileName}`;
+        const filePath = `${sessionUser?.id || "guest"}/${fileName}`;
 
         const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('listing-image')
-          .upload(filePath, selectedFile, { cacheControl: '3600', upsert: false });
+          .from("listing-image")
+          .upload(filePath, selectedFile, {
+            cacheControl: "3600",
+            upsert: false,
+          });
 
         if (uploadError) {
           throw new Error("Gagal mengunggah foto: " + uploadError.message);
         }
 
         const { data: publicUrlData } = supabase.storage
-          .from('listing-image')
+          .from("listing-image")
           .getPublicUrl(uploadData.path);
 
         finalPhotoUrl = publicUrlData.publicUrl;
@@ -229,7 +271,8 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
             Jual Sampah / Limbah Daur Ulang
           </h1>
           <p className="text-xs text-slate-500">
-            Unggah foto sampah Anda dan AI kami akan mengklasifikasikan kategorinya secara otomatis.
+            Unggah foto sampah Anda dan AI kami akan mengklasifikasikan
+            kategorinya secara otomatis.
           </p>
         </div>
       </div>
@@ -243,7 +286,9 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
       {step === "upload" && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6 shadow-xs">
           <div>
-            <h2 className="text-base font-bold text-slate-900">1. Pilih atau Unggah Foto Sampah</h2>
+            <h2 className="text-base font-bold text-slate-900">
+              1. Pilih atau Unggah Foto Sampah
+            </h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Atau Anda dapat memilih untuk mengisi form secara manual:
             </p>
@@ -253,7 +298,6 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
             <input
               type="file"
               accept="image/*"
-              capture="environment"
               id="file-upload"
               className="hidden"
               onChange={handleFileUpload}
@@ -263,15 +307,24 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
               className="border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-500 rounded-xl p-8 text-center space-y-3 cursor-pointer transition-colors block"
             >
               <Upload className="w-8 h-8 text-slate-400 mx-auto" />
-              <p className="text-sm font-medium text-slate-700">Klik untuk unggah foto sampah atau ambil via kamera</p>
-              <p className="text-xs text-slate-500">Format JPG, PNG, WEBP hingga 10MB</p>
+              <p className="text-sm font-medium text-slate-700">
+                Klik untuk unggah foto sampah atau ambil via kamera
+              </p>
+              <p className="text-xs text-slate-500">
+                Format JPG, PNG, WEBP hingga 10MB
+              </p>
             </label>
 
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mt-4 flex items-start gap-2.5">
               <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
               <div className="text-[11px] text-blue-800 leading-relaxed">
-                <strong>Info:</strong> Model AI Scanner mendukung deteksi 10 jenis sampah:
-                <span className="font-semibold text-blue-900"> Kardus, Kertas, Plastik, Kaca (Bening/Hijau/Cokelat), Logam/Besi, Baterai, Sampah Organik, dan Residu.</span>
+                <strong>Info:</strong> Model AI Scanner mendukung deteksi 10
+                jenis sampah:
+                <span className="font-semibold text-blue-900">
+                  {" "}
+                  Kardus, Kertas, Plastik, Kaca (Bening/Hijau/Cokelat),
+                  Logam/Besi, Baterai, Sampah Organik, dan Residu.
+                </span>
               </div>
             </div>
             <button
@@ -283,33 +336,48 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
             </button>
           </div>
 
-
-
           {isClassifying && (
             <div className="flex items-center justify-center space-x-2 py-4 text-emerald-600 text-sm font-medium">
               <RefreshCw className="w-4 h-4 animate-spin" />
-              <span>AI sedang memindai dan mengenali jenis material sampah...</span>
+              <span>
+                AI sedang memindai dan mengenali jenis material sampah...
+              </span>
             </div>
           )}
         </div>
       )}
 
       {step === "form" && (
-        <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-xs">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-xs"
+        >
           <div className="flex items-center space-x-4 p-4 rounded-xl border border-slate-200 bg-slate-50">
             {photoUrl ? (
-              <img src={photoUrl} alt="Preview Sampah" className="w-16 h-16 rounded-lg object-cover border border-slate-300 shadow-sm" />
+              <img
+                src={photoUrl}
+                alt="Preview Sampah"
+                className="w-16 h-16 rounded-lg object-cover border border-slate-300 shadow-sm"
+              />
             ) : (
               <div className="w-16 h-16 rounded-lg bg-slate-200 border border-slate-300 shadow-sm flex items-center justify-center">
-                <span className="text-[10px] text-slate-500 font-medium">Tanpa Foto</span>
+                <span className="text-[10px] text-slate-500 font-medium">
+                  Tanpa Foto
+                </span>
               </div>
             )}
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-slate-800">Foto Sampah Anda</h3>
+              <h3 className="text-sm font-semibold text-slate-800">
+                Foto Sampah Anda
+              </h3>
               {photoUrl ? (
-                <p className="text-xs text-slate-500 mt-0.5">Foto asli berhasil dimuat.</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Foto asli berhasil dimuat.
+                </p>
               ) : (
-                <p className="text-xs text-amber-600 font-medium mt-0.5">Listing dibuat tanpa foto. Disarankan memakai foto.</p>
+                <p className="text-xs text-amber-600 font-medium mt-0.5">
+                  Listing dibuat tanpa foto. Disarankan memakai foto.
+                </p>
               )}
             </div>
             {!aiResult && (
@@ -317,7 +385,6 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   id="replace-photo"
                   className="hidden"
                   onChange={(e) => {
@@ -348,7 +415,9 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-xs font-semibold text-emerald-900">Terdeteksi AI:</span>
+                    <span className="text-xs font-semibold text-emerald-900">
+                      Terdeteksi AI:
+                    </span>
                     <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-200 text-emerald-800">
                       {aiResult.categoryName}
                     </span>
@@ -362,19 +431,25 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Judul Listing Sampah *</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Judul Listing Sampah *
+            </label>
             <input
               type="text"
               {...register("title")}
               className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl focus:bg-white focus:outline-none transition-colors"
             />
             {errors.title && (
-              <p className="text-xs text-rose-600 mt-1 font-medium">{errors.title.message as string}</p>
+              <p className="text-xs text-rose-600 mt-1 font-medium">
+                {errors.title.message as string}
+              </p>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Kategori Sampah *</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Kategori Sampah *
+            </label>
             <select
               {...register("categoryId")}
               className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl focus:bg-white focus:outline-none transition-colors"
@@ -386,13 +461,17 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
               ))}
             </select>
             {errors.categoryId && (
-              <p className="text-xs text-rose-600 mt-1 font-medium">{errors.categoryId.message as string}</p>
+              <p className="text-xs text-rose-600 mt-1 font-medium">
+                {errors.categoryId.message as string}
+              </p>
             )}
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Berat (kg)</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Berat (kg)
+              </label>
               <input
                 type="number"
                 step="0.1"
@@ -400,11 +479,15 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
                 className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl focus:bg-white focus:outline-none transition-colors"
               />
               {errors.estimatedWeightKg && (
-                <p className="text-xs text-rose-600 mt-1 font-medium">{errors.estimatedWeightKg.message as string}</p>
+                <p className="text-xs text-rose-600 mt-1 font-medium">
+                  {errors.estimatedWeightKg.message as string}
+                </p>
               )}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Jumlah</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Jumlah
+              </label>
               <input
                 type="number"
                 {...register("quantity")}
@@ -412,7 +495,9 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Satuan</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Satuan
+              </label>
               <input
                 type="text"
                 {...register("unit")}
@@ -423,7 +508,9 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Kondisi</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Kondisi
+              </label>
               <input
                 type="text"
                 {...register("condition")}
@@ -431,20 +518,26 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Harga Estimasi (Rp)</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Harga Estimasi (Rp)
+              </label>
               <input
                 type="number"
                 {...register("estimatedPrice")}
                 className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl focus:bg-white focus:outline-none transition-colors"
               />
               {errors.estimatedPrice && (
-                <p className="text-xs text-rose-600 mt-1 font-medium">{errors.estimatedPrice.message as string}</p>
+                <p className="text-xs text-rose-600 mt-1 font-medium">
+                  {errors.estimatedPrice.message as string}
+                </p>
               )}
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Deskripsi Sampah</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Deskripsi Sampah
+            </label>
             <textarea
               rows={3}
               {...register("description")}
@@ -463,8 +556,12 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
                 disabled={isLocating}
                 className="inline-flex items-center gap-1 text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold cursor-pointer disabled:opacity-50 transition-colors"
               >
-                <Navigation className={`w-3 h-3 text-emerald-600 ${isLocating ? "animate-spin" : ""}`} />
-                <span>{isLocating ? "Membaca GPS..." : "📍 Ambil Lokasi GPS Saya"}</span>
+                <Navigation
+                  className={`w-3 h-3 text-emerald-600 ${isLocating ? "animate-spin" : ""}`}
+                />
+                <span>
+                  {isLocating ? "Membaca GPS..." : "📍 Ambil Lokasi GPS Saya"}
+                </span>
               </button>
             </div>
             <div className="relative">
@@ -487,7 +584,9 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
               />
             </div>
             {errors.address && (
-              <p className="text-xs text-rose-600 mt-1 font-medium">{errors.address.message as string}</p>
+              <p className="text-xs text-rose-600 mt-1 font-medium">
+                {errors.address.message as string}
+              </p>
             )}
           </div>
 
@@ -508,7 +607,7 @@ export function CreateListingClient({ categories, sessionUser }: CreateListingCl
               disabled={isSubmitting || isUploading}
               className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm transition-colors flex items-center space-x-2 disabled:opacity-60 cursor-pointer"
             >
-              {(isSubmitting || isUploading) ? (
+              {isSubmitting || isUploading ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />
               ) : (
                 <span>Publikasikan Listing Sampah</span>

@@ -171,11 +171,15 @@ export async function getSessionUser() {
         avatarUrl: true,
         isAdmin: true,
         activeRole: true,
+        latitude: true,
+        longitude: true,
       },
     });
     if (!user) return null;
     return {
       ...user,
+      latitude: user.latitude ? Number(user.latitude) : null,
+      longitude: user.longitude ? Number(user.longitude) : null,
       activeRole: (user.activeRole as "seller" | "buyer") || "seller",
     };
   } catch (error) {

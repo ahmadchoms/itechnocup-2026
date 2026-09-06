@@ -272,7 +272,7 @@ export class ChatRepository {
         });
 
         // Use direct requestId from conversation if available, otherwise fallback to match.request
-        const request = conv?.request || conv?.match?.request;
+        const request = (conv as any)?.request || (conv as any)?.match?.request;
         if (request) {
           const currentWanted = Number(request.quantityWanted || 0);
           const remainingWanted = Math.max(0, currentWanted - soldQty);

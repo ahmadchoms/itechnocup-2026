@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css"; // Impor CSS resmi Leaflet agar posisi tiles presisi
+import "leaflet/dist/leaflet.css";
 
 export interface MapMarkerItem {
   id: string;
@@ -18,7 +18,7 @@ export interface MapMarkerItem {
 
 interface LeafletMapInnerProps {
   markers: MapMarkerItem[];
-  defaultCenter: { lat: number; lng: number };
+  userLocation: { lat: number; lng: number };
   onSelectPin: (pin: MapMarkerItem) => void;
 }
 
@@ -33,7 +33,21 @@ function createCustomIcon(type: "seller" | "buyer") {
 
   return L.divIcon({
     className: "custom-map-pin",
-    html: `<div class="w-8 h-8 rounded-full ${pinColor} border-2 shadow-md flex items-center justify-center transform transition-transform hover:scale-125">${svgIcon}</div>`,
+    html: `<div class="w-8 h-8 rounded-full ${pinColor} border-2 shadow-lg flex items-center justify-center transform transition-transform hover:scale-125 cursor-pointer">${svgIcon}</div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+  });
+}
+
+function createUserLocationIcon() {
+  return L.divIcon({
+    className: "custom-user-pin",
+    html: `
+      <div style="position:relative; width:32px; height:32px; display:flex; align-items:center; justify-content:center;">
+        <div style="position:absolute; width:28px; height:28px; border-radius:50%; background-color:rgba(16,185,129,0.35); animation:pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;"></div>
+        <div style="width:16px; height:16px; border-radius:50%; background-color:#10b981; border:3px solid #ffffff; box-shadow:0 0 12px rgba(16,185,129,0.8); z-index:10;"></div>
+      </div>
+    `,
     iconSize: [32, 32],
     iconAnchor: [16, 16],
   });
@@ -41,23 +55,25 @@ function createCustomIcon(type: "seller" | "buyer") {
 
 export default function LeafletMapInner({
   markers,
-  defaultCenter,
+  userLocation,
   onSelectPin,
 }: LeafletMapInnerProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const userMarkerRef = useRef<L.Marker | null>(null);
 
+  // 1. Inisialisasi Map Instance (Sekali saja)
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-    // 1. Inisialisasi Peta
     const map = L.map(mapContainerRef.current, {
-      center: [defaultCenter.lat, defaultCenter.lng],
+      center: [userLocation.lat, userLocation.lng],
       zoom: 13,
       zoomControl: false,
     });
 
-    // 2. Tile Layer OpenStreetMap Standard (100% Gratis & Tanpa API Key Watermark)
+    // Tile Layer OpenStreetMap Standard
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
       subdomains: ["a", "b", "c"],
@@ -67,32 +83,25 @@ export default function LeafletMapInner({
 
     L.control.zoom({ position: "topright" }).addTo(map);
 
-    // 3. Marker User
-    const userIcon = L.divIcon({
-      className: "custom-user-pin",
-      html: `<div class="w-5 h-5 rounded-full bg-emerald-500 border-2 border-white shadow-lg flex items-center justify-center"><div class="w-2 h-2 rounded-full bg-white"></div></div>`,
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
-    });
+    // Layer Group untuk marker limbah & pengepul
+    const markersLayer = L.layerGroup().addTo(map);
+    markersLayerRef.current = markersLayer;
 
-    L.marker([defaultCenter.lat, defaultCenter.lng], { icon: userIcon })
+    // Marker Lokasi Anda
+    const userMarker = L.marker([userLocation.lat, userLocation.lng], {
+      icon: createUserLocationIcon(),
+      zIndexOffset: 1000,
+    })
       .addTo(map)
-      .bindTooltip("Lokasi Anda", { direction: "top" });
-
-    // 4. Marker Seller & Buyer
-    markers.forEach((m) => {
-      const marker = L.marker([m.lat, m.lng], {
-        icon: createCustomIcon(m.type),
-      }).addTo(map);
-      marker.on("click", () => {
-        onSelectPin(m);
-        map.panTo([m.lat, m.lng], { animate: true });
+      .bindTooltip("📍 Lokasi Anda Saat Ini", {
+        direction: "top",
+        permanent: false,
+        className: "leaflet-tooltip-custom",
       });
-    });
 
+    userMarkerRef.current = userMarker;
     mapInstanceRef.current = map;
 
-    // 💡 KUNCI PERBAIKAN: Recalculate ukuran peta setelah DOM render selesai
     const timer = setTimeout(() => {
       map.invalidateSize();
     }, 200);
@@ -101,8 +110,59 @@ export default function LeafletMapInner({
       clearTimeout(timer);
       map.remove();
       mapInstanceRef.current = null;
+      markersLayerRef.current = null;
+      userMarkerRef.current = null;
     };
-  }, [defaultCenter, markers, onSelectPin]);
+  }, []); // Run once on mount
+
+  // 2. Update Marker Lokasi User saat userLocation berubah (misal setelah GPS terdeteksi)
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+
+    if (userMarkerRef.current) {
+      userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
+    } else {
+      userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], {
+        icon: createUserLocationIcon(),
+        zIndexOffset: 1000,
+      })
+        .addTo(mapInstanceRef.current)
+        .bindTooltip("📍 Lokasi Anda Saat Ini", { direction: "top" });
+    }
+
+    // Pan dengan halus ke lokasi baru user
+    mapInstanceRef.current.panTo([userLocation.lat, userLocation.lng], {
+      animate: true,
+      duration: 1,
+    });
+  }, [userLocation.lat, userLocation.lng]);
+
+  // 3. Update Markers Limbah (Seller & Buyer)
+  useEffect(() => {
+    if (!markersLayerRef.current || !mapInstanceRef.current) return;
+
+    markersLayerRef.current.clearLayers();
+
+    markers.forEach((m) => {
+      const marker = L.marker([m.lat, m.lng], {
+        icon: createCustomIcon(m.type),
+      });
+
+      marker.bindTooltip(
+        `<strong>${m.title}</strong><br/><span style="font-size:11px;color:#10b981;">${m.distance}</span>`,
+        { direction: "top", opacity: 0.95 }
+      );
+
+      marker.on("click", () => {
+        onSelectPin(m);
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.panTo([m.lat, m.lng], { animate: true });
+        }
+      });
+
+      markersLayerRef.current?.addLayer(marker);
+    });
+  }, [markers, onSelectPin]);
 
   return <div ref={mapContainerRef} className="w-full h-full z-0 min-h-80" />;
 }

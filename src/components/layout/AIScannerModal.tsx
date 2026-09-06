@@ -2,12 +2,25 @@
 import { supabase } from "@/lib/supabase";
 
 import { useState, useRef, useEffect } from "react";
-import { Camera, Sparkles, Info, X, CheckCircle, RefreshCw, Upload, MapPin, Navigation } from "lucide-react";
+import {
+  Camera,
+  Sparkles,
+  Info,
+  X,
+  CheckCircle,
+  RefreshCw,
+  Upload,
+  MapPin,
+  Navigation,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createListingAction } from "@/actions/listing.actions";
-import { geocodeAddressAction, reverseGeocodeAction } from "@/actions/geo.actions";
+import {
+  geocodeAddressAction,
+  reverseGeocodeAction,
+} from "@/actions/geo.actions";
 import * as tf from "@tensorflow/tfjs";
-import { getCategoryMapping, getHumanReadableName, getBasePrice } from "@/lib/model";
+import { getHumanReadableName, getBasePrice } from "@/lib/model";
 import { toast } from "@/components/ui/sonner";
 
 interface AIScannerModalProps {
@@ -17,11 +30,18 @@ interface AIScannerModalProps {
   sellerId?: string;
 }
 
-export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScannerModalProps) {
+export function AIScannerModal({
+  isOpen,
+  onClose,
+  categories,
+  sellerId,
+}: AIScannerModalProps) {
   const router = useRouter();
 
   // Step state: 1: Upload/Camera, 2: Scanning AI, 3: AI Result & Form Input
-  const [step, setStep] = useState<"upload" | "scanning" | "form" | "success">("upload");
+  const [step, setStep] = useState<"upload" | "scanning" | "form" | "success">(
+    "upload",
+  );
   const [photoUrl, setPhotoUrl] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -93,7 +113,7 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
             lng: pos.coords.longitude,
           });
           if (res.success && res.displayName) {
-            setFormData(prev => ({
+            setFormData((prev) => ({
               ...prev,
               address: res.displayName!,
               latitude: String(pos.coords.latitude),
@@ -113,7 +133,7 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
         toast.error("Gagal mengambil GPS. Pastikan izin lokasi aktif.");
         setIsLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
   };
 
@@ -138,11 +158,14 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
       });
 
       const tensor = tf.tidy(() => {
-        let img = tf.browser.fromPixels(imgElement).resizeBilinear([224, 224]).toFloat();
+        let img = tf.browser
+          .fromPixels(imgElement)
+          .resizeBilinear([224, 224])
+          .toFloat();
         // Convert RGB to BGR
         img = img.reverse(-1);
         // Subtract ImageNet Mean
-        const meanTensor = tf.tensor1d([103.939, 116.779, 123.680]);
+        const meanTensor = tf.tensor1d([103.939, 116.779, 123.68]);
         img = img.sub(meanTensor);
         return img.expandDims(0);
       });
@@ -173,7 +196,7 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
 
       const humanName = getHumanReadableName(predictedLabel);
       const targetCat = categories.find(
-        (c) => c.name.toLowerCase() === humanName.toLowerCase()
+        (c) => c.name.toLowerCase() === humanName.toLowerCase(),
       );
       const catId = targetCat?.id || categories[0]?.id || "";
 
@@ -186,7 +209,7 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
             : humanName,
         categoryId: catId,
         estimatedPrice: String(
-          targetCat?.averagePrice || getBasePrice(predictedLabel)
+          targetCat?.averagePrice || getBasePrice(predictedLabel),
         ),
       }));
       setStep("form");
@@ -225,22 +248,31 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
               resolve();
             },
             () => resolve(),
-            { timeout: 5000 }
+            { timeout: 5000 },
           );
         });
       }
 
       let finalPhotoUrl = photoUrl;
       if (selectedFile) {
-        const fileExt = selectedFile.name.split('.').pop();
+        const fileExt = selectedFile.name.split(".").pop();
         const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-        const filePath = `${sellerId || 'guest'}/${fileName}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage.from('listing-image').upload(filePath, selectedFile, { cacheControl: '3600', upsert: false });
+        const filePath = `${sellerId || "guest"}/${fileName}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("listing-image")
+          .upload(filePath, selectedFile, {
+            cacheControl: "3600",
+            upsert: false,
+          });
         if (uploadError) {
-          throw new Error("Gagal mengunggah foto ke Supabase: " + uploadError.message);
+          throw new Error(
+            "Gagal mengunggah foto ke Supabase: " + uploadError.message,
+          );
         }
         if (uploadData) {
-          const { data: publicUrlData } = supabase.storage.from('listing-image').getPublicUrl(uploadData.path);
+          const { data: publicUrlData } = supabase.storage
+            .from("listing-image")
+            .getPublicUrl(uploadData.path);
           finalPhotoUrl = publicUrlData.publicUrl;
         }
       }
@@ -284,7 +316,7 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in">
-      <div className="relative w-full max-w-xl bg-white border border-zinc-200/80 rounded-3xl sm:rounded-[32px] text-[#171717] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="relative w-full max-w-xl bg-white border border-zinc-200/80 rounded-3xl sm:rounded-4xl text-[#171717] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* Modal Header */}
         <div className="px-6 py-5 border-b border-zinc-100 flex items-center justify-between bg-white">
           <div className="flex items-center space-x-3">
@@ -316,7 +348,6 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
               <input
                 type="file"
                 accept="image/*"
-                capture="environment"
                 ref={fileInputRef}
                 className="hidden"
                 onChange={handleFileUpload}
@@ -341,8 +372,13 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-start gap-2.5">
                 <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
                 <div className="text-[11px] text-blue-800 leading-relaxed">
-                  <strong>Info:</strong> Model AI Scanner mendukung deteksi 10 jenis sampah:
-                  <span className="font-semibold text-blue-900"> Kardus, Kertas, Plastik, Kaca (Bening/Hijau/Cokelat), Logam/Besi, Baterai, Sampah Organik, dan Residu.</span>
+                  <strong>Info:</strong> Model AI Scanner mendukung deteksi 10
+                  jenis sampah:
+                  <span className="font-semibold text-blue-900">
+                    {" "}
+                    Kardus, Kertas, Plastik, Kaca (Bening/Hijau/Cokelat),
+                    Logam/Besi, Baterai, Sampah Organik, dan Residu.
+                  </span>
                 </div>
               </div>
 
@@ -352,7 +388,11 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
                   type="button"
                   onClick={() => {
                     setPhotoUrl("");
-                    setAiResult({ categoryName: "Besi", confidence: 0, categoryId: "" });
+                    setAiResult({
+                      categoryName: "Besi",
+                      confidence: 0,
+                      categoryId: "",
+                    });
                     setIsManualOverride(true);
                     setStep("form");
                   }}
@@ -401,7 +441,9 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
                   />
                 ) : (
                   <div className="w-14 h-14 rounded-xl bg-zinc-200 border border-zinc-300 shrink-0 flex items-center justify-center">
-                    <span className="text-[10px] font-semibold text-zinc-500">Tanpa Foto</span>
+                    <span className="text-[10px] font-semibold text-zinc-500">
+                      Tanpa Foto
+                    </span>
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
@@ -410,7 +452,8 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
                       <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#E8EEDD] text-[#2B3A1C] border border-[#6B7B4F]/20 mb-0.5">
                         <Sparkles className="w-3 h-3 text-[#6B7B4F]" />
                         <span>
-                          Terdeteksi: {aiResult.categoryName} ({aiResult.confidence}%)
+                          Terdeteksi: {aiResult.categoryName} (
+                          {aiResult.confidence}%)
                         </span>
                       </div>
 
@@ -420,7 +463,8 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
                           onClick={() => setIsManualOverride(true)}
                           className="text-[11px] text-[#6B7B4F] hover:underline block font-semibold mt-0.5 cursor-pointer"
                         >
-                          Bukan {aiResult.categoryName.toLowerCase()}? Ubah manual
+                          Bukan {aiResult.categoryName.toLowerCase()}? Ubah
+                          manual
                         </button>
                       ) : (
                         <span className="text-[11px] text-amber-700 font-semibold block mt-0.5">
@@ -430,11 +474,17 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
                     </>
                   ) : (
                     <>
-                      <h3 className="text-sm font-semibold text-[#171717]">Foto Sampah</h3>
+                      <h3 className="text-sm font-semibold text-[#171717]">
+                        Foto Sampah
+                      </h3>
                       {photoUrl ? (
-                        <p className="text-[10px] text-zinc-500 mt-0.5">Foto siap digunakan.</p>
+                        <p className="text-[10px] text-zinc-500 mt-0.5">
+                          Foto siap digunakan.
+                        </p>
                       ) : (
-                        <p className="text-[10px] text-amber-600 font-medium mt-0.5">Listing dibuat tanpa foto.</p>
+                        <p className="text-[10px] text-amber-600 font-medium mt-0.5">
+                          Listing dibuat tanpa foto.
+                        </p>
                       )}
                     </>
                   )}
@@ -444,7 +494,6 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
                     <input
                       type="file"
                       accept="image/*"
-                      capture="environment"
                       id="manual-photo"
                       className="hidden"
                       onChange={(e) => {
@@ -617,8 +666,14 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
                       disabled={isLocating}
                       className="inline-flex items-center gap-1 text-[10px] text-emerald-700 hover:text-emerald-800 font-semibold cursor-pointer disabled:opacity-50 transition-colors"
                     >
-                      <Navigation className={`w-3 h-3 text-emerald-600 ${isLocating ? "animate-spin" : ""}`} />
-                      <span>{isLocating ? "Membaca GPS..." : "📍 Ambil Lokasi GPS Saya"}</span>
+                      <Navigation
+                        className={`w-3 h-3 text-emerald-600 ${isLocating ? "animate-spin" : ""}`}
+                      />
+                      <span>
+                        {isLocating
+                          ? "Membaca GPS..."
+                          : "📍 Ambil Lokasi GPS Saya"}
+                      </span>
                     </button>
                   </div>
                   <div className="relative">
@@ -635,7 +690,9 @@ export function AIScannerModal({ isOpen, onClose, categories, sellerId }: AIScan
                         const addr = e.target.value.trim();
                         if (addr.length < 3) return;
                         try {
-                          const geo = await geocodeAddressAction({ address: addr });
+                          const geo = await geocodeAddressAction({
+                            address: addr,
+                          });
                           if (geo.success) {
                             setFormData((prev) => ({
                               ...prev,

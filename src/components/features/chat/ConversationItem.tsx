@@ -27,20 +27,22 @@ export function ConversationItem({
       ? conv.messages[conv.messages.length - 1]
       : null;
   const tx = conv.transactions?.[0];
-  
-  const listingTitle = tx?.listing?.title ||
+
+  const listingTitle =
+    tx?.listing?.title ||
     conv.listing?.title ||
     conv.match?.listing?.title ||
     conv.request?.title ||
     conv.match?.request?.title ||
     "Limbah Sirkular";
 
-  const estimatedWeight = tx?.listing?.estimatedWeightKg ||
+  const estimatedWeight =
+    tx?.listing?.estimatedWeightKg ||
     conv.listing?.estimatedWeightKg ||
     conv.match?.listing?.estimatedWeightKg ||
     conv.request?.quantityWanted ||
     conv.match?.request?.quantityWanted;
-    
+
   const partnerInitials = partner?.fullName?.slice(0, 2).toUpperCase() || "DN";
 
   return (
@@ -102,7 +104,7 @@ export function ConversationItem({
             {isUserSeller ? "Menjual" : "Membeli"}
           </Badge>
 
-          <span className="text-[11px] font-semibold text-[#171717] truncate max-w-[140px]">
+          <span className="text-[11px] font-semibold text-[#171717] truncate max-w-35">
             {listingTitle}
           </span>
           {estimatedWeight && (

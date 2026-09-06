@@ -6,19 +6,28 @@ import { ArrowLeft, RefreshCw, Navigation, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createRequestSchema, CreateRequestInput } from "@/validations/request.schema";
+import {
+  createRequestSchema,
+  CreateRequestInput,
+} from "@/validations/request.schema";
 import { createRequestAction } from "@/actions/request.actions";
 import { getCategoriesAction } from "@/actions/category.actions";
-import { geocodeAddressAction, reverseGeocodeAction } from "@/actions/geo.actions";
+import {
+  geocodeAddressAction,
+  reverseGeocodeAction,
+} from "@/actions/geo.actions";
 import { toast } from "@/components/ui/sonner";
 
 interface CreateRequestClientProps {
   categories: { id: string; name: string }[];
 }
 
-export function CreateRequestClient({ categories: initialCategories = [] }: CreateRequestClientProps) {
+export function CreateRequestClient({
+  categories: initialCategories = [],
+}: CreateRequestClientProps) {
   const router = useRouter();
-  const [categories, setCategories] = useState<{ id: string; name: string }[]>(initialCategories);
+  const [categories, setCategories] =
+    useState<{ id: string; name: string }[]>(initialCategories);
   const [isLocating, setIsLocating] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -30,15 +39,15 @@ export function CreateRequestClient({ categories: initialCategories = [] }: Crea
   } = useForm<any>({
     resolver: zodResolver(createRequestSchema),
     defaultValues: {
-      title: "Butuh Ampas Kopi Rutin Mingguan 100kg",
+      title: "",
       categoryId: initialCategories[0]?.id || "",
-      quantityWanted: 100,
+      quantityWanted: undefined,
       unit: "kg",
-      offeredPrice: 2000,
-      address: "Jl. Raya Ungaran No. 88, Semarang",
-      latitude: -7.1350,
-      longitude: 110.4040,
-      description: "Mencari ampas kopi basah/kering murni dari kedai kopi Semarang untuk bahan pupuk organik perkebunan Ungaran.",
+      offeredPrice: undefined,
+      address: "",
+      latitude: undefined,
+      longitude: undefined,
+      description: "",
     },
   });
 
@@ -80,9 +89,11 @@ export function CreateRequestClient({ categories: initialCategories = [] }: Crea
       (err) => {
         console.error("GPS error:", err);
         setIsLocating(false);
-        toast.error("Gagal membaca GPS: Pastikan izin lokasi telah diaktifkan.");
+        toast.error(
+          "Gagal membaca GPS: Pastikan izin lokasi telah diaktifkan.",
+        );
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000 },
     );
   };
 
@@ -117,12 +128,16 @@ export function CreateRequestClient({ categories: initialCategories = [] }: Crea
             Pasang Kebutuhan Sampah (Pengepul)
           </h1>
           <p className="text-xs text-slate-500">
-            Pasang kebutuhan sampah yang Anda cari agar sistem memberikan rekomendasi Penjual sampah terdekat.
+            Pasang kebutuhan sampah yang Anda cari agar sistem memberikan
+            rekomendasi Penjual sampah terdekat.
           </p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-xs">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5 shadow-xs"
+      >
         {serverError && (
           <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-medium">
             {serverError}
@@ -141,7 +156,9 @@ export function CreateRequestClient({ categories: initialCategories = [] }: Crea
             className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl focus:bg-white focus:outline-none transition-colors"
           />
           {errors.title && (
-            <p className="text-xs text-rose-600 mt-1 font-medium">{errors.title.message as string}</p>
+            <p className="text-xs text-rose-600 mt-1 font-medium">
+              {errors.title.message as string}
+            </p>
           )}
         </div>
 
@@ -161,7 +178,9 @@ export function CreateRequestClient({ categories: initialCategories = [] }: Crea
             ))}
           </select>
           {errors.categoryId && (
-            <p className="text-xs text-rose-600 mt-1 font-medium">{errors.categoryId.message as string}</p>
+            <p className="text-xs text-rose-600 mt-1 font-medium">
+              {errors.categoryId.message as string}
+            </p>
           )}
         </div>
 
@@ -173,11 +192,13 @@ export function CreateRequestClient({ categories: initialCategories = [] }: Crea
             </label>
             <input
               type="number"
-              {...register("quantityWanted")}
+              {...register("quantityWanted", { valueAsNumber: true })}
               className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl focus:bg-white focus:outline-none transition-colors"
             />
             {errors.quantityWanted && (
-              <p className="text-xs text-rose-600 mt-1 font-medium">{errors.quantityWanted.message as string}</p>
+              <p className="text-xs text-rose-600 mt-1 font-medium">
+                {errors.quantityWanted.message as string}
+              </p>
             )}
           </div>
           <div>
@@ -199,11 +220,13 @@ export function CreateRequestClient({ categories: initialCategories = [] }: Crea
           </label>
           <input
             type="number"
-            {...register("offeredPrice")}
+            {...register("offeredPrice", { valueAsNumber: true })}
             className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-xl focus:bg-white focus:outline-none transition-colors"
           />
           {errors.offeredPrice && (
-            <p className="text-xs text-rose-600 mt-1 font-medium">{errors.offeredPrice.message as string}</p>
+            <p className="text-xs text-rose-600 mt-1 font-medium">
+              {errors.offeredPrice.message as string}
+            </p>
           )}
         </div>
 
@@ -219,8 +242,12 @@ export function CreateRequestClient({ categories: initialCategories = [] }: Crea
               disabled={isLocating}
               className="inline-flex items-center gap-1 text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold cursor-pointer disabled:opacity-50 transition-colors"
             >
-              <Navigation className={`w-3 h-3 text-emerald-600 ${isLocating ? "animate-spin" : ""}`} />
-              <span>{isLocating ? "Membaca GPS..." : "📍 Ambil Lokasi GPS Saya"}</span>
+              <Navigation
+                className={`w-3 h-3 text-emerald-600 ${isLocating ? "animate-spin" : ""}`}
+              />
+              <span>
+                {isLocating ? "Membaca GPS..." : "📍 Ambil Lokasi GPS Saya"}
+              </span>
             </button>
           </div>
           <div className="relative">
@@ -243,7 +270,9 @@ export function CreateRequestClient({ categories: initialCategories = [] }: Crea
             />
           </div>
           {errors.address && (
-            <p className="text-xs text-rose-600 mt-1 font-medium">{errors.address.message as string}</p>
+            <p className="text-xs text-rose-600 mt-1 font-medium">
+              {errors.address.message as string}
+            </p>
           )}
         </div>
 
