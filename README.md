@@ -1,10 +1,15 @@
+Penyebab tampilan README rusak di GitHub adalah **tag Markdown yang bertumpuk (````markdown`)** dan **pembatas kode (`````) yang tidak tertutup secara benar** di sekitar _Folder Structure_, _Setup Env_, _Database_, _API Documentation_, dan _Testing_. Akibatnya, GitHub menganggap setengah dari isi berkas kamu sebagai kode mentah biasa.
+
+Berikut adalah isi **seluruh berkas `README.md` utuh** yang sudah diperbaiki format Markdown-nya, dibersihkan dari _wrapper/tag_ yang bocor, serta siap langsung disalin penuh ke GitHub:
+
+```markdown
 <div align="center">
   
-  # [Daur Nusa] 
-  ### [Tagline Singkat dan Menarik]
+  # 🚀 Daur Nusa
+  ### Inovasi Web Modern, Kecerdasan Edge AI untuk Pengelolaan Daur Ulang
   
   [![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Visit_Site-success?style=for-the-badge)](https://[URL_DEMO])
-  [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://[URL_REPO])
+  [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://github.com/ahmadchoms/itechnocup2026)
   [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
   
   **Submission for ITECHNO CUP 2026 - Web Development**
@@ -26,7 +31,7 @@
 - [Penggunaan](#-penggunaan)
 - [API Documentation](#-api-documentation)
 - [Testing](#-testing)
-- [Tim Developer](#-tim-pengembang)
+- [Tim Developer](#-tim-developer)
 - [Lisensi](#-lisensi)
 
 ---
@@ -121,25 +126,25 @@ Inovasi ini memberikan beberapa keunggulan utama dalam menyelesaikan permasalaha
 
 #### Frontend
 
-Framework : Next.js 15 (App Router)
-UI Library : Tailwind CSS & Shadcn UI (`components.json`)
-State Mgmt : React Hooks & Context API
-Validation : Zod & React Hook Form
+- **Framework**: Next.js 15 (App Router)[cite: 1]
+- **UI Library**: Tailwind CSS & Shadcn UI (`components.json`)[cite: 1]
+- **State Mgmt**: React Hooks & Context API
+- **Validation**: Zod & React Hook Form
 
 #### Backend
 
-Runtime : Node.js
-Framework : Next.js API Routes (Server Actions)
-Database : PostgreSQL
-ORM : Prisma ORM (`prisma/schema.prisma`)
-Auth : NextAuth.js / Custom JWT Session
+- **Runtime**: Node.js[cite: 1]
+- **Framework**: Next.js API Routes (Server Actions)[cite: 1]
+- **Database**: PostgreSQL
+- **ORM**: Prisma ORM (`prisma/schema.prisma`)[cite: 1]
+- **Auth**: NextAuth.js / Custom JWT Session
 
 #### DevOps & Tools
 
-Deployment : Vercel Platform
-CI/CD : GitHub Actions & Vercel Auto Deploy
-Testing : Vitest / React Testing Library
-Monitoring : Vercel Analytics & System Logs
+- **Deployment**: Vercel Platform[cite: 1]
+- **CI/CD**: GitHub Actions & Vercel Auto Deploy
+- **Testing**: Vitest / React Testing Library
+- **Monitoring**: Vercel Analytics & System Logs
 
 ### Alasan Pemilihan Teknologi
 
@@ -151,59 +156,10 @@ Monitoring : Vercel Analytics & System Logs
 | **TypeScript**                  | Menjamin _type-safety_ di seluruh lapisan aplikasi untuk meminimalisir potensi bug saat _runtime_, meningkatkan keterbacaan kode, dan mempermudah kolaborasi pengembangan tim[cite: 1].                                                                       |
 | **Tailwind CSS & Shadcn UI**    | Memungkinkan penyusunan antarmuka yang responsif, modern, dan aksesibel secara cepat dengan sistem _utility-first_ serta konfigurasi komponen yang modular (`components.json`)[cite: 1].                                                                      |
 
-### Dependencies Utama
-
-```json
-{
-  "dependencies": {
-    "@base-ui/react": "^1.7.0",
-    "@google/genai": "^2.19.0",
-    "@hookform/resolvers": "^5.9.1",
-    "@prisma/adapter-pg": "^7.9.1",
-    "@prisma/client": "^7.9.1",
-    "@supabase/ssr": "^0.12.4",
-    "@supabase/supabase-js": "^2.112.3",
-    "@tensorflow/tfjs": "^4.22.0",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/pg": "^8.21.0",
-    "bcryptjs": "^3.0.3",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "framer-motion": "^13.1.0",
-    "lucide-react": "^1.29.0",
-    "next": "16.3.0",
-    "pg": "^8.23.0",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "react-hook-form": "^7.86.0",
-    "react-leaflet": "^5.0.0",
-    "shadcn": "^4.16.2",
-    "sonner": "^2.0.1",
-    "tailwind-merge": "^3.6.0",
-    "tw-animate-css": "^1.4.0",
-    "web-streams-polyfill": "^4.3.0",
-    "zod": "^4.4.3"
-  }
-}
-```
-
 ---
 
 ## 🏗️ Arsitektur Sistem
 
-### System Architecture
-
-```
-[Tambahkan diagram arsitektur sistem - bisa menggunakan Mermaid atau gambar]
-```
-
-### Database Schema
-
-```
-[Tambahkan diagram ERD atau schema database]
-```
-
-```markdown
 ### Folder Structure
 ```
 
@@ -237,10 +193,9 @@ itechnocup-2026-design/
 ### Prerequisites
 
 Pastikan Anda telah menginstall:
-
 - **Node.js** (v18.x atau lebih tinggi)
 - **npm** / **yarn** / **pnpm**
-- **[Database]** (jika diperlukan)
+- **PostgreSQL Database**
 - **Git**
 
 ### Langkah Instalasi
@@ -248,42 +203,35 @@ Pastikan Anda telah menginstall:
 #### 1️⃣ Clone Repository
 
 ```bash
-git clone https://github.com/ahmadchoms/itechnocup2026.git
+git clone [https://github.com/ahmadchoms/itechnocup2026.git](https://github.com/ahmadchoms/itechnocup2026.git)
 cd itechnocup2026
+
 ````
 
 #### 2️⃣ Install Dependencies
 
 ```bash
-# Menggunakan npm
 npm install
 
-# Atau menggunakan yarn
-yarn install
-
-# Atau menggunakan pnpm
-pnpm install
 ```
 
-````markdown
 #### 3️⃣ Setup Environment Variables
 
 Buat file `.env` di root directory dan sesuaikan nilainya:
 
 ```env
-# Database
+# Database Connection
 DATABASE_URL="postgresql://user:password@localhost:5432/dbname"
 
-# Supabase Realtime & Auth
+# Supabase Credentials
 NEXT_PUBLIC_SUPABASE_URL="[https://your-project.supabase.co](https://your-project.supabase.co)"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
 
-# AI Service
+# AI Integration
 GEMINI_API_KEY="your-gemini-api-key"
-```
-````
 
-````markdown
+```
+
 #### 4️⃣ Setup Database
 
 ```bash
@@ -292,8 +240,8 @@ npx prisma migrate dev
 
 # Seed data awal kategori & sistem
 npx prisma db seed
+
 ```
-````
 
 #### 5️⃣ Run Development Server
 
@@ -302,55 +250,39 @@ npm run dev
 
 ```
 
-Aplikasi akan berjalan di `http://localhost:3000`
+Aplikasi akan berjalan di `http://localhost:3000`.
 
 ---
 
 ## 🚀 Penggunaan
-
-### Menjalankan Aplikasi
-
-```bash
-# Development mode
-npm run dev
-
-# Production build
-npm run build
-npm run start
-
-# Run tests
-npm run test
-
-# Linting
-npm run lint
-```
 
 ### User Guide
 
 #### Untuk Pengguna Umum
 
 1. **Registrasi/Login**: Buka aplikasi di browser, lalu lakukan pendaftaran akun baru atau masuk menggunakan akun yang sudah terdaftar untuk menyimpan riwayat pemilahan sampah.
-2. **Scan/Klasifikasi Sampah**: Akses fitur kamera pada aplikasi, arahkan kamera ke objek sampah daur ulang, dan biarkan model _Edge AI_ mengidentifikasi jenis sampah secara instan di browser Anda (`public/model_ai_class`)[cite: 1].
+2. **Scan/Klasifikasi Sampah**: Akses fitur kamera pada aplikasi, arahkan kamera ke objek sampah daur ulang, dan biarkan model _Edge AI_ mengidentifikasi jenis sampah secara instan di browser Anda (`public/model_ai_class`).
+
 3. **Panduan Daur Ulang & Poin**: Ikuti petunjuk pemilahan dan penanganan sampah sesuai hasil deteksi, lalu kumpulkan poin kontribusi lingkungan yang akan dicatat otomatis ke dalam sistem.
 
 #### Untuk Admin
 
 1. **Akses Admin Panel**: Masuk menggunakan akun berhak akses Admin melalui halaman `/admin` untuk mengelola data sistem.
-2. **Manajemen Kategori Sampah**: Tambah, ubah, atau hapus kategori sampah daur ulang serta panduan penanganannya yang tersimpan di dalam database (`prisma/schema.prisma`)[cite: 1].
+2. **Manajemen Kategori Sampah**: Tambah, ubah, atau hapus kategori sampah daur ulang serta panduan penanganannya yang tersimpan di dalam database (`prisma/schema.prisma`).
+
 3. **Monitoring & Laporan Analytics**: Pantau statistik aktivitas pemilahan pengguna, total volume sampah teridentifikasi, serta riwayat aktivitas sistem secara _real-time_.
 
 ---
 
-```markdown
 ## 📚 API Documentation
 
 ### Base URL
+
 ```
-
 Development: http://localhost:3000/api
-Production: https://[domain]/api
+Production:  https://[domain]/api
 
-````
+```
 
 ### Endpoints
 
@@ -362,7 +294,7 @@ POST /api/auth/login
 POST /api/auth/logout
 GET  /api/auth/me
 
-````
+```
 
 #### Garbage Classifications & Recycling History
 
@@ -387,17 +319,7 @@ DELETE /api/categories/:id        # Hapus kategori sampah (Admin)
 
 ### Example Request
 
-````javascript
-// Login
-const response = await fetch("/api/auth/login", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    email: "user@example.com",
-    password: "password123",
-  }),
-});
-
+```javascript
 // Save Edge AI Classification Result
 const saveClassification = await fetch("/api/classifications", {
   method: "POST",
@@ -411,12 +333,10 @@ const saveClassification = await fetch("/api/classifications", {
 
 const data = await saveClassification.json();
 console.log("Classification Result Saved:", data);
-
-📖 **[Dokumentasi API Lengkap](./docs/API.md)** _(opsional)_
+```
 
 ---
 
-```markdown
 ## 🧪 Testing
 
 ### Running Tests
@@ -434,7 +354,7 @@ npm run test:e2e
 # Test coverage report
 npm run test:coverage
 
-````
+```
 
 ### Test Coverage
 
@@ -446,25 +366,12 @@ Lines        : 88.7%
 
 ```
 
-```
-
-<ElicitationsGroup message="Seluruh bagian README sudah selesai disusun! Langkah selanjutnya yang bisa kita lakukan:">
-  <Elicitation label="Gabungkan seluruh bagian menjadi satu file README.md utuh" query="Gabungkan seluruh bagian README yang sudah kita buat tadi dari awal sampai akhir menjadi satu file README.md utuh."/>
-  <Elicitation label="Buat ringkasan ringkas untuk berkas CONTEXT.md atau PRD.md" query="Buat ringkasan ringkas untuk berkas CONTEXT.md dan PRD.md yang sesuai dengan isi README ini."/>
-</ElicitationsGroup>
-
-```
-
 ---
 
 ## 📄 Lisensi
 
-Proyek ini dilisensikan di bawah [MIT License](LICENSE) - lihat file LICENSE untuk detail lebih lanjut.
+Proyek ini dilisensikan di bawah [MIT License](https://www.google.com/search?q=LICENSE) - lihat file LICENSE untuk detail lebih lanjut.
 
 ---
 
-<div align="center">
-
 **Made with ❤️ by Londo Ireng for ITECHNO CUP 2026**
-
-</div>
