@@ -9,6 +9,7 @@ import {
   MapPin,
   Clock,
   Sparkles,
+  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatIdDate } from "@/lib/format";
@@ -17,11 +18,15 @@ import type { ChatMessage } from "@/types";
 interface MessageStreamProps {
   messages: ChatMessage[];
   effectiveUserId: string;
+  failedMessageIds?: Set<string>;
+  onRetryMessage?: (optimisticId: string, content: string) => void;
 }
 
 export function MessageStream({
   messages,
   effectiveUserId,
+  failedMessageIds,
+  onRetryMessage,
 }: MessageStreamProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -80,6 +85,7 @@ export function MessageStream({
         const isSystem = msg.senderId === "system";
         const content = msg.content || "";
         const messageKey = msg.id ? `msg-${msg.id}` : `msg-fallback-${index}`;
+        const isFailed = isMe && Boolean(failedMessageIds?.has(String(msg.id)));
 
         // Check if message is a system milestone
         const isMilestone =
@@ -176,17 +182,33 @@ export function MessageStream({
           >
             <div
               className={cn(
-                "px-3.5 py-2 sm:px-4 sm:py-2.5 text-xs font-normal leading-relaxed shadow-2xs break-words",
-                isMe
-                  ? "bg-[#171717] text-white rounded-2xl rounded-tr-xs"
-                  : "bg-white text-[#171717] border border-zinc-200/90 rounded-2xl rounded-tl-xs",
+                "px-3.5 py-2 sm:px-4 sm:py-2.5 text-xs font-normal leading-relaxed shadow-2xs wrap-break-words",
+                isFailed
+                  ? "bg-red-50 text-red-900 border border-red-200 rounded-2xl rounded-tr-xs"
+                  : isMe
+                    ? "bg-[#171717] text-white rounded-2xl rounded-tr-xs"
+                    : "bg-white text-[#171717] border border-zinc-200/90 rounded-2xl rounded-tl-xs",
               )}
             >
               {content}
             </div>
-            <span className="font-mono text-[9px] sm:text-[9.5px] text-[#8A8778] mt-1 px-1.5">
-              {formatIdDate(msg.sentAt, { hour: "2-digit", minute: "2-digit" })}
-            </span>
+            {isFailed ? (
+              <button
+                type="button"
+                onClick={() => onRetryMessage?.(String(msg.id), content)}
+                className="flex items-center gap-1 mt-1 px-1.5 text-[9.5px] sm:text-[10px] font-semibold text-red-600 hover:text-red-700 cursor-pointer"
+              >
+                <RotateCcw className="w-2.5 h-2.5" />
+                <span>Gagal terkirim &middot; Coba lagi</span>
+              </button>
+            ) : (
+              <span className="font-mono text-[9px] sm:text-[9.5px] text-[#8A8778] mt-1 px-1.5">
+                {formatIdDate(msg.sentAt, {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            )}
           </motion.div>
         );
       })}

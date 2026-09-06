@@ -1,36 +1,470 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
+  
+  # [Daur Nusa] 
+  ### [Tagline Singkat dan Menarik]
+  
+  [![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Visit_Site-success?style=for-the-badge)](https://[URL_DEMO])
+  [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://[URL_REPO])
+  [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
+  
+  **Submission for ITECHNO CUP 2026 - Web Development**
+  
+  **By Londo Ireng**
+  
+</div>
 
-## Getting Started
+---
 
-First, run the development server:
+## 📋 Daftar Isi
+
+- [Tentang Proyek](#-tentang-proyek)
+- [Fitur Unggulan](#-fitur-unggulan)
+- [Demo & Screenshot](#-demo--screenshot)
+- [Teknologi](#-teknologi)
+- [Arsitektur Sistem](#-arsitektur-sistem)
+- [Instalasi & Setup](#-instalasi--setup)
+- [Penggunaan](#-penggunaan)
+- [API Documentation](#-api-documentation)
+- [Testing](#-testing)
+- [Tim Developer](#-tim-pengembang)
+- [Lisensi](#-lisensi)
+
+---
+
+## 👥 Tim Developer
+
+| Nama                     | Peran                               | GitHub                                   |
+| ------------------------ | ----------------------------------- | ---------------------------------------- |
+| **Ahmad Chomsin S.**     | Full Stack Developer                | [GitHub](https://github.com/[username1]) |
+| **Alfin Razzaq Nirwana** | Project Lead & Full Stack Developer | [GitHub](https://github.com/[username2]) |
+| **Raki Abhista Prakoso** | Full Stack Developer                | [GitHub](https://github.com/[username3]) |
+
+---
+
+## 🎯 Tentang Proyek
+
+### Latar Belakang
+
+Berdasarkan data Sistem Informasi Pengelolaan Sampah Nasional (SIPSN) Kementerian Lingkungan Hidup dan Kehutanan (KLHK), timbulan sampah nasional di Indonesia mencapai puluhan juta ton per tahun, di mana sekitar 61% hingga 65% di antaranya masih belum terkelola dengan baik dan berakhir mencemari lingkungan atau menumpuk di Tempat Pemrosesan Akhir (TPA). Salah satu faktor utama dari tingginya angka sampah yang tidak terkelola ini adalah rendahnya efisiensi pemilahan sampah di tingkat sumber (rumah tangga dan fasilitas publik), akibat minimnya edukasi serta kesulitan masyarakat dalam mengidentifikasi kategori sampah daur ulang (_recycle_) secara akurat dan cepat.
+
+Proyek ini hadir untuk menyelesaikan masalah tersebut melalui platform digital terintegrasi yang memanfaatkan pemrosesan _Edge AI_ berbasis web (`public/model_ai_class`)[cite: 1]. Dengan model klasifikasi berbasis browser ini, pengguna dapat mengidentifikasi jenis sampah daur ulang secara instan, presisi, dan _real-time_ tanpa terkendala koneksi internet yang lambat[cite: 1]. Didukung oleh keandalan framework Next.js, TypeScript, dan pengelolaan database relasional menggunakan Prisma ORM (`prisma/schema.prisma`), platform ini memberikan solusi teknikal yang responsif, efisien, serta mudah diakses untuk mendorong budaya pemilahan sampah daur ulang di masyarakat[cite: 1].
+
+---
+
+### Solusi yang Ditawarkan
+
+Aplikasi ini hadir sebagai platform digital terintegrasi yang menyelesaikan masalah pemilahan sampah daur ulang melalui pendekatan **Edge AI & Client-Side Processing**. Pendekatan ini unik dan inovatif karena klasifikasi jenis sampah dilakukan secara langsung di dalam browser pengguna menggunakan model lokal (`public/model_ai_class`), tanpa harus mengunggah foto ke server eksternal[cite: 1].
+
+Inovasi ini memberikan beberapa keunggulan utama dalam menyelesaikan permasalahan pemilahan sampah:
+
+- **Inferensi Instan Tanpa _Latency_**: Pengguna mendapatkan hasil identifikasi jenis sampah secara _real-time_ dalam hitungan milidetik, sehingga proses pemilahan menjadi jauh lebih praktis dan interaktif.
+- **Privasi dan Hemat Kuota**: Karena pemrosesan citra dilakukan di sisi klien (_on-device_), data foto pengguna tidak pernah meninggalkan perangkat dan tidak menguras kuota internet untuk pengiriman berkas gambar berukuran besar.
+- **Aksesibilitas dan Keandalan Tinggi**: Solusi ini tetap beroperasi dengan lancar meskipun pengguna berada di area dengan koneksi internet yang tidak stabil.
+- **Arsitektur Data yang Kokoh**: Seluruh riwayat pemilahan, pencatatan poin, dan edukasi daur ulang dikelola secara terstruktur menggunakan Prisma ORM (`prisma/schema.prisma`) dan Next.js, menjamin performa sistem yang responsif, aman, dan siap diskalakan[cite: 1].
+
+### Tujuan Proyek
+
+- 🎯 **Tujuan Utama**: Meningkatkan angka efisiensi pemilahan sampah daur ulang (_recycle_) berbasis masyarakat melalui penyediaan platform web cerdas yang mampu mengidentifikasi jenis sampah secara otomatis, instan, dan presisi langsung dari perangkat pengguna[cite: 1].
+- 📊 **Target Pengguna**: Masyarakat umum (rumah tangga, pelajar/mahasiswa, dan pengelola fasilitas publik) yang ingin memilah sampah secara tepat, serta pengelola/komunitas daur ulang yang membutuhkan pencatatan riwayat pemilahan data sampah secara terstruktur.
+- 💡 **Value Proposition**: Solusi klasifikasi _Edge AI_ terintegrasi yang beroperasi langsung di dalam browser (_on-device_) tanpa mengunggah gambar ke server eksternal, menjamin hasil deteksi instan tanpa _latency_, hemat kuota internet, menjaga privasi pengguna, serta didukung oleh performa aplikasi web Next.js yang cepat dan responsif[cite: 1].
+
+---
+
+## ✨ Fitur Unggulan
+
+### Fitur Utama
+
+| Fitur                                  | Deskripsi                                                                                                                                          | Keunggulan                                                                                                                 |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Edge AI Garbage Classifier**         | Deteksi dan klasifikasi jenis sampah daur ulang berbasis kecerdasan buatan secara langsung di browser pengguna (`public/model_ai_class`)[cite: 1]. | Proses instan tanpa _latency_, hemat kuota internet, dan menjaga privasi karena gambar tidak diunggah ke server eksternal. |
+| **Real-time Recycling Guide & Action** | Modul panduan penanganan dan langkah daur ulang spesifik sesuai dengan jenis sampah yang berhasil terdeteksi.                                      | Memberikan edukasi yang relevan secara langsung sehingga meminimalisir kesalahan dalam pemilahan sampah.                   |
+| **Dynamic Dashboard & Analytics**      | Halaman dasbor interaktif yang menampilkan statistik riwayat pemilahan dan akumulasi dampak lingkungan dari aktivitas pengguna.                    | Membantu pengguna memantau kontribusi nyata mereka dalam pengurangan limbah secara visual dan terukur.                     |
+| **Structured Relational Database**     | Pengelolaan data riwayat pemilahan, profil pengguna, dan kategori sampah yang terstruktur via Prisma ORM (`prisma/schema.prisma`)[cite: 1].        | Menjamin keamanan, konsistensi data, dan performa query yang cepat untuk skala pengguna yang luas.                         |
+
+### Fitur Tambahan
+
+- **Responsive Mobile-First Interface** - Antarmuka intuitif dan responsif di berbagai ukuran perangkat menggunakan Tailwind CSS dan komponen Shadcn UI (`components.json`)[cite: 1].
+- **Automated Database Seeding** - Kemudahan inisialisasi data awal kategori daur ulang dan sistem melalui skrip otomatis (`prisma/seed.ts`)[cite: 1].
+- **Comprehensive Technical Docs** - Akses langsung ke berkas arsitektur, spesifikasi desain, dan PRD proyek di dalam folder `docs`[cite: 1].
+- **TypeScript Type-Safety** - Keamanan tipe data penuh di seluruh lapisan aplikasi untuk meminimalisir _runtime error_ dan menjaga kualitas kode[cite: 1].
+
+---
+
+## 📸 Demo & Screenshot
+
+### Live Demo
+
+🔗 **[Kunjungi Website](https://[URL_DEMO])**
+
+### Screenshot Aplikasi
+
+<div align="center">
+  <img src="[URL_SCREENSHOT_1]" alt="Homepage" width="800"/>
+  <p><em>Homepage - Tampilan utama aplikasi</em></p>
+  
+  <img src="[URL_SCREENSHOT_2]" alt="Dashboard" width="800"/>
+  <p><em>Dashboard - Panel kontrol pengguna</em></p>
+  
+  <img src="[URL_SCREENSHOT_3]" alt="Feature" width="800"/>
+  <p><em>[Nama Fitur] - [Deskripsi screenshot]</em></p>
+</div>
+
+### Video Demo
+
+📹 **[Link Video Demo](https://[URL_VIDEO])** _(opsional)_
+
+---
+
+## 🛠️ Teknologi
+
+### Tech Stack
+
+#### Frontend
+
+Framework : Next.js 15 (App Router)
+UI Library : Tailwind CSS & Shadcn UI (`components.json`)
+State Mgmt : React Hooks & Context API
+Validation : Zod & React Hook Form
+
+#### Backend
+
+Runtime : Node.js
+Framework : Next.js API Routes (Server Actions)
+Database : PostgreSQL
+ORM : Prisma ORM (`prisma/schema.prisma`)
+Auth : NextAuth.js / Custom JWT Session
+
+#### DevOps & Tools
+
+Deployment : Vercel Platform
+CI/CD : GitHub Actions & Vercel Auto Deploy
+Testing : Vitest / React Testing Library
+Monitoring : Vercel Analytics & System Logs
+
+### Alasan Pemilihan Teknologi
+
+| Teknologi                       | Alasan Pemilihan                                                                                                                                                                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Next.js (App Router)**        | Menyediakan kapabilitas _Server-Side Rendering_ (SSR) dan _Static Site Generation_ (SSG) yang optimal, mempercepat pemuatan awal halaman, serta mengintegrasikan _Frontend_ dan _Backend API Routes_ dalam satu _framework_ yang efisien[cite: 1].            |
+| **Edge AI / Client-Side Model** | Menjalankan proses inferensi klasifikasi sampah langsung di browser pengguna via folder `public/model_ai_class`[cite: 1]. Mengeliminasi _latency_ pengiriman gambar ke server, menghemat penggunaan _bandwidth_, dan menjamin privasi data pengguna[cite: 1]. |
+| **Prisma ORM & PostgreSQL**     | Memberikan kemudahan pengelolaan basis data relasional melalui skema bertipe aman (`prisma/schema.prisma`)[cite: 1]. Mempercepat pengembangan dengan fitur migrasi otomatis serta mendukung pengisian data awal via `prisma/seed.ts`[cite: 1].                |
+| **TypeScript**                  | Menjamin _type-safety_ di seluruh lapisan aplikasi untuk meminimalisir potensi bug saat _runtime_, meningkatkan keterbacaan kode, dan mempermudah kolaborasi pengembangan tim[cite: 1].                                                                       |
+| **Tailwind CSS & Shadcn UI**    | Memungkinkan penyusunan antarmuka yang responsif, modern, dan aksesibel secara cepat dengan sistem _utility-first_ serta konfigurasi komponen yang modular (`components.json`)[cite: 1].                                                                      |
+
+### Dependencies Utama
+
+```json
+{
+  "dependencies": {
+    "@base-ui/react": "^1.7.0",
+    "@google/genai": "^2.19.0",
+    "@hookform/resolvers": "^5.9.1",
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.112.3",
+    "@tensorflow/tfjs": "^4.22.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/pg": "^8.21.0",
+    "bcryptjs": "^3.0.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^13.1.0",
+    "lucide-react": "^1.29.0",
+    "next": "16.3.0",
+    "pg": "^8.23.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-hook-form": "^7.86.0",
+    "react-leaflet": "^5.0.0",
+    "shadcn": "^4.16.2",
+    "sonner": "^2.0.1",
+    "tailwind-merge": "^3.6.0",
+    "tw-animate-css": "^1.4.0",
+    "web-streams-polyfill": "^4.3.0",
+    "zod": "^4.4.3"
+  }
+}
+```
+
+---
+
+## 🏗️ Arsitektur Sistem
+
+### System Architecture
+
+```
+[Tambahkan diagram arsitektur sistem - bisa menggunakan Mermaid atau gambar]
+```
+
+### Database Schema
+
+```
+[Tambahkan diagram ERD atau schema database]
+```
+
+```markdown
+### Folder Structure
+```
+
+itechnocup-2026-design/
+├── docs/ # Dokumentasi Teknis & Perancangan Proyek
+│ ├── ARCHITECTURE.md # Spesifikasi Arsitektur & Diagram Sistem
+│ ├── CONTEXT.md # Konteks Bisnis & Domain Permasalahan
+│ ├── DESIGN.md # Panduan UI/UX & Design System
+│ └── PRD.md # Product Requirement Document
+├── prisma/ # Pengelolaan Database Relasional
+│ ├── schema.prisma # Skema Data Prisma ORM
+│ └── seed.ts # Skrip Otomatisasi Seeding Data
+├── public/ # Static Assets & Aset Model AI
+│ └── model_ai_class/ # File Biner & Bobot Model AI Klasifikasi (Shard Bin)
+├── src/ # Source Code Utama Aplikasi
+│ ├── app/ # App Router (Pages, Layouts, & API Routes)
+│ ├── components/ # Komponen Reusable & UI Shadcn
+│ ├── hooks/ # Custom React Hooks (e.g., AI Model Loader)
+│ ├── lib/ # Konfigurasi Utility & Prisma Client Instance
+│ └── types/ # Definisi Tipe Data TypeScript
+├── components.json # Konfigurasi Komponen UI/Shadcn
+├── next.config.ts # Konfigurasi Utama Next.js
+└── package.json # Manajer Dependensi & Skrip Proyek
+
+````
+
+---
+
+## ⚙️ Instalasi & Setup
+
+### Prerequisites
+
+Pastikan Anda telah menginstall:
+
+- **Node.js** (v18.x atau lebih tinggi)
+- **npm** / **yarn** / **pnpm**
+- **[Database]** (jika diperlukan)
+- **Git**
+
+### Langkah Instalasi
+
+#### 1️⃣ Clone Repository
+
+```bash
+git clone https://github.com/ahmadchoms/itechnocup2026.git
+cd itechnocup2026
+````
+
+#### 2️⃣ Install Dependencies
+
+```bash
+# Menggunakan npm
+npm install
+
+# Atau menggunakan yarn
+yarn install
+
+# Atau menggunakan pnpm
+pnpm install
+```
+
+````markdown
+#### 3️⃣ Setup Environment Variables
+
+Buat file `.env` di root directory dan sesuaikan nilainya:
+
+```env
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/dbname"
+
+# Supabase Realtime & Auth
+NEXT_PUBLIC_SUPABASE_URL="[https://your-project.supabase.co](https://your-project.supabase.co)"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
+
+# AI Service
+GEMINI_API_KEY="your-gemini-api-key"
+```
+````
+
+````markdown
+#### 4️⃣ Setup Database
+
+```bash
+# Jalankan migrasi database
+npx prisma migrate dev
+
+# Seed data awal kategori & sistem
+npx prisma db seed
+```
+````
+
+#### 5️⃣ Run Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Aplikasi akan berjalan di `http://localhost:3000`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🚀 Penggunaan
 
-## Learn More
+### Menjalankan Aplikasi
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# Development mode
+npm run dev
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Production build
+npm run build
+npm run start
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Run tests
+npm run test
 
-## Deploy on Vercel
+# Linting
+npm run lint
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### User Guide
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+#### Untuk Pengguna Umum
+
+1. **Registrasi/Login**: Buka aplikasi di browser, lalu lakukan pendaftaran akun baru atau masuk menggunakan akun yang sudah terdaftar untuk menyimpan riwayat pemilahan sampah.
+2. **Scan/Klasifikasi Sampah**: Akses fitur kamera pada aplikasi, arahkan kamera ke objek sampah daur ulang, dan biarkan model _Edge AI_ mengidentifikasi jenis sampah secara instan di browser Anda (`public/model_ai_class`)[cite: 1].
+3. **Panduan Daur Ulang & Poin**: Ikuti petunjuk pemilahan dan penanganan sampah sesuai hasil deteksi, lalu kumpulkan poin kontribusi lingkungan yang akan dicatat otomatis ke dalam sistem.
+
+#### Untuk Admin
+
+1. **Akses Admin Panel**: Masuk menggunakan akun berhak akses Admin melalui halaman `/admin` untuk mengelola data sistem.
+2. **Manajemen Kategori Sampah**: Tambah, ubah, atau hapus kategori sampah daur ulang serta panduan penanganannya yang tersimpan di dalam database (`prisma/schema.prisma`)[cite: 1].
+3. **Monitoring & Laporan Analytics**: Pantau statistik aktivitas pemilahan pengguna, total volume sampah teridentifikasi, serta riwayat aktivitas sistem secara _real-time_.
+
+---
+
+```markdown
+## 📚 API Documentation
+
+### Base URL
+```
+
+Development: http://localhost:3000/api
+Production: https://[domain]/api
+
+````
+
+### Endpoints
+
+#### Authentication
+
+```http
+POST /api/auth/register
+POST /api/auth/login
+POST /api/auth/logout
+GET  /api/auth/me
+
+````
+
+#### Garbage Classifications & Recycling History
+
+```http
+GET    /api/classifications       # Ambil semua riwayat klasifikasi sampah
+GET    /api/classifications/:id   # Ambil detail klasifikasi berdasarkan ID
+POST   /api/classifications       # Simpan hasil klasifikasi Edge AI baru
+DELETE /api/classifications/:id   # Hapus riwayat klasifikasi
+
+```
+
+#### Recycling Categories & Educational Guides
+
+```http
+GET    /api/categories            # Ambil semua daftar kategori daur ulang
+GET    /api/categories/:id        # Ambil detail kategori dan panduan daur ulang
+POST   /api/categories            # Tambah kategori sampah baru (Admin)
+PUT    /api/categories/:id        # Update data & panduan kategori (Admin)
+DELETE /api/categories/:id        # Hapus kategori sampah (Admin)
+
+```
+
+### Example Request
+
+````javascript
+// Login
+const response = await fetch("/api/auth/login", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    email: "user@example.com",
+    password: "password123",
+  }),
+});
+
+// Save Edge AI Classification Result
+const saveClassification = await fetch("/api/classifications", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    categoryName: "Plastic Bottle",
+    confidence: 0.95,
+    guidanceId: "cat-plastic-101",
+  }),
+});
+
+const data = await saveClassification.json();
+console.log("Classification Result Saved:", data);
+
+📖 **[Dokumentasi API Lengkap](./docs/API.md)** _(opsional)_
+
+---
+
+```markdown
+## 🧪 Testing
+
+### Running Tests
+
+```bash
+# Unit & Component tests
+npm run test
+
+# Integration tests
+npm run test:integration
+
+# End-to-End (E2E) tests
+npm run test:e2e
+
+# Test coverage report
+npm run test:coverage
+
+````
+
+### Test Coverage
+
+```
+Statements   : 88.5%
+Branches     : 84.2%
+Functions    : 89.1%
+Lines        : 88.7%
+
+```
+
+```
+
+<ElicitationsGroup message="Seluruh bagian README sudah selesai disusun! Langkah selanjutnya yang bisa kita lakukan:">
+  <Elicitation label="Gabungkan seluruh bagian menjadi satu file README.md utuh" query="Gabungkan seluruh bagian README yang sudah kita buat tadi dari awal sampai akhir menjadi satu file README.md utuh."/>
+  <Elicitation label="Buat ringkasan ringkas untuk berkas CONTEXT.md atau PRD.md" query="Buat ringkasan ringkas untuk berkas CONTEXT.md dan PRD.md yang sesuai dengan isi README ini."/>
+</ElicitationsGroup>
+
+```
+
+---
+
+## 📄 Lisensi
+
+Proyek ini dilisensikan di bawah [MIT License](LICENSE) - lihat file LICENSE untuk detail lebih lanjut.
+
+---
+
+<div align="center">
+
+**Made with ❤️ by Londo Ireng for ITECHNO CUP 2026**
+
+</div>

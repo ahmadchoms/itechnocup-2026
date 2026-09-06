@@ -60,14 +60,11 @@ export function ConversationItem({
       <div className="relative shrink-0">
         <Avatar className="h-11 w-11 border border-zinc-200 shadow-2xs">
           <AvatarImage
-            src={
-              partner?.avatarUrl ||
-              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120"
-            }
+            src={partner?.avatarUrl || undefined}
             alt={partner?.fullName || "User"}
             className="object-cover"
           />
-          <AvatarFallback className="bg-sage text-xs font-bold text-[#6B7B4F]">
+          <AvatarFallback className="bg-[#EAE2D7] text-xs font-bold text-[#6B7B4F]">
             {partnerInitials}
           </AvatarFallback>
         </Avatar>

@@ -18,7 +18,8 @@ export interface MapMarkerItem {
 
 interface LeafletMapInnerProps {
   markers: MapMarkerItem[];
-  userLocation: { lat: number; lng: number };
+  userLocation?: { lat: number; lng: number };
+  defaultCenter?: { lat: number; lng: number };
   onSelectPin: (pin: MapMarkerItem) => void;
 }
 
@@ -56,6 +57,7 @@ function createUserLocationIcon() {
 export default function LeafletMapInner({
   markers,
   userLocation,
+  defaultCenter,
   onSelectPin,
 }: LeafletMapInnerProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -63,12 +65,15 @@ export default function LeafletMapInner({
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
 
+  const activeCenter = userLocation ||
+    defaultCenter || { lat: -7.0051, lng: 110.4381 };
+
   // 1. Inisialisasi Map Instance (Sekali saja)
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-      center: [userLocation.lat, userLocation.lng],
+      center: [activeCenter.lat, activeCenter.lng],
       zoom: 13,
       zoomControl: false,
     });
@@ -88,7 +93,7 @@ export default function LeafletMapInner({
     markersLayerRef.current = markersLayer;
 
     // Marker Lokasi Anda
-    const userMarker = L.marker([userLocation.lat, userLocation.lng], {
+    const userMarker = L.marker([userLocation?.lat, userLocation?.lng], {
       icon: createUserLocationIcon(),
       zIndexOffset: 1000,
     })
@@ -120,9 +125,9 @@ export default function LeafletMapInner({
     if (!mapInstanceRef.current) return;
 
     if (userMarkerRef.current) {
-      userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
+      userMarkerRef.current.setLatLng([userLocation?.lat, userLocation?.lng]);
     } else {
-      userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], {
+      userMarkerRef.current = L.marker([userLocation?.lat, userLocation?.lng], {
         icon: createUserLocationIcon(),
         zIndexOffset: 1000,
       })
@@ -131,11 +136,11 @@ export default function LeafletMapInner({
     }
 
     // Pan dengan halus ke lokasi baru user
-    mapInstanceRef.current.panTo([userLocation.lat, userLocation.lng], {
+    mapInstanceRef.current.panTo([userLocation?.lat, userLocation?.lng], {
       animate: true,
       duration: 1,
     });
-  }, [userLocation.lat, userLocation.lng]);
+  }, [userLocation?.lat, userLocation?.lng]);
 
   // 3. Update Markers Limbah (Seller & Buyer)
   useEffect(() => {
@@ -150,7 +155,7 @@ export default function LeafletMapInner({
 
       marker.bindTooltip(
         `<strong>${m.title}</strong><br/><span style="font-size:11px;color:#10b981;">${m.distance}</span>`,
-        { direction: "top", opacity: 0.95 }
+        { direction: "top", opacity: 0.95 },
       );
 
       marker.on("click", () => {

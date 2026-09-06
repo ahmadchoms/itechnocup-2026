@@ -20,16 +20,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { getActiveListingsAction } from "@/actions/listing.actions";
-import type { ChatConversation, ChatTransaction, SellerListing } from "@/types";
+import { getDistance, getBasePrice } from "@/lib/deal-pricing";
+import { WastePhotoDialog } from "./WastePhotoDialog";
+import type {
+  ChatConversation,
+  ChatListing,
+  ChatTransaction,
+  SellerListing,
+} from "@/types";
 
 interface DealDrawerProps {
   activeConv: ChatConversation;
@@ -54,57 +54,6 @@ interface DealDrawerProps {
     selectedCategoryId?: string,
   ) => void;
   onOpenReviewDialog?: () => void;
-}
-
-function getDistance(conv: ChatConversation) {
-  if (conv.match?.distanceKm) return conv.match.distanceKm.toFixed(1);
-
-  // Prefer listing & request coordinates, fallback to user coordinates
-  const lat1 = Number(
-    conv.listing?.latitude ||
-      conv.match?.listing?.latitude ||
-      conv.seller?.latitude,
-  );
-  const lon1 = Number(
-    conv.listing?.longitude ||
-      conv.match?.listing?.longitude ||
-      conv.seller?.longitude,
-  );
-  const lat2 = Number(
-    conv.request?.latitude ||
-      conv.match?.request?.latitude ||
-      conv.buyer?.latitude,
-  );
-  const lon2 = Number(
-    conv.request?.longitude ||
-      conv.match?.request?.longitude ||
-      conv.buyer?.longitude,
-  );
-
-  if (lat1 && lon1 && lat2 && lon2) {
-    const R = 6371;
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return (R * c).toFixed(1);
-  }
-  return null;
-}
-
-function getBasePrice(conv: ChatConversation, defaultItemName: string = "") {
-  return (
-    Number(conv.request?.offeredPrice) ||
-    Number(conv.match?.request?.offeredPrice) ||
-    Number(conv.listing?.estimatedPrice) ||
-    Number(conv.match?.listing?.estimatedPrice) ||
-    (defaultItemName.toLowerCase().includes("kardus") ? 1500 : 2500)
-  );
 }
 
 export function DealDrawer({
@@ -139,17 +88,21 @@ export function DealDrawer({
   const calculatedDistance = getDistance(activeConv);
 
   useEffect(() => {
+    let isMounted = true;
+
     if (isCreatingNewDeal && isSeller && activeListings.length === 0) {
-      let isMounted = true;
-      setIsLoadingListings(true);
-      getActiveListingsAction().then((res) => {
+      const fetchListings = async () => {
+        setIsLoadingListings(true);
+        const res = await getActiveListingsAction();
         if (isMounted && res.success && res.listings) {
-          const readyListings = res.listings.filter(
-            (l: any) =>
+          const readyListings = (
+            res.listings as unknown as SellerListing[]
+          ).filter(
+            (l) =>
               Number(l.quantity || 0) > 0 ||
               Number(l.estimatedWeightKg || 0) > 0,
           );
-          setActiveListings(readyListings as unknown as SellerListing[]);
+          setActiveListings(readyListings);
           if (readyListings.length > 0) {
             setSelectedListingId(readyListings[0].id);
             // Auto-update price/qty input based on selected listing
@@ -171,15 +124,20 @@ export function DealDrawer({
           }
         }
         if (isMounted) setIsLoadingListings(false);
-      });
-      return () => {
-        isMounted = false;
       };
+
+      fetchListings();
     }
+
+    return () => {
+      isMounted = false;
+    };
   }, [
     isCreatingNewDeal,
     isSeller,
     activeListings.length,
+    activeConv,
+    onDealInputsChange,
     onPriceChange,
     onQuantityChange,
   ]);
@@ -227,10 +185,14 @@ export function DealDrawer({
       activeConv.listing?.photoUrl ||
       activeConv.match?.listing?.photoUrl;
 
-  const basePrice =
-    Number(activeConv.request?.offeredPrice) ||
-    Number(activeConv.match?.request?.offeredPrice) ||
-    (listingTitle.toLowerCase().includes("kardus") ? 1500 : 2500);
+  // Sumber listing tunggal untuk dialog preview foto, agar tidak duplikasi
+  // logic fallback price/weight/unit yang sudah dihitung di atas.
+  const displayListing: ChatListing | null =
+    (selectedListing as ChatListing | undefined) ??
+    activeTx?.listing ??
+    activeConv.listing ??
+    activeConv.match?.listing ??
+    null;
 
   const handleModifyPrice = (delta: number) => {
     const current = Number(currentDealInput.price) || 0;
@@ -1026,50 +988,12 @@ export function DealDrawer({
         )}
       </AnimatePresence>
 
-      {/* Dialog Preview Foto Sampah Penjual */}
-      {photoUrl && (
-        <Dialog open={showPhotoModal} onOpenChange={setShowPhotoModal}>
-          <DialogContent className="max-w-md rounded-[28px] sm:rounded-[32px] border-zinc-200/80 bg-white p-5 sm:p-6 shadow-2xl">
-            <DialogHeader className="text-left space-y-1 pb-2 border-b border-zinc-100">
-              <div className="flex items-center gap-2 text-[#6B7B4F]">
-                <Camera className="h-4 w-4" />
-                <span className="text-xs font-bold uppercase tracking-wider">
-                  Foto Sampah dari Penjual
-                </span>
-              </div>
-              <DialogTitle className="font-display text-base font-bold text-[#171717]">
-                {listingTitle}
-              </DialogTitle>
-              <DialogDescription className="text-xs text-[#78766B]">
-                Kondisi fisik limbah yang terdaftar untuk transaksi ini.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-3 pt-2">
-              <div className="relative aspect-4/3 w-full rounded-2xl overflow-hidden border border-zinc-200 bg-zinc-100 shadow-inner">
-                <Image
-                  src={photoUrl}
-                  alt={listingTitle}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 640px) 100vw, 400px"
-                />
-              </div>
-
-              <div className="flex justify-end pt-1">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowPhotoModal(false)}
-                  className="rounded-full h-8.5 px-4 text-xs font-semibold border-zinc-200"
-                >
-                  Tutup
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Dialog Preview Foto Sampah Penjual (komponen bersama, dipakai juga di ChatHeader) */}
+      <WastePhotoDialog
+        isOpen={showPhotoModal}
+        onClose={() => setShowPhotoModal(false)}
+        listing={displayListing}
+      />
     </>
   );
 }

@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect, useOptimistic, startTransition, type FormEvent } from "react";
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useOptimistic,
+  startTransition,
+  type FormEvent,
+} from "react";
 import { cn } from "@/lib/utils";
 import { formatRupiah } from "@/lib/format";
 import { displayFont, bodyFont } from "@/lib/fonts";
@@ -12,13 +19,25 @@ import { MessageStream } from "./MessageStream";
 import { ChatInputBar } from "./ChatInputBar";
 import { EmptyChatState } from "./EmptyChatState";
 import { CreateReviewDialog } from "./CreateReviewDialog";
-import { sendMessageAction, getUserConversationsAction } from "@/actions/chat.actions";
+import {
+  sendMessageAction,
+  getUserConversationsAction,
+} from "@/actions/chat.actions";
 import { updateTransactionStatusAction } from "@/actions/transaction.actions";
-import type { ChatClientProps, ChatConversation, ChatMessage, ChatReviewItem } from "@/types";
+import { toast } from "@/components/ui/sonner";
+import type {
+  ChatClientProps,
+  ChatConversation,
+  ChatMessage,
+  ChatReviewItem,
+} from "@/types";
 
 import { supabase } from "@/lib/supabase";
 
-function mergeUniqueMessages(existingList: ChatMessage[] = [], newMsg: ChatMessage): ChatMessage[] {
+function mergeUniqueMessages(
+  existingList: ChatMessage[] = [],
+  newMsg: ChatMessage,
+): ChatMessage[] {
   const existingIdIndex = existingList.findIndex((m) => m.id === newMsg.id);
   if (existingIdIndex !== -1) {
     const next = [...existingList];
@@ -27,7 +46,10 @@ function mergeUniqueMessages(existingList: ChatMessage[] = [], newMsg: ChatMessa
   }
 
   const tempIndex = existingList.findIndex(
-    (m) => String(m.id).startsWith("temp-") && m.content === newMsg.content && m.senderId === newMsg.senderId
+    (m) =>
+      String(m.id).startsWith("temp-") &&
+      m.content === newMsg.content &&
+      m.senderId === newMsg.senderId,
   );
   if (tempIndex !== -1) {
     const next = [...existingList];
@@ -65,10 +87,29 @@ export function ChatClient({
   const [convList, setConvList] = useState<ChatConversation[]>(conversations);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [reviewedTxIds, setReviewedTxIds] = useState<string[]>([]);
+  // Track pesan optimistic yang gagal terkirim, agar bisa ditampilkan &
+  // dicoba kirim ulang tanpa perlu diketik ulang oleh pengguna.
+  const [failedMessageIds, setFailedMessageIds] = useState<Set<string>>(
+    new Set(),
+  );
+
+  // Kunci stabil berisi daftar ID percakapan milik user saat ini. Dipakai
+  // untuk membatasi (scope) langganan Supabase Realtime hanya ke baris yang
+  // relevan bagi user ini, bukan ke SELURUH tabel messages/transactions di
+  // platform. String key ini hanya berubah saat SET percakapan berubah
+  // (percakapan baru dibuat/dihapus), bukan setiap kali ada pesan baru,
+  // sehingga channel tidak dibongkar-pasang terus-menerus.
+  const conversationIdsKey = useMemo(
+    () =>
+      convList
+        .map((c) => c.id)
+        .sort()
+        .join(","),
+    [convList],
+  );
 
   // Pure Supabase Realtime WebSocket Connection (0 spam polling)
   useEffect(() => {
-    // Sync on tab re-focus only
     const syncConversations = async () => {
       try {
         const res = await getUserConversationsAction();
@@ -80,102 +121,195 @@ export function ChatClient({
       }
     };
 
+    // Sync saat tab kembali aktif (fallback jika ada event yang terlewat
+    // ketika tab di-background / browser membekukan koneksi WS)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         syncConversations();
       }
     };
 
+    // Sync + paksa reconnect saat koneksi internet perangkat kembali online.
+    // Ini menutup celah utama: kalau WiFi/data mati beberapa detik saat tab
+    // tetap fokus, "visibilitychange" tidak pernah terpicu sehingga user
+    // bisa berhenti menerima pesan baru tanpa sadar sampai refresh manual.
+    const handleOnline = () => {
+      reconnectAttempt = 0;
+      syncConversations();
+      resubscribe();
+    };
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("online", handleOnline);
 
-    // 2. Supabase Realtime Channel
-    const channel = supabase
-      .channel("realtime-daurnusa-chat")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-        },
-        (payload) => {
-          const newMsg = payload.new as any;
-          if (!newMsg || !newMsg.conversation_id) return;
+    const conversationIds = conversationIdsKey
+      ? conversationIdsKey.split(",")
+      : [];
+    // Batasi event yang diterima hanya untuk percakapan milik user ini,
+    // bukan seluruh tabel messages/transactions di platform.
+    const conversationFilter =
+      conversationIds.length > 0
+        ? `conversation_id=in.(${conversationIds.join(",")})`
+        : undefined;
 
-          const formattedMessage: ChatMessage = {
-            id: newMsg.id,
-            conversationId: newMsg.conversation_id,
-            senderId: newMsg.sender_id,
-            content: newMsg.content,
-            sentAt: parseRealtimeDate(newMsg.sent_at),
-          };
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let reconnectAttempt = 0;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let isCancelled = false;
 
-          setConvList((prev) =>
-            prev.map((conv) => {
-              if (conv.id === newMsg.conversation_id) {
-                return {
-                  ...conv,
-                  messages: mergeUniqueMessages(conv.messages || [], formattedMessage),
-                };
-              }
-              return conv;
-            })
-          );
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "transactions",
-        },
-        (payload) => {
-          console.log("[Supabase Realtime] Transaction Event:", payload);
-          const updatedTx = payload.new as any;
-          if (!updatedTx || !updatedTx.conversation_id) return;
+    const resubscribe = () => {
+      if (isCancelled) return;
+      if (channel) {
+        supabase.removeChannel(channel);
+        channel = null;
+      }
+      setupChannel();
+    };
 
-          setConvList((prev) =>
-            prev.map((conv) => {
-              if (conv.id === updatedTx.conversation_id) {
-                return {
-                  ...conv,
-                  transactions: [
-                    {
-                      ...updatedTx,
-                      finalPrice: Number(updatedTx.final_price || updatedTx.finalPrice || 0),
-                      finalQuantity: Number(updatedTx.final_quantity || updatedTx.finalQuantity || 0),
-                      unit: updatedTx.unit || "kg",
-                      createdAt: parseRealtimeDate(updatedTx.created_at || updatedTx.createdAt).toISOString(),
-                      completedAt: (updatedTx.completed_at || updatedTx.completedAt) ? parseRealtimeDate(updatedTx.completed_at || updatedTx.completedAt).toISOString() : null,
-                      listing: conv.transactions?.[0]?.listing || null,
-                    },
-                  ],
-                };
-              }
-              return conv;
-            })
-          );
+    const setupChannel = () => {
+      channel = supabase
+        .channel(`realtime-daurnusa-chat-${currentUserId || "guest"}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+            filter: conversationFilter,
+          },
+          (payload) => {
+            const newMsg = payload.new as any;
+            if (!newMsg || !newMsg.conversation_id) return;
 
-          // Realtime synchronization of calculator deal input values
-          if (updatedTx.final_price !== undefined || updatedTx.finalPrice !== undefined) {
-            setDealInputs((prev) => ({
-              ...prev,
-              [updatedTx.conversation_id]: {
-                price: String(Number(updatedTx.final_price || updatedTx.finalPrice || 0)),
-                quantity: String(Number(updatedTx.final_quantity || updatedTx.finalQuantity || 1)),
-              },
-            }));
+            const formattedMessage: ChatMessage = {
+              id: newMsg.id,
+              conversationId: newMsg.conversation_id,
+              senderId: newMsg.sender_id,
+              content: newMsg.content,
+              sentAt: parseRealtimeDate(newMsg.sent_at),
+            };
+
+            setConvList((prev) =>
+              prev.map((conv) => {
+                if (conv.id === newMsg.conversation_id) {
+                  return {
+                    ...conv,
+                    messages: mergeUniqueMessages(
+                      conv.messages || [],
+                      formattedMessage,
+                    ),
+                  };
+                }
+                return conv;
+              }),
+            );
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "transactions",
+            filter: conversationFilter,
+          },
+          (payload) => {
+            console.log("[Supabase Realtime] Transaction Event:", payload);
+            const updatedTx = payload.new as any;
+            if (!updatedTx || !updatedTx.conversation_id) return;
+
+            setConvList((prev) =>
+              prev.map((conv) => {
+                if (conv.id === updatedTx.conversation_id) {
+                  return {
+                    ...conv,
+                    transactions: [
+                      {
+                        ...updatedTx,
+                        finalPrice: Number(
+                          updatedTx.final_price || updatedTx.finalPrice || 0,
+                        ),
+                        finalQuantity: Number(
+                          updatedTx.final_quantity ||
+                            updatedTx.finalQuantity ||
+                            0,
+                        ),
+                        unit: updatedTx.unit || "kg",
+                        createdAt: parseRealtimeDate(
+                          updatedTx.created_at || updatedTx.createdAt,
+                        ).toISOString(),
+                        completedAt:
+                          updatedTx.completed_at || updatedTx.completedAt
+                            ? parseRealtimeDate(
+                                updatedTx.completed_at || updatedTx.completedAt,
+                              ).toISOString()
+                            : null,
+                        listing: conv.transactions?.[0]?.listing || null,
+                      },
+                    ],
+                  };
+                }
+                return conv;
+              }),
+            );
+
+            // Realtime synchronization of calculator deal input values
+            if (
+              updatedTx.final_price !== undefined ||
+              updatedTx.finalPrice !== undefined
+            ) {
+              setDealInputs((prev) => ({
+                ...prev,
+                [updatedTx.conversation_id]: {
+                  price: String(
+                    Number(updatedTx.final_price || updatedTx.finalPrice || 0),
+                  ),
+                  quantity: String(
+                    Number(
+                      updatedTx.final_quantity || updatedTx.finalQuantity || 1,
+                    ),
+                  ),
+                },
+              }));
+            }
+          },
+        )
+        .subscribe((status) => {
+          if (isCancelled) return;
+
+          if (status === "SUBSCRIBED") {
+            // Channel baru pulih (mis. setelah putus koneksi) — tarik ulang
+            // data terbaru untuk menutup celah pesan yang mungkin terlewat.
+            if (reconnectAttempt > 0) {
+              syncConversations();
+            }
+            reconnectAttempt = 0;
+            return;
           }
-        }
-      )
-      .subscribe();
+
+          if (
+            status === "CHANNEL_ERROR" ||
+            status === "TIMED_OUT" ||
+            status === "CLOSED"
+          ) {
+            const delay = Math.min(1000 * 2 ** reconnectAttempt, 15000);
+            reconnectAttempt += 1;
+            if (reconnectTimer) clearTimeout(reconnectTimer);
+            reconnectTimer = setTimeout(resubscribe, delay);
+          }
+        });
+    };
+
+    setupChannel();
 
     return () => {
+      isCancelled = true;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      supabase.removeChannel(channel);
+      window.removeEventListener("online", handleOnline);
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (channel) supabase.removeChannel(channel);
     };
-  }, []);
+  }, [conversationIdsKey, currentUserId]);
 
   // React 19 Optimistic State for zero-lag messaging
   const [optimisticConvs, setOptimisticUpdate] = useOptimistic(
@@ -185,7 +319,7 @@ export function ChatClient({
         return state.map((c) =>
           c.id === action.conversationId
             ? { ...c, messages: [...(c.messages || []), action.message] }
-            : c
+            : c,
         );
       }
       if (action.type === "update_tx") {
@@ -197,15 +331,17 @@ export function ChatClient({
                   {
                     ...action.transaction,
                     finalPrice: Number(action.transaction.finalPrice),
-                    finalQuantity: Number(action.transaction.finalQuantity || 0),
+                    finalQuantity: Number(
+                      action.transaction.finalQuantity || 0,
+                    ),
                   },
                 ],
               }
-            : c
+            : c,
         );
       }
       return state;
-    }
+    },
   );
 
   const [isSending, setIsSending] = useState(false);
@@ -215,7 +351,11 @@ export function ChatClient({
 
   // Active conversation from optimistic state
   const activeConv = useMemo(() => {
-    return optimisticConvs.find((c) => c.id === selectedConvId) || optimisticConvs[0] || null;
+    return (
+      optimisticConvs.find((c) => c.id === selectedConvId) ||
+      optimisticConvs[0] ||
+      null
+    );
   }, [optimisticConvs, selectedConvId]);
 
   const activeTx = activeConv?.transactions?.[0] || null;
@@ -337,20 +477,32 @@ export function ChatClient({
 
     // Urutkan berdasarkan aktivitas terbaru (pesan terbaru, transaksi terbaru, atau waktu dibuat)
     filtered.sort((a, b) => {
-      const aLastMessage = a.messages && a.messages.length > 0 ? a.messages[a.messages.length - 1].sentAt : null;
-      const aLastTx = a.transactions && a.transactions.length > 0 ? a.transactions[0].createdAt : null;
+      const aLastMessage =
+        a.messages && a.messages.length > 0
+          ? a.messages[a.messages.length - 1].sentAt
+          : null;
+      const aLastTx =
+        a.transactions && a.transactions.length > 0
+          ? a.transactions[0].createdAt
+          : null;
       const aTime = Math.max(
         aLastMessage ? new Date(aLastMessage).getTime() : 0,
         aLastTx ? new Date(aLastTx).getTime() : 0,
-        new Date(a.createdAt).getTime()
+        new Date(a.createdAt).getTime(),
       );
 
-      const bLastMessage = b.messages && b.messages.length > 0 ? b.messages[b.messages.length - 1].sentAt : null;
-      const bLastTx = b.transactions && b.transactions.length > 0 ? b.transactions[0].createdAt : null;
+      const bLastMessage =
+        b.messages && b.messages.length > 0
+          ? b.messages[b.messages.length - 1].sentAt
+          : null;
+      const bLastTx =
+        b.transactions && b.transactions.length > 0
+          ? b.transactions[0].createdAt
+          : null;
       const bTime = Math.max(
         bLastMessage ? new Date(bLastMessage).getTime() : 0,
         bLastTx ? new Date(bLastTx).getTime() : 0,
-        new Date(b.createdAt).getTime()
+        new Date(b.createdAt).getTime(),
       );
 
       return bTime - aTime;
@@ -368,17 +520,99 @@ export function ChatClient({
     setShowMobileChat(false);
   };
 
+  const sendChatMessage = async (
+    convId: string,
+    content: string,
+    optimisticId: string,
+    senderId: string,
+  ) => {
+    setIsSending(true);
+    try {
+      const res = await sendMessageAction({
+        conversationId: convId,
+        content,
+      });
+
+      if (res.success && res.message) {
+        setFailedMessageIds((prev) => {
+          if (!prev.has(optimisticId)) return prev;
+          const next = new Set(prev);
+          next.delete(optimisticId);
+          return next;
+        });
+        setConvList((prev) =>
+          prev.map((c) =>
+            c.id === convId
+              ? {
+                  ...c,
+                  messages: mergeUniqueMessages(
+                    c.messages || [],
+                    res.message as unknown as ChatMessage,
+                  ),
+                }
+              : c,
+          ),
+        );
+      } else {
+        // Simpan pesan yang gagal ke convList dasar (bukan hanya overlay
+        // optimistic) agar tidak hilang begitu useOptimistic settle, dan
+        // supaya tombol "Coba lagi" tetap punya bubble untuk ditampilkan.
+        setFailedMessageIds((prev) => new Set(prev).add(optimisticId));
+        setConvList((prev) =>
+          prev.map((c) =>
+            c.id === convId
+              ? {
+                  ...c,
+                  messages: mergeUniqueMessages(c.messages || [], {
+                    id: optimisticId,
+                    conversationId: convId,
+                    senderId,
+                    content,
+                    sentAt: new Date(),
+                  }),
+                }
+              : c,
+          ),
+        );
+        toast.error(res.error || "Pesan gagal terkirim. Coba lagi.");
+      }
+    } catch (err) {
+      console.error("[ChatClient] sendMessage error:", err);
+      setFailedMessageIds((prev) => new Set(prev).add(optimisticId));
+      setConvList((prev) =>
+        prev.map((c) =>
+          c.id === convId
+            ? {
+                ...c,
+                messages: mergeUniqueMessages(c.messages || [], {
+                  id: optimisticId,
+                  conversationId: convId,
+                  senderId,
+                  content,
+                  sentAt: new Date(),
+                }),
+              }
+            : c,
+        ),
+      );
+      toast.error("Pesan gagal terkirim. Periksa koneksi internet Anda.");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
     if (!messageInput.trim() || !activeConv) return;
 
     const currentMsg = messageInput.trim();
     const convId = activeConv.id;
+    const optimisticId = `temp-${Date.now()}`;
     setMessageInput("");
 
     // Optimistic message object
     const optimisticMessage: ChatMessage = {
-      id: `temp-${Date.now()}`,
+      id: optimisticId,
       conversationId: convId,
       senderId: effectiveUserId,
       content: currentMsg,
@@ -392,33 +626,31 @@ export function ChatClient({
         message: optimisticMessage,
       });
 
-      setIsSending(true);
-      try {
-        const res = await sendMessageAction({
-          conversationId: convId,
-          content: currentMsg,
-        });
+      await sendChatMessage(convId, currentMsg, optimisticId, effectiveUserId);
+    });
+  };
 
-        if (res.success && res.message) {
-          setConvList((prev) =>
-            prev.map((c) =>
-              c.id === convId
-                ? {
-                    ...c,
-                    messages: mergeUniqueMessages(
-                      c.messages || [],
-                      res.message as unknown as ChatMessage
-                    ),
-                  }
-                : c,
-            ),
-          );
-        }
-      } catch (err) {
-        console.error("[ChatClient] sendMessage error:", err);
-      } finally {
-        setIsSending(false);
-      }
+  // Kirim ulang pesan yang gagal terkirim, memakai ulang id optimistic yang
+  // sama supaya bubble yang sudah tampil berubah status, bukan duplikat baru.
+  const handleRetryMessage = (
+    conversationId: string,
+    optimisticId: string,
+    content: string,
+  ) => {
+    setFailedMessageIds((prev) => {
+      if (!prev.has(optimisticId)) return prev;
+      const next = new Set(prev);
+      next.delete(optimisticId);
+      return next;
+    });
+
+    startTransition(async () => {
+      await sendChatMessage(
+        conversationId,
+        content,
+        optimisticId,
+        effectiveUserId,
+      );
     });
   };
 
@@ -427,9 +659,15 @@ export function ChatClient({
   };
 
   const handleUpdateTransactionStatus = async (
-    status: "menunggu_persetujuan" | "menunggu_persetujuan_penjual" | "menunggu_persetujuan_pembeli" | "menunggu_konfirmasi" | "selesai" | "dibatalkan",
+    status:
+      | "menunggu_persetujuan"
+      | "menunggu_persetujuan_penjual"
+      | "menunggu_persetujuan_pembeli"
+      | "menunggu_konfirmasi"
+      | "selesai"
+      | "dibatalkan",
     selectedListingId?: string,
-    selectedCategoryId?: string
+    selectedCategoryId?: string,
   ) => {
     if (!activeConv) return;
     const convId = activeConv.id;
@@ -512,7 +750,8 @@ export function ChatClient({
                     transactions: [
                       {
                         ...updatedTx,
-                        createdAt: updatedTx.createdAt || new Date().toISOString(),
+                        createdAt:
+                          updatedTx.createdAt || new Date().toISOString(),
                         finalPrice: Number(updatedTx.finalPrice),
                         finalQuantity: updatedTx.finalQuantity
                           ? Number(updatedTx.finalQuantity)
@@ -537,7 +776,7 @@ export function ChatClient({
                         ...c,
                         messages: mergeUniqueMessages(
                           c.messages || [],
-                          msgRes.message as unknown as ChatMessage
+                          msgRes.message as unknown as ChatMessage,
                         ),
                       }
                     : c,
@@ -616,10 +855,10 @@ export function ChatClient({
                   isUpdatingTx={isUpdatingTx}
                   hasReviewed={Boolean(
                     activeTx &&
-                      (reviewedTxIds.includes(activeTx.id) ||
-                        (activeTx.reviews || []).some(
-                          (r: ChatReviewItem) => r.reviewerId === effectiveUserId
-                        ))
+                    (reviewedTxIds.includes(activeTx.id) ||
+                      (activeTx.reviews || []).some(
+                        (r: ChatReviewItem) => r.reviewerId === effectiveUserId,
+                      )),
                   )}
                   onPriceChange={handlePriceChange}
                   onQuantityChange={handleQuantityChange}
@@ -632,6 +871,10 @@ export function ChatClient({
                 <MessageStream
                   messages={activeConv.messages || []}
                   effectiveUserId={effectiveUserId}
+                  failedMessageIds={failedMessageIds}
+                  onRetryMessage={(optimisticId, content) =>
+                    handleRetryMessage(activeConv.id, optimisticId, content)
+                  }
                 />
 
                 {/* 4. Chat Input & Adaptive Quick Suggestion Bar */}

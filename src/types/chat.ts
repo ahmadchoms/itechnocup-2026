@@ -7,6 +7,8 @@ export interface ChatUser extends GeoLocation {
   phone?: string | null;
   address?: string | null;
   avatarUrl?: string | null;
+  isAdmin?: boolean;
+  isBuyerApproved?: boolean;
 }
 
 export interface ChatListing extends GeoLocation {

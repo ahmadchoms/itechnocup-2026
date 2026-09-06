@@ -68,24 +68,26 @@ export async function startChatAction(input: StartChatInput) {
       }
     }
 
-    if (!buyerId) {
-      buyerId = sessionUser.id;
-    }
-    if (!sellerId) {
+    // Tentukan sellerId & buyerId berdasarkan konteks listing/request dan session
+    if (!sellerId && sessionUser.id !== buyerId) {
       sellerId = sessionUser.id;
     }
-
-    if (!sellerId) {
-      const defaultSeller = await prisma.user.findFirst({ where: { email: "ahmad@daurnusa.id" } });
-      sellerId = defaultSeller?.id || (await prisma.user.findFirst())?.id;
-    }
-    if (!buyerId) {
-      const defaultBuyer = await prisma.user.findFirst({ where: { email: "paktani.ungaran@gmail.com" } });
-      buyerId = defaultBuyer?.id || (await prisma.user.findFirst())?.id;
+    if (!buyerId && sessionUser.id !== sellerId) {
+      buyerId = sessionUser.id;
     }
 
     if (!sellerId || !buyerId) {
-      return { success: false, error: "Data penjual atau pembeli tidak ditemukan" };
+      return {
+        success: false,
+        error: "Data penjual atau pembeli tidak valid untuk memulai percakapan.",
+      };
+    }
+
+    if (sellerId === buyerId) {
+      return {
+        success: false,
+        error: "Anda tidak dapat memulai transaksi atau percakapan dengan akun Anda sendiri.",
+      };
     }
 
     const defaultMsg = `Halo, saya berminat dengan item ${itemTitle}. Mari kita diskusikan kesepakatan harga dan penjemputan.`;
