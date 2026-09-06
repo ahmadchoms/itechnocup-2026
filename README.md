@@ -92,16 +92,16 @@ Selain edukasi, kendala terbesar lainnya adalah **terputusnya rantai distribusi*
 *(Gambar-gambar di bawah dapat dilihat di folder `public/docs/screenshots`)*
 
 <div align="center">
-  <img src="/docs/screenshots/homepage.png" alt="Homepage" width="800"/>
+  <img src="/public/docs/screenshots/homepage.png" alt="Homepage" width="800"/>
   <p><em>Homepage - Tampilan utama aplikasi Daur Nusa</em></p>
   
-  <img src="/docs/screenshots/ai-scanner.png" alt="AI Scanner" width="800"/>
+  <img src="/public/docs/screenshots/ai-scanner.png" alt="AI Scanner" width="800"/>
   <p><em>Edge AI Scanner - Identifikasi sampah real-time melalui kamera</em></p>
   
-  <img src="/docs/screenshots/marketplace.png" alt="Marketplace" width="800"/>
+  <img src="/public/docs/screenshots/marketplace.png" alt="Marketplace" width="800"/>
   <p><em>Marketplace - Halaman listing dan permintaan (request) sampah daur ulang</em></p>
   
-  <img src="/docs/screenshots/maps.png" alt="Maps Matchmaking" width="800"/>
+  <img src="/public/docs/screenshots/maps.png" alt="Maps Matchmaking" width="800"/>
   <p><em>Matchmaking Lokasi - Peta interaktif mempertemukan warga dan pengepul terdekat</em></p>
 </div>
 
